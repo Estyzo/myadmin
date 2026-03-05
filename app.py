@@ -1,5 +1,4 @@
 import os
-import sqlite3
 import json
 import csv
 import io
@@ -10,7 +9,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import urlopen
 from zoneinfo import ZoneInfo
 
-from flask import Flask, Response, g, redirect, render_template, request, url_for
+from flask import Flask, Response, jsonify, redirect, render_template, request, url_for
 
 try:
     from dotenv import load_dotenv
@@ -36,77 +35,22 @@ if api_base_url.startswith("http://southerntechnologies.tech"):
     api_base_url = "https://" + api_base_url[len("http://") :]
 app.config["API_BASE_URL"] = api_base_url
 app.config["APP_TIMEZONE"] = os.getenv("APP_TIMEZONE", "Africa/Dar_es_Salaam")
-app.config["DATABASE"] = os.path.join(app.instance_path, "transferflow.db")
+sender_config_api_url = os.getenv("SENDER_CONFIG_API_URL", "").strip()
+if not sender_config_api_url:
+    sender_config_api_url = f"{api_base_url.rstrip('/')}/sender-configurations"
+elif sender_config_api_url.startswith("/"):
+    sender_config_api_url = f"{api_base_url.rstrip('/')}/{sender_config_api_url.lstrip('/')}"
+if sender_config_api_url.startswith("http://southerntechnologies.tech"):
+    sender_config_api_url = "https://" + sender_config_api_url[len("http://") :]
+app.config["SENDER_CONFIG_API_URL"] = sender_config_api_url
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "transferflow-dev-key")
 
 TRANSACTION_CACHE_TTL_SECONDS = 20
 TRANSACTION_CACHE = {"fetched_at": 0.0, "items": [], "last_error": "", "source": "none"}
 MESSAGES_CACHE_TTL_SECONDS = 20
 MESSAGES_CACHE = {"fetched_at": 0.0, "items": [], "last_error": "", "source": "none"}
-
-
-def get_db():
-    if "db" not in g:
-        g.db = sqlite3.connect(app.config["DATABASE"])
-        g.db.row_factory = sqlite3.Row
-    return g.db
-
-
-@app.teardown_appcontext
-def close_db(_error):
-    db = g.pop("db", None)
-    if db is not None:
-        db.close()
-
-
-def init_db():
-    db = sqlite3.connect(app.config["DATABASE"])
-    db.execute(
-        """
-        CREATE TABLE IF NOT EXISTS sender_configurations (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            sender_number TEXT NOT NULL UNIQUE,
-            client_code TEXT NOT NULL,
-            til_number TEXT NOT NULL,
-            til_name TEXT,
-            path TEXT NOT NULL,
-            is_active INTEGER NOT NULL DEFAULT 1,
-            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-        )
-        """
-    )
-    existing_rows = db.execute("SELECT COUNT(*) FROM sender_configurations").fetchone()[0]
-    if existing_rows == 0:
-        db.executemany(
-            """
-            INSERT INTO sender_configurations
-            (sender_number, client_code, til_number, til_name, path, is_active)
-            VALUES (?, ?, ?, ?, ?, ?)
-            """,
-            [
-                ("0716904482", "client2", "314470", "-", "*150*01#,3,receivernumber,amount,PIN", 1),
-                ("0753901881", "client2", "8011022", "-", "*150*00#,1,receivernumber,amount,HUS,PIN", 1),
-                ("0760763383", "client1", "787625", "-", "*150*00#,1,receivernumber,amount,VAN,PIN", 1),
-                ("0695235537", "client1", "1154214", "-", "*150*60#,1,1,receivernumber,amount,PIN", 1),
-            ],
-        )
-    db.commit()
-    db.close()
-
-
-def fetch_sender_configurations(active_only=False):
-    db = get_db()
-    sql = """
-        SELECT id, sender_number, client_code, til_number, til_name, path, is_active
-        FROM sender_configurations
-    """
-    params = []
-    if active_only:
-        sql += " WHERE is_active = ?"
-        params.append(1)
-    sql += " ORDER BY id DESC"
-    rows = db.execute(sql, params).fetchall()
-    return rows
+SENDER_CONFIG_CACHE_TTL_SECONDS = 20
+SENDER_CONFIG_CACHE = {"fetched_at": 0.0, "items": [], "last_error": "", "source": "none"}
 
 
 def format_amount(value):
@@ -296,6 +240,130 @@ def extract_message_records(payload):
             return records
 
     return []
+
+
+def parse_sender_status(value):
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return value != 0
+
+    normalized = str(value or "").strip().lower()
+    if normalized in {"1", "true", "yes", "active", "enabled", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "inactive", "disabled", "off"}:
+        return False
+    return True
+
+
+def extract_sender_config_records(payload):
+    if isinstance(payload, list):
+        return payload
+    if not isinstance(payload, dict):
+        return []
+
+    for key in ("data", "items", "results", "sender_configurations", "senderConfigurations", "records"):
+        records = payload.get(key)
+        if isinstance(records, list):
+            return records
+
+    return []
+
+
+def normalize_sender_config_record(item, fallback_id):
+    if not isinstance(item, dict):
+        return None
+
+    sender_number = pick_first_available(
+        item,
+        ("sender_number", "sender_mobile_number", "senderNumber", "sender", "mobile_number", "phone_number"),
+        fallback="",
+    ).strip()
+    if not sender_number:
+        return None
+
+    raw_id = pick_first_available(item, ("id", "config_id", "sender_config_id"), fallback="")
+    try:
+        normalized_id = int(str(raw_id).strip()) if str(raw_id).strip() else fallback_id
+    except (TypeError, ValueError):
+        normalized_id = fallback_id
+
+    status_value = item.get("is_active", item.get("active", item.get("status", True)))
+    return {
+        "id": normalized_id,
+        "sender_number": sender_number,
+        "client_code": pick_first_available(item, ("client_code", "clientCode"), fallback="-"),
+        "til_number": pick_first_available(item, ("til_number", "tilNumber"), fallback="-"),
+        "til_name": pick_first_available(item, ("til_name", "tilName"), fallback="-"),
+        "path": pick_first_available(item, ("path", "ussd_path", "ussdPath"), fallback="-"),
+        "is_active": parse_sender_status(status_value),
+    }
+
+
+def fetch_sender_configurations(active_only=False, force_refresh=False):
+    def apply_filters(rows):
+        if not active_only:
+            return rows
+        return [row for row in rows if row.get("is_active")]
+
+    now = time.time()
+    cache_is_fresh = (
+        bool(SENDER_CONFIG_CACHE["items"])
+        and (now - SENDER_CONFIG_CACHE["fetched_at"]) < SENDER_CONFIG_CACHE_TTL_SECONDS
+    )
+    if cache_is_fresh and not force_refresh:
+        return apply_filters(list(SENDER_CONFIG_CACHE["items"])), {
+            "source": "cache",
+            "used_stale": False,
+            "last_updated": SENDER_CONFIG_CACHE["fetched_at"],
+            "error": "",
+        }
+
+    endpoint = app.config["SENDER_CONFIG_API_URL"]
+    fetch_error = ""
+    try:
+        with urlopen(endpoint, timeout=8) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except (HTTPError, URLError, TimeoutError, json.JSONDecodeError):
+        payload = None
+        fetch_error = "Unable to load sender configurations from API."
+
+    if payload is not None:
+        raw_records = extract_sender_config_records(payload)
+        normalized_rows = []
+        for index, raw_item in enumerate(raw_records, start=1):
+            normalized = normalize_sender_config_record(raw_item, fallback_id=index)
+            if normalized is not None:
+                normalized_rows.append(normalized)
+
+        SENDER_CONFIG_CACHE["items"] = list(normalized_rows)
+        SENDER_CONFIG_CACHE["fetched_at"] = time.time()
+        SENDER_CONFIG_CACHE["last_error"] = ""
+        SENDER_CONFIG_CACHE["source"] = "live"
+        return apply_filters(normalized_rows), {
+            "source": "live",
+            "used_stale": False,
+            "last_updated": SENDER_CONFIG_CACHE["fetched_at"],
+            "error": "",
+        }
+
+    if SENDER_CONFIG_CACHE["items"]:
+        if fetch_error:
+            SENDER_CONFIG_CACHE["last_error"] = fetch_error
+        SENDER_CONFIG_CACHE["source"] = "stale_cache"
+        return apply_filters(list(SENDER_CONFIG_CACHE["items"])), {
+            "source": "cache",
+            "used_stale": True,
+            "last_updated": SENDER_CONFIG_CACHE["fetched_at"],
+            "error": fetch_error or SENDER_CONFIG_CACHE.get("last_error", ""),
+        }
+
+    return [], {
+        "source": "error",
+        "used_stale": False,
+        "last_updated": 0.0,
+        "error": fetch_error or "No sender configurations are currently available.",
+    }
 
 
 def fetch_messages(force_refresh=False):
@@ -522,66 +590,6 @@ def format_cache_timestamp(timestamp_value):
     except (TypeError, ValueError, OSError):
         return "-"
     return parsed.strftime("%d %b %Y, %I:%M:%S %p")
-
-
-def build_trend_window(transactions, days):
-    tz = get_app_timezone()
-    today = datetime.now(tz).date()
-    start_date = today - timedelta(days=days - 1)
-    day_keys = [(start_date + timedelta(days=offset)).isoformat() for offset in range(days)]
-    sent_operations = {"transfer", "sent"}
-    received_operations = {"received", "receive"}
-
-    buckets = {
-        key: {
-            "date": datetime.fromisoformat(key).date(),
-            "sent": 0.0,
-            "received": 0.0,
-        }
-        for key in day_keys
-    }
-
-    for tx in transactions:
-        day_key = tx.get("created_at_date")
-        if day_key not in buckets:
-            continue
-        amount = tx.get("amount_value") or 0.0
-        operation_value = str(tx.get("operation", "")).strip().lower()
-        if operation_value in sent_operations:
-            buckets[day_key]["sent"] += amount
-        elif operation_value in received_operations:
-            buckets[day_key]["received"] += amount
-
-    max_value = 1.0
-    for bucket in buckets.values():
-        max_value = max(max_value, bucket["sent"], bucket["received"])
-
-    points = []
-    sent_total = 0.0
-    received_total = 0.0
-    for key in day_keys:
-        bucket = buckets[key]
-        sent_value = bucket["sent"]
-        received_value = bucket["received"]
-        sent_total += sent_value
-        received_total += received_value
-        points.append(
-            {
-                "label": bucket["date"].strftime("%d %b"),
-                "sent": sent_value,
-                "received": received_value,
-                "sent_label": format_currency_amount(sent_value),
-                "received_label": format_currency_amount(received_value),
-                "sent_pct": round((sent_value / max_value) * 100, 2),
-                "received_pct": round((received_value / max_value) * 100, 2),
-            }
-        )
-
-    return {
-        "points": points,
-        "sent_total": format_currency_amount(sent_total),
-        "received_total": format_currency_amount(received_total),
-    }
 
 
 def build_daily_metric_window(transactions, days=7):
@@ -962,9 +970,6 @@ def build_dashboard_data(
         status_title = "Data Unavailable"
         status_message = fetch_meta["error"] or "Unable to load transactions."
 
-    trend_7 = build_trend_window(all_transactions, 7)
-    trend_30 = build_trend_window(all_transactions, 30)
-
     return {
         "period": normalized_period,
         "per_page": rows_per_page,
@@ -980,7 +985,6 @@ def build_dashboard_data(
         "filtered_transactions": sorted_transactions,
         "pagination": pagination,
         "sort": {"by": normalized_sort_by, "dir": normalized_sort_dir},
-        "trend": {"7": trend_7, "30": trend_30},
         "data_status": {
             "level": status_level,
             "title": status_title,
@@ -1160,17 +1164,12 @@ def export_transactions_as_pdf(transactions, period):
     )
 
 
-def bootstrap():
-    os.makedirs(app.instance_path, exist_ok=True)
-    init_db()
-
-
-bootstrap()
-
-
 @app.context_processor
 def inject_api_base_url():
-    return {"api_base_url": app.config["API_BASE_URL"]}
+    return {
+        "api_base_url": app.config["API_BASE_URL"],
+        "sender_config_api_url": app.config["SENDER_CONFIG_API_URL"],
+    }
 
 
 @app.route("/")
@@ -1212,7 +1211,6 @@ def dashboard():
         per_page_options=dashboard_data["per_page_options"],
         filters=dashboard_data["filters"],
         sort=dashboard_data["sort"],
-        trend=dashboard_data["trend"],
         data_status=dashboard_data["data_status"],
         operator_options=dashboard_data["operator_options"],
         operation_options=dashboard_data["operation_options"],
@@ -1334,63 +1332,75 @@ def messages():
     )
 
 
+@app.route("/api/sender-configurations")
+def api_sender_configurations():
+    force_refresh = request.args.get("refresh", "0") == "1"
+    active_only = (request.args.get("active_only", "") or "").strip().lower() in {"1", "true", "yes"}
+    sender_configs, fetch_meta = fetch_sender_configurations(
+        active_only=active_only,
+        force_refresh=force_refresh,
+    )
+    http_status = 200 if fetch_meta["source"] != "error" else 502
+    return jsonify(
+        {
+            "data": sender_configs,
+            "meta": {
+                "source": fetch_meta["source"],
+                "used_stale": fetch_meta["used_stale"],
+                "last_updated": fetch_meta["last_updated"],
+                "last_updated_label": format_cache_timestamp(fetch_meta["last_updated"]),
+                "error": fetch_meta["error"],
+                "active_only": active_only,
+            },
+        }
+    ), http_status
+
+
 @app.route("/send-money")
 def send_money():
-    sender_rows = fetch_sender_configurations(active_only=True)
+    sender_rows, _sender_fetch_meta = fetch_sender_configurations(active_only=True)
+    sender_numbers = sorted(
+        {row.get("sender_number", "").strip() for row in sender_rows if row.get("sender_number")},
+        key=str.casefold,
+    )
     return render_template(
         "send_money.html",
-        sender_numbers=[row["sender_number"] for row in sender_rows],
+        sender_numbers=sender_numbers,
     )
 
 
 @app.route("/settings")
 def settings():
-    sender_configs = fetch_sender_configurations()
+    force_refresh = request.args.get("refresh", "0") == "1"
+    sender_configs, fetch_meta = fetch_sender_configurations(force_refresh=force_refresh)
+    if fetch_meta["source"] == "live":
+        status_level = "success"
+        status_title = "Sender Config Synced"
+        status_message = "Showing latest sender configurations from API."
+    elif fetch_meta["source"] == "cache" and fetch_meta["used_stale"]:
+        status_level = "warning"
+        status_title = "Using Cached Sender Config"
+        status_message = fetch_meta["error"] or "Live sender config API unavailable. Showing latest cached data."
+    elif fetch_meta["source"] == "cache":
+        status_level = "info"
+        status_title = "Using Cached Snapshot"
+        status_message = "Showing a recently cached sender configuration snapshot."
+    else:
+        status_level = "error"
+        status_title = "Sender Config Unavailable"
+        status_message = fetch_meta["error"] or "Unable to load sender configurations."
+
     return render_template(
         "settings.html",
         sender_configs=sender_configs,
         sender_config_count=len(sender_configs),
+        data_status={
+            "level": status_level,
+            "title": status_title,
+            "message": status_message,
+            "last_updated": format_cache_timestamp(fetch_meta.get("last_updated")),
+        },
     )
-
-
-@app.route("/settings/sender-config", methods=["POST"])
-def add_sender_configuration():
-    sender_number = request.form.get("sender_mobile_number", "").strip()
-    client_code = request.form.get("client_code", "").strip()
-    til_number = request.form.get("til_number", "").strip()
-    til_name = request.form.get("til_name", "").strip() or "-"
-    path = request.form.get("path", "").strip()
-
-    if not sender_number or not client_code or not til_number or not path:
-        return redirect(url_for("settings"))
-
-    db = get_db()
-    db.execute(
-        """
-        INSERT INTO sender_configurations
-        (sender_number, client_code, til_number, til_name, path, is_active)
-        VALUES (?, ?, ?, ?, ?, ?)
-        ON CONFLICT(sender_number) DO UPDATE SET
-            client_code = excluded.client_code,
-            til_number = excluded.til_number,
-            til_name = excluded.til_name,
-            path = excluded.path,
-            is_active = excluded.is_active
-        """,
-        (sender_number, client_code, til_number, til_name, path, 1),
-    )
-    db.commit()
-    return redirect(url_for("settings"))
-
-
-@app.route("/settings/sender-config/<int:config_id>/toggle", methods=["POST"])
-def toggle_sender_configuration(config_id):
-    is_active = request.form.get("is_active", "0")
-    next_status = 1 if is_active == "1" else 0
-    db = get_db()
-    db.execute("UPDATE sender_configurations SET is_active = ? WHERE id = ?", (next_status, config_id))
-    db.commit()
-    return redirect(url_for("settings"))
 
 
 if __name__ == "__main__":

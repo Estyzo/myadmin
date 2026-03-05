@@ -120,54 +120,15 @@
           <article class="config-card add-config-card">
             <h3>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
-              Add Configuration
+              Sender Config Source
             </h3>
-
-            <form class="config-form" action="{{ url_for('add_sender_configuration') }}" method="post">
-              <label class="config-field">
-                <span>Sender Mobile Number</span>
-                <div class="config-input-wrap">
-                  <svg class="field-icon" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M22 16.9v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.1A19.5 19.5 0 0 1 5.2 12.8 19.8 19.8 0 0 1 2.1 4.4 2 2 0 0 1 4.1 2.2h3a2 2 0 0 1 2 1.7 12.8 12.8 0 0 0 .7 2.8 2 2 0 0 1-.45 2.1L8.1 10a16 16 0 0 0 5.9 5.9l1.2-1.2a2 2 0 0 1 2.1-.45 12.8 12.8 0 0 0 2.8.7 2 2 0 0 1 1.7 2z"></path>
-                  </svg>
-                  <input class="config-input with-leading-icon" name="sender_mobile_number" type="text" required placeholder="0753248971">
-                </div>
-              </label>
-
-              <label class="config-field">
-                <span>Client Code</span>
-                <div class="config-input-wrap">
-                  <svg class="field-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m16 18 6-6-6-6"></path><path d="m8 6-6 6 6 6"></path></svg>
-                  <input class="config-input with-leading-icon" name="client_code" type="text" required placeholder="CLIENT001">
-                </div>
-              </label>
-
-              <label class="config-field">
-                <span>TIL Number</span>
-                <div class="config-input-wrap">
-                  <input class="config-input" name="til_number" type="text" required placeholder="Enter TIL number">
-                </div>
-              </label>
-
-              <label class="config-field">
-                <span>TIL Name</span>
-                <div class="config-input-wrap">
-                  <input class="config-input" name="til_name" type="text" placeholder="Enter TIL name">
-                </div>
-              </label>
-
-              <label class="config-field">
-                <span>Path</span>
-                <div class="config-input-wrap">
-                  <input class="config-input" name="path" type="text" required placeholder="Enter path">
-                </div>
-              </label>
-
-              <button class="add-config-btn" type="submit">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
-                Add Configuration
-              </button>
-            </form>
+            <p class="subtle">
+              Sender configurations are managed by the API and are no longer stored in this app.
+            </p>
+            <p class="subtle">
+              Endpoint: <strong>{{ sender_config_api_url }}</strong>
+            </p>
+            <a class="status-retry" href="{{ url_for('settings', refresh=1) }}">Refresh from API</a>
           </article>
 
           <article class="config-card table-config-card">
@@ -208,15 +169,9 @@
                       <td>{{ config.til_name or "-" }}</td>
                       <td class="path-cell">{{ config.path }}</td>
                       <td>
-                        <form class="toggle-form" action="{{ url_for('toggle_sender_configuration', config_id=config.id) }}" method="post">
-                          <input type="hidden" name="is_active" value="{{ 0 if config.is_active else 1 }}">
-                          <button type="submit" class="toggle-switch {{ 'on' if config.is_active else 'off' }}" aria-label="Toggle sender configuration status">
-                            <span></span>
-                          </button>
-                          <span class="status-pill {{ 'active' if config.is_active else 'inactive' }}">
-                            {{ "Active" if config.is_active else "Inactive" }}
-                          </span>
-                        </form>
+                        <span class="status-pill {{ 'active' if config.is_active else 'inactive' }}">
+                          {{ "Active" if config.is_active else "Inactive" }}
+                        </span>
                       </td>
                     </tr>
                     {% endfor %}
@@ -230,6 +185,16 @@
             </div>
           </article>
         </div>
+
+        <article class="status-card {{ data_status.level }}">
+          <h4>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg>
+            {{ data_status.title }}
+          </h4>
+          <p>{{ data_status.message }}</p>
+          <p class="status-meta">Last updated: {{ data_status.last_updated }}</p>
+          <a class="status-retry" href="{{ url_for('settings', refresh=1) }}">Retry now</a>
+        </article>
       </section>
     </main>
   </div>

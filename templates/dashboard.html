@@ -168,52 +168,6 @@
           </article>
         </div>
 
-        <section class="trend-shell">
-          <div class="trend-head">
-            <h4>Transaction Trends</h4>
-            <div class="trend-range-switch" role="tablist" aria-label="Trend range">
-              <button class="trend-range-btn active" type="button" data-trend-range="7">7D</button>
-              <button class="trend-range-btn" type="button" data-trend-range="30">30D</button>
-            </div>
-          </div>
-
-          <div class="trend-panel active" data-trend-panel="7">
-            <div class="trend-summary">
-              <span><strong>Sent:</strong> {{ trend["7"].sent_total }}</span>
-              <span><strong>Received:</strong> {{ trend["7"].received_total }}</span>
-            </div>
-            <div class="trend-chart">
-              {% for point in trend["7"].points %}
-              <div class="trend-column" title="{{ point.label }} | Sent: {{ point.sent_label }} | Received: {{ point.received_label }}">
-                <div class="trend-bars">
-                  <span class="trend-bar sent" style="height: {{ point.sent_pct }}%"></span>
-                  <span class="trend-bar received" style="height: {{ point.received_pct }}%"></span>
-                </div>
-                <span class="trend-label">{{ point.label }}</span>
-              </div>
-              {% endfor %}
-            </div>
-          </div>
-
-          <div class="trend-panel" data-trend-panel="30">
-            <div class="trend-summary">
-              <span><strong>Sent:</strong> {{ trend["30"].sent_total }}</span>
-              <span><strong>Received:</strong> {{ trend["30"].received_total }}</span>
-            </div>
-            <div class="trend-chart trend-chart-dense">
-              {% for point in trend["30"].points %}
-              <div class="trend-column" title="{{ point.label }} | Sent: {{ point.sent_label }} | Received: {{ point.received_label }}">
-                <div class="trend-bars">
-                  <span class="trend-bar sent" style="height: {{ point.sent_pct }}%"></span>
-                  <span class="trend-bar received" style="height: {{ point.received_pct }}%"></span>
-                </div>
-                <span class="trend-label">{{ point.label }}</span>
-              </div>
-              {% endfor %}
-            </div>
-          </div>
-        </section>
-
         <article class="status-card {{ data_status.level }}">
           <h4>
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg>
@@ -435,20 +389,6 @@
 
       renderCountdown();
       window.setInterval(tick, 1000);
-
-      var trendButtons = document.querySelectorAll("[data-trend-range]");
-      var trendPanels = document.querySelectorAll("[data-trend-panel]");
-      trendButtons.forEach(function (button) {
-        button.addEventListener("click", function () {
-          var range = button.getAttribute("data-trend-range");
-          trendButtons.forEach(function (btn) {
-            btn.classList.toggle("active", btn === button);
-          });
-          trendPanels.forEach(function (panel) {
-            panel.classList.toggle("active", panel.getAttribute("data-trend-panel") === range);
-          });
-        });
-      });
 
       var columnStorageKey = "dashboard.hiddenColumns";
       var columnToggles = document.querySelectorAll("[data-col-toggle]");

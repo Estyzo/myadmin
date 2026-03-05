@@ -524,129 +524,6 @@ svg {
   background: #f5f8fd;
 }
 
-.trend-shell {
-  margin-top: 18px;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  background: #fff;
-  padding: 18px 18px 14px;
-  box-shadow: var(--soft-shadow);
-}
-
-.trend-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.trend-head h4 {
-  margin: 0;
-  font-size: 20px;
-  color: #16253f;
-}
-
-.trend-range-switch {
-  border: 1px solid #dde4ef;
-  border-radius: 11px;
-  padding: 2px;
-  display: inline-flex;
-  gap: 2px;
-  background: #f6f9fd;
-}
-
-.trend-range-btn {
-  border: 0;
-  background: transparent;
-  border-radius: 8px;
-  min-height: 30px;
-  padding: 0 10px;
-  font-size: 12px;
-  font-weight: 700;
-  color: #647792;
-}
-
-.trend-range-btn.active {
-  background: #fff;
-  color: #121c31;
-  box-shadow: 0 2px 6px rgba(17, 27, 52, 0.1);
-}
-
-.trend-panel {
-  display: none;
-}
-
-.trend-panel.active {
-  display: block;
-}
-
-.trend-summary {
-  margin: 12px 0 6px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  color: #4c6080;
-  font-size: 13px;
-}
-
-.trend-chart {
-  min-height: 180px;
-  display: flex;
-  gap: 10px;
-  align-items: end;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding-bottom: 4px;
-  -webkit-overflow-scrolling: touch;
-}
-
-.trend-chart.trend-chart-dense {
-  gap: 6px;
-}
-
-.trend-column {
-  display: grid;
-  gap: 6px;
-  align-items: end;
-  justify-items: center;
-  flex: 1 1 0;
-  min-width: 56px;
-}
-
-.trend-bars {
-  width: 100%;
-  min-height: 130px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 4px;
-}
-
-.trend-bar {
-  width: 40%;
-  min-height: 2px;
-  border-radius: 6px 6px 2px 2px;
-}
-
-.trend-bar.sent {
-  background: #4d7bf5;
-}
-
-.trend-bar.received {
-  background: #1ac38d;
-}
-
-.trend-label {
-  font-size: 11px;
-  color: #74839b;
-  white-space: nowrap;
-}
-
-.trend-chart.trend-chart-dense .trend-column {
-  flex: 0 0 34px;
-  min-width: 34px;
-}
-
 .list-shell {
   margin-top: 20px;
   background: #fff;
@@ -2140,38 +2017,6 @@ button {
     font-size: 15px;
   }
 
-  .trend-shell {
-    padding: 16px 12px 12px;
-  }
-
-  .trend-head {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .trend-range-switch {
-    width: 100%;
-  }
-
-  .trend-range-btn {
-    flex: 1;
-    justify-content: center;
-  }
-
-  .trend-chart {
-    gap: 8px;
-    min-height: 170px;
-  }
-
-  .trend-column {
-    min-width: 52px;
-  }
-
-  .trend-chart.trend-chart-dense .trend-column {
-    min-width: 30px;
-    flex-basis: 30px;
-  }
-
   .list-controls {
     grid-template-columns: 1fr;
   }
@@ -2420,20 +2265,6 @@ button {
 
   .messages-list-head h3 {
     font-size: 20px;
-  }
-
-  .trend-summary {
-    gap: 8px;
-    font-size: 12px;
-  }
-
-  .trend-label {
-    font-size: 10px;
-  }
-
-  .trend-chart.trend-chart-dense .trend-column {
-    min-width: 26px;
-    flex-basis: 26px;
   }
 
   .send-hero,
