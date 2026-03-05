@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="api-base-url" content="{{ api_base_url }}">
+  <title>TransferFlow Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <script>window.API_BASE_URL = "{{ api_base_url }}";</script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo-wrap">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="14" rx="3"></rect>
+            <path d="M3 10h18"></path>
+            <path d="M8 14h5"></path>
+          </svg>
+        </div>
+        <span>TransferFlow</span>
+      </div>
+
+      <nav class="side-nav">
+        <a href="{{ url_for('dashboard') }}" class="nav-item active">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11h7V3H3zM14 21h7v-7h-7zM14 10h7V3h-7zM3 21h7v-7H3z"></path></svg>
+          <span>Dashboard</span>
+        </a>
+        <a href="{{ url_for('send_money') }}" class="nav-item">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4z"></path></svg>
+          <span>Send Money</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          <span>Customers</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+          <span>Messages</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"></path><path d="M18 17V9"></path><path d="M13 17V5"></path><path d="M8 17v-3"></path></svg>
+          <span>Reports</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7H4"></path><path d="M20 12H4"></path><path d="M20 17H4"></path></svg>
+          <span>Balance</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19V5"></path><path d="M10 19V9"></path><path d="M14 19V7"></path><path d="M18 19V11"></path></svg>
+          <span>Loans</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.7" y="5" width="18.6" height="14" rx="2.3"></rect><path d="M2.7 10.5h18.6"></path><path d="M7 15.2h4.5"></path></svg>
+          <span>Commissions</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20"></path><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14.5a3.5 3.5 0 0 1 0 7H7"></path></svg>
+          <span>Expenses</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 8 4.5v11L12 22l-8-4.5v-11z"></path><path d="m12 12 8-4.5"></path><path d="m12 12-8-4.5"></path><path d="M12 22V12"></path></svg>
+          <span>Assets</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          <span>Audit Logs</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><path d="M20 8v6"></path><path d="M23 11h-6"></path></svg>
+          <span>Users</span>
+        </a>
+        <a href="{{ url_for('settings') }}" class="nav-item">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15A1.65 1.65 0 0 0 20 16.82l.1.1a2 2 0 1 1-2.83 2.83l-.1-.1A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1V21a2 2 0 1 1-4 0v-.2a1.65 1.65 0 0 0-.33-1 1.65 1.65 0 0 0-1-.6 1.65 1.65 0 0 0-1.82.6l-.1.1a2 2 0 1 1-2.83-2.83l.1-.1A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1-.33H3a2 2 0 1 1 0-4h.2a1.65 1.65 0 0 0 1-.33 1.65 1.65 0 0 0 .6-1 1.65 1.65 0 0 0-.6-1.82l-.1-.1a2 2 0 1 1 2.83-2.83l.1.1A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .33-1V3a2 2 0 1 1 4 0v.2a1.65 1.65 0 0 0 .33 1 1.65 1.65 0 0 0 1 .6 1.65 1.65 0 0 0 1.82-.6l.1-.1a2 2 0 1 1 2.83 2.83l-.1.1A1.65 1.65 0 0 0 19.4 9c.27.32.47.7.6 1.1H21a2 2 0 1 1 0 4h-.2a1.65 1.65 0 0 0-1 .33z"></path></svg>
+          <span>Settings</span>
+        </a>
+      </nav>
+      <button class="collapse-btn" aria-label="Collapse sidebar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+      </button>
+    </aside>
+
+    <main class="content">
+      <header class="topbar">
+        <h1>Dashboard</h1>
+        <div class="profile">L</div>
+      </header>
+
+      <section class="page-wrap">
+        <div class="page-header">
+          <div>
+            <h2>Dashboard</h2>
+            <p>Overview of your transactions and statistics</p>
+          </div>
+          <div class="header-actions">
+            <details class="export-menu">
+              <summary class="ghost-btn">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10l5 5 5-5"></path><path d="M12 15V3"></path></svg>
+                Export
+              </summary>
+              <div class="export-menu-panel">
+                <a class="export-option" href="{{ url_for('export_transactions', file_format='csv', period=period, q=filters.q, operator=filters.operator, operation=filters.operation, sort_by=sort.by, sort_dir=sort.dir, per_page=per_page) }}">Export CSV</a>
+                <a class="export-option" href="{{ url_for('export_transactions', file_format='pdf', period=period, q=filters.q, operator=filters.operator, operation=filters.operation, sort_by=sort.by, sort_dir=sort.dir, per_page=per_page) }}">Export PDF</a>
+              </div>
+            </details>
+            <a class="ghost-btn strong refresh-btn" href="{{ url_for('dashboard', page=pagination.page, period=period, q=filters.q, operator=filters.operator, operation=filters.operation, sort_by=sort.by, sort_dir=sort.dir, per_page=per_page, refresh=1) }}">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15.5-6.4L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15.5 6.4L3 16"></path></svg>
+              Refresh
+            </a>
+            <span class="auto-refresh-pill">Auto refresh in <strong id="refresh-countdown">30s</strong></span>
+            <button class="ghost-btn refresh-toggle" id="refresh-toggle" type="button" aria-pressed="false">Pause</button>
+          </div>
+        </div>
+
+        <div class="switch-wrap">
+          <a class="switch-btn {% if period == 'today' %}active{% endif %}" href="{{ url_for('dashboard', period='today', q=filters.q, operator=filters.operator, operation=filters.operation, sort_by=sort.by, sort_dir=sort.dir, per_page=per_page) }}">Today</a>
+          <a class="switch-btn {% if period == 'all' %}active{% endif %}" href="{{ url_for('dashboard', period='all', q=filters.q, operator=filters.operator, operation=filters.operation, sort_by=sort.by, sort_dir=sort.dir, per_page=per_page) }}">All Time</a>
+        </div>
+
+        <div class="stat-grid">
+          <article class="stat-card highlighted">
+            <div>
+              <p class="label">{{ stats.total_label }}</p>
+              <h3>{{ stats.total_volume }}</h3>
+              <p class="subtle">{{ stats.total_transactions }} transactions</p>
+            </div>
+            <div class="card-icon lilac">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4z"></path></svg>
+            </div>
+          </article>
+
+          <article class="stat-card">
+            <div>
+              <p class="label">{{ stats.sent_label }}</p>
+              <h3>{{ stats.sent_amount }}</h3>
+              <p class="subtle">{{ stats.outgoing_transfers }} outgoing transfers</p>
+            </div>
+            <div class="card-icon blue">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7"></path><path d="M7 7h10v10"></path></svg>
+            </div>
+          </article>
+
+          <article class="stat-card">
+            <div>
+              <p class="label">{{ stats.received_label }}</p>
+              <h3>{{ stats.received_amount }}</h3>
+              <p class="subtle">{{ stats.incoming_transfers }} incoming transfers</p>
+            </div>
+            <div class="card-icon cyan">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7 17 17"></path><path d="M17 7H7v10"></path></svg>
+            </div>
+          </article>
+        </div>
+
+        <section class="trend-shell">
+          <div class="trend-head">
+            <h4>Transaction Trends</h4>
+            <div class="trend-range-switch" role="tablist" aria-label="Trend range">
+              <button class="trend-range-btn active" type="button" data-trend-range="7">7D</button>
+              <button class="trend-range-btn" type="button" data-trend-range="30">30D</button>
+            </div>
+          </div>
+
+          <div class="trend-panel active" data-trend-panel="7">
+            <div class="trend-summary">
+              <span><strong>Sent:</strong> {{ trend["7"].sent_total }}</span>
+              <span><strong>Received:</strong> {{ trend["7"].received_total }}</span>
+            </div>
+            <div class="trend-chart">
+              {% for point in trend["7"].points %}
+              <div class="trend-column" title="{{ point.label }} | Sent: {{ point.sent_label }} | Received: {{ point.received_label }}">
+                <div class="trend-bars">
+                  <span class="trend-bar sent" style="height: {{ point.sent_pct }}%"></span>
+                  <span class="trend-bar received" style="height: {{ point.received_pct }}%"></span>
+                </div>
+                <span class="trend-label">{{ point.label }}</span>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div class="trend-panel" data-trend-panel="30">
+            <div class="trend-summary">
+              <span><strong>Sent:</strong> {{ trend["30"].sent_total }}</span>
+              <span><strong>Received:</strong> {{ trend["30"].received_total }}</span>
+            </div>
+            <div class="trend-chart trend-chart-dense">
+              {% for point in trend["30"].points %}
+              <div class="trend-column" title="{{ point.label }} | Sent: {{ point.sent_label }} | Received: {{ point.received_label }}">
+                <div class="trend-bars">
+                  <span class="trend-bar sent" style="height: {{ point.sent_pct }}%"></span>
+                  <span class="trend-bar received" style="height: {{ point.received_pct }}%"></span>
+                </div>
+                <span class="trend-label">{{ point.label }}</span>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </section>
+
+        <article class="status-card {{ data_status.level }}">
+          <h4>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg>
+            {{ data_status.title }}
+          </h4>
+          <p>{{ data_status.message }}</p>
+          <p class="status-meta">Last updated: {{ data_status.last_updated }}</p>
+          {% if data_status.can_retry %}
+          <a class="status-retry" href="{{ url_for('dashboard', period=period, q=filters.q, operator=filters.operator, operation=filters.operation, sort_by=sort.by, sort_dir=sort.dir, per_page=per_page, refresh=1) }}">Retry now</a>
+          {% endif %}
+        </article>
+
+        <section class="list-shell">
+          <form class="list-controls" method="get" action="{{ url_for('dashboard') }}">
+            <input type="hidden" name="period" value="{{ period }}">
+            <input type="hidden" name="sort_by" value="{{ sort.by }}">
+            <input type="hidden" name="sort_dir" value="{{ sort.dir }}">
+            <label class="search-box">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+              <input type="text" name="q" value="{{ filters.q }}" placeholder="Search by phone number, receiver, creator..." />
+            </label>
+
+            <div class="filters">
+              <label class="filter-select-wrap">
+                <select class="filter-select" name="operator" aria-label="Filter by operator">
+                  <option value="">All Operators</option>
+                  {% for operator in operator_options %}
+                  <option value="{{ operator }}" {% if filters.operator == operator %}selected{% endif %}>{{ operator }}</option>
+                  {% endfor %}
+                </select>
+              </label>
+              <label class="filter-select-wrap">
+                <select class="filter-select" name="operation" aria-label="Filter by operation">
+                  <option value="">All Operations</option>
+                  {% for operation in operation_options %}
+                  <option value="{{ operation }}" {% if filters.operation == operation %}selected{% endif %}>{{ operation }}</option>
+                  {% endfor %}
+                </select>
+              </label>
+              <label class="filter-select-wrap per-page-wrap">
+                <select class="filter-select" name="per_page" aria-label="Rows per page">
+                  {% for option in per_page_options %}
+                  <option value="{{ option }}" {% if per_page == option %}selected{% endif %}>{{ option }} rows</option>
+                  {% endfor %}
+                </select>
+              </label>
+              <button class="filter-btn" type="submit">Apply</button>
+              {% if filters.q or filters.operator or filters.operation %}
+              <a class="filter-btn clear-filter-btn" href="{{ url_for('dashboard', period=period, sort_by=sort.by, sort_dir=sort.dir, per_page=per_page) }}">Clear</a>
+              {% endif %}
+              <details class="column-menu">
+                <summary class="filter-btn">Columns</summary>
+                <div class="column-menu-panel">
+                  <label class="column-option"><input type="checkbox" data-col-toggle="sender" checked> Sender</label>
+                  <label class="column-option"><input type="checkbox" data-col-toggle="receiver" checked> Receiver</label>
+                  <label class="column-option"><input type="checkbox" data-col-toggle="operator" checked> Operator</label>
+                  <label class="column-option"><input type="checkbox" data-col-toggle="operation" checked> Operation</label>
+                  <label class="column-option"><input type="checkbox" data-col-toggle="amount" checked> Amount</label>
+                  <label class="column-option"><input type="checkbox" data-col-toggle="created_by" checked> Created By</label>
+                  <label class="column-option"><input type="checkbox" data-col-toggle="date" checked> Date</label>
+                </div>
+              </details>
+              <button class="filter-btn compact-mode-btn" id="compact-mode-toggle" type="button" aria-pressed="false">Compact cards</button>
+            </div>
+          </form>
+          <div class="active-filters">
+            {% if period == "all" %}
+            <a class="filter-chip with-remove" href="{{ url_for('dashboard', period='today', q=filters.q, operator=filters.operator, operation=filters.operation, sort_by=sort.by, sort_dir=sort.dir, per_page=per_page) }}">
+              Period: All Time
+              <span class="chip-remove" aria-hidden="true">×</span>
+            </a>
+            {% else %}
+            <span class="filter-chip">Period: Today</span>
+            {% endif %}
+            {% if filters.q %}
+            <a class="filter-chip with-remove" href="{{ url_for('dashboard', period=period, operator=filters.operator, operation=filters.operation, sort_by=sort.by, sort_dir=sort.dir, per_page=per_page) }}">
+              Search: {{ filters.q }}
+              <span class="chip-remove" aria-hidden="true">×</span>
+            </a>
+            {% endif %}
+            {% if filters.operator %}
+            <a class="filter-chip with-remove" href="{{ url_for('dashboard', period=period, q=filters.q, operation=filters.operation, sort_by=sort.by, sort_dir=sort.dir, per_page=per_page) }}">
+              Operator: {{ filters.operator }}
+              <span class="chip-remove" aria-hidden="true">×</span>
+            </a>
+            {% endif %}
+            {% if filters.operation %}
+            <a class="filter-chip with-remove" href="{{ url_for('dashboard', period=period, q=filters.q, operator=filters.operator, sort_by=sort.by, sort_dir=sort.dir, per_page=per_page) }}">
+              Operation: {{ filters.operation }}
+              <span class="chip-remove" aria-hidden="true">×</span>
+            </a>
+            {% endif %}
+            {% if period == "all" or filters.q or filters.operator or filters.operation %}
+            <a class="clear-all-link" href="{{ url_for('dashboard', sort_by=sort.by, sort_dir=sort.dir, per_page=per_page) }}">Clear all</a>
+            {% endif %}
+          </div>
+
+          {% if transactions %}
+          <div class="table-wrap dashboard-table-wrap">
+            <table class="transaction-table">
+              <thead>
+                <tr>
+                  <th data-col="sender">Sender</th>
+                  <th data-col="receiver">Receiver</th>
+                  <th data-col="operator">
+                    <a class="sort-link {% if sort.by == 'operator' %}active{% endif %}" href="{{ url_for('dashboard', period=period, q=filters.q, operator=filters.operator, operation=filters.operation, sort_by='operator', sort_dir='desc' if sort.by == 'operator' and sort.dir == 'asc' else 'asc', per_page=per_page) }}">
+                      Operator
+                      {% if sort.by == 'operator' %}
+                      <span class="sort-indicator">{{ '↑' if sort.dir == 'asc' else '↓' }}</span>
+                      {% endif %}
+                    </a>
+                  </th>
+                  <th data-col="operation">Operation</th>
+                  <th data-col="amount">
+                    <a class="sort-link {% if sort.by == 'amount' %}active{% endif %}" href="{{ url_for('dashboard', period=period, q=filters.q, operator=filters.operator, operation=filters.operation, sort_by='amount', sort_dir='asc' if sort.by == 'amount' and sort.dir == 'desc' else 'desc', per_page=per_page) }}">
+                      Amount
+                      {% if sort.by == 'amount' %}
+                      <span class="sort-indicator">{{ '↑' if sort.dir == 'asc' else '↓' }}</span>
+                      {% endif %}
+                    </a>
+                  </th>
+                  <th data-col="created_by">Created By</th>
+                  <th data-col="date">
+                    <a class="sort-link {% if sort.by == 'date' %}active{% endif %}" href="{{ url_for('dashboard', period=period, q=filters.q, operator=filters.operator, operation=filters.operation, sort_by='date', sort_dir='asc' if sort.by == 'date' and sort.dir == 'desc' else 'desc', per_page=per_page) }}">
+                      Date
+                      {% if sort.by == 'date' %}
+                      <span class="sort-indicator">{{ '↑' if sort.dir == 'asc' else '↓' }}</span>
+                      {% endif %}
+                    </a>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for transaction in transactions %}
+                <tr>
+                  <td data-col="sender" data-label="Sender">{{ transaction.sender_number }}</td>
+                  <td data-col="receiver" data-label="Receiver" class="receiver-cell">{{ transaction.receiver_number }}</td>
+                  <td data-col="operator" data-label="Operator">{{ transaction.operator }}</td>
+                  <td data-col="operation" data-label="Operation">{{ transaction.operation }}</td>
+                  <td data-col="amount" data-label="Amount" class="transaction-amount">{{ transaction.amount }}</td>
+                  <td data-col="created_by" data-label="Created By" class="monospace">{{ transaction.created_by }}</td>
+                  <td data-col="date" data-label="Date" class="transaction-date">{{ transaction.created_at }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="table-pagination">
+            <p class="pagination-info">
+              Showing {{ pagination.start_row }}-{{ pagination.end_row }} of {{ pagination.total }} transactions
+            </p>
+            <div class="pagination-links">
+              {% if pagination.has_prev %}
+              <a class="page-btn" href="{{ url_for('dashboard', page=pagination.prev_page, period=period, q=filters.q, operator=filters.operator, operation=filters.operation, sort_by=sort.by, sort_dir=sort.dir, per_page=per_page) }}">Previous</a>
+              {% else %}
+              <span class="page-btn disabled" aria-disabled="true">Previous</span>
+              {% endif %}
+              <span class="page-current">Page {{ pagination.page }} of {{ pagination.total_pages }}</span>
+              {% if pagination.has_next %}
+              <a class="page-btn" href="{{ url_for('dashboard', page=pagination.next_page, period=period, q=filters.q, operator=filters.operator, operation=filters.operation, sort_by=sort.by, sort_dir=sort.dir, per_page=per_page) }}">Next</a>
+              {% else %}
+              <span class="page-btn disabled" aria-disabled="true">Next</span>
+              {% endif %}
+            </div>
+          </div>
+          {% else %}
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.1A19.5 19.5 0 0 1 5.2 12.8 19.8 19.8 0 0 1 2.1 4.4 2 2 0 0 1 4.1 2.2h3a2 2 0 0 1 2 1.7 12.8 12.8 0 0 0 .7 2.8 2 2 0 0 1-.45 2.1L8.1 10a16 16 0 0 0 5.9 5.9l1.2-1.2a2 2 0 0 1 2.1-.45 12.8 12.8 0 0 0 2.8.7 2 2 0 0 1 1.7 2z"></path></svg>
+            <h5>No transactions found</h5>
+            <p>Transactions will appear once data is available from the API.</p>
+          </div>
+          {% endif %}
+        </section>
+      </section>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var totalSeconds = 30;
+      var remainingSeconds = totalSeconds;
+      var isPaused = false;
+      var didReload = false;
+      var reloadUrl = new URL(window.location.href);
+      reloadUrl.searchParams.delete("refresh");
+      var countdownEl = document.getElementById("refresh-countdown");
+      var toggleBtn = document.getElementById("refresh-toggle");
+
+      function renderCountdown() {
+        if (!countdownEl) {
+          return;
+        }
+        countdownEl.textContent = isPaused ? "paused" : (remainingSeconds + "s");
+      }
+
+      function tick() {
+        if (didReload) {
+          return;
+        }
+        if (isPaused) {
+          return;
+        }
+        remainingSeconds -= 1;
+        if (remainingSeconds <= 0) {
+          didReload = true;
+          window.location.href = reloadUrl.toString();
+          return;
+        }
+        renderCountdown();
+      }
+
+      if (toggleBtn) {
+        toggleBtn.addEventListener("click", function () {
+          isPaused = !isPaused;
+          toggleBtn.textContent = isPaused ? "Resume" : "Pause";
+          toggleBtn.setAttribute("aria-pressed", isPaused ? "true" : "false");
+          renderCountdown();
+        });
+      }
+
+      renderCountdown();
+      window.setInterval(tick, 1000);
+
+      var trendButtons = document.querySelectorAll("[data-trend-range]");
+      var trendPanels = document.querySelectorAll("[data-trend-panel]");
+      trendButtons.forEach(function (button) {
+        button.addEventListener("click", function () {
+          var range = button.getAttribute("data-trend-range");
+          trendButtons.forEach(function (btn) {
+            btn.classList.toggle("active", btn === button);
+          });
+          trendPanels.forEach(function (panel) {
+            panel.classList.toggle("active", panel.getAttribute("data-trend-panel") === range);
+          });
+        });
+      });
+
+      var columnStorageKey = "dashboard.hiddenColumns";
+      var columnToggles = document.querySelectorAll("[data-col-toggle]");
+      var hiddenColumns = new Set();
+      try {
+        var persisted = JSON.parse(window.localStorage.getItem(columnStorageKey) || "[]");
+        if (Array.isArray(persisted)) {
+          persisted.forEach(function (col) { hiddenColumns.add(col); });
+        }
+      } catch (_error) {}
+
+      function applyColumnVisibility() {
+        var allCells = document.querySelectorAll("[data-col]");
+        allCells.forEach(function (cell) {
+          var colName = cell.getAttribute("data-col");
+          cell.classList.toggle("col-hidden", hiddenColumns.has(colName));
+        });
+      }
+
+      columnToggles.forEach(function (toggle) {
+        var colName = toggle.getAttribute("data-col-toggle");
+        toggle.checked = !hiddenColumns.has(colName);
+        toggle.addEventListener("change", function () {
+          if (toggle.checked) {
+            hiddenColumns.delete(colName);
+          } else {
+            hiddenColumns.add(colName);
+          }
+          try {
+            window.localStorage.setItem(columnStorageKey, JSON.stringify(Array.from(hiddenColumns)));
+          } catch (_error) {}
+          applyColumnVisibility();
+        });
+      });
+      applyColumnVisibility();
+
+      var compactModeStorageKey = "dashboard.compactCardsMode";
+      var compactModeToggle = document.getElementById("compact-mode-toggle");
+      var compactCardsEnabled = false;
+      var defaultCompactByScreen = window.matchMedia && window.matchMedia("(max-width: 760px)").matches;
+      compactCardsEnabled = defaultCompactByScreen;
+      try {
+        var storedCompactMode = window.localStorage.getItem(compactModeStorageKey);
+        if (storedCompactMode === "on" || storedCompactMode === "off") {
+          compactCardsEnabled = storedCompactMode === "on";
+        }
+      } catch (_error) {}
+
+      function applyCompactMode() {
+        document.body.classList.toggle("compact-cards-mode", compactCardsEnabled);
+        if (!compactModeToggle) {
+          return;
+        }
+        compactModeToggle.textContent = compactCardsEnabled ? "Standard rows" : "Compact cards";
+        compactModeToggle.setAttribute("aria-pressed", compactCardsEnabled ? "true" : "false");
+      }
+
+      if (compactModeToggle) {
+        compactModeToggle.addEventListener("click", function () {
+          compactCardsEnabled = !compactCardsEnabled;
+          try {
+            window.localStorage.setItem(compactModeStorageKey, compactCardsEnabled ? "on" : "off");
+          } catch (_error) {}
+          applyCompactMode();
+        });
+      }
+      applyCompactMode();
+    })();
+  </script>
+</body>
+</html>
