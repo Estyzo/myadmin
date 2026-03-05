@@ -1163,6 +1163,11 @@ svg {
   box-shadow: 0 0 0 3px rgba(67, 129, 222, 0.12);
 }
 
+.send-input-wrap.invalid {
+  border-color: #d34c4c;
+  box-shadow: 0 0 0 3px rgba(211, 76, 76, 0.12);
+}
+
 .select-wrap {
   position: relative;
 }
@@ -1249,6 +1254,38 @@ svg {
 
 .send-submit:hover {
   background: #7cb8a4;
+}
+
+.field-error {
+  margin-top: 6px;
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #c13838;
+}
+
+.form-feedback {
+  margin: 2px 2px 0;
+  min-height: 22px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.form-feedback.info {
+  color: #3c5576;
+}
+
+.form-feedback.success {
+  color: #1f8f57;
+}
+
+.form-feedback.error {
+  color: #c13838;
+}
+
+.is-loading {
+  opacity: 0.65;
+  pointer-events: none;
 }
 
 .settings-page {

@@ -91,7 +91,7 @@
         <div class="profile">L</div>
       </header>
 
-      <section class="page-wrap messages-page container-fluid px-3 px-md-4">
+      <section id="messages-page-root" class="page-wrap messages-page container-fluid px-3 px-md-4">
         <div class="messages-header">
           <div class="messages-heading">
             <div class="messages-icon">
@@ -102,14 +102,14 @@
               <p>View all received messages</p>
             </div>
           </div>
-          <a class="ghost-btn strong" href="{{ url_for('messages', page=pagination.page, q=filters.q, from_date=filters.from_date, to_date=filters.to_date, sender=filters.sender, refresh=1) }}">
+          <a class="ghost-btn strong" data-ajax-link="true" data-ajax-target="#messages-page-root" href="{{ url_for('messages', page=pagination.page, q=filters.q, from_date=filters.from_date, to_date=filters.to_date, sender=filters.sender, refresh=1) }}">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15.5-6.4L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15.5 6.4L3 16"></path></svg>
             Refresh
           </a>
         </div>
 
         <section class="messages-filter-shell">
-          <form id="messages-filter-form" method="get" action="{{ url_for('messages') }}">
+          <form id="messages-filter-form" method="get" action="{{ url_for('messages') }}" data-ajax-form="true" data-ajax-target="#messages-page-root" data-auto-submit="true">
             <label class="messages-search">
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
               <input type="text" name="q" value="{{ filters.q }}" placeholder="Search messages, phone numbers...">
@@ -138,7 +138,7 @@
             <div class="messages-filter-actions">
               <button class="filter-btn" type="submit">Apply</button>
               {% if filters.q or filters.from_date or filters.to_date or filters.sender %}
-              <a class="filter-btn clear-filter-btn" href="{{ url_for('messages') }}">Clear</a>
+              <a class="filter-btn clear-filter-btn" data-ajax-link="true" data-ajax-target="#messages-page-root" href="{{ url_for('messages') }}">Clear</a>
               {% endif %}
             </div>
           </form>
@@ -199,13 +199,13 @@
             </p>
             <div class="pagination-links">
               {% if pagination.has_prev %}
-              <a class="page-btn" href="{{ url_for('messages', page=pagination.prev_page, q=filters.q, from_date=filters.from_date, to_date=filters.to_date, sender=filters.sender) }}">Previous</a>
+              <a class="page-btn" data-ajax-link="true" data-ajax-target="#messages-page-root" href="{{ url_for('messages', page=pagination.prev_page, q=filters.q, from_date=filters.from_date, to_date=filters.to_date, sender=filters.sender) }}">Previous</a>
               {% else %}
               <span class="page-btn disabled" aria-disabled="true">Previous</span>
               {% endif %}
               <span class="page-current">Page {{ pagination.page }} of {{ pagination.total_pages }}</span>
               {% if pagination.has_next %}
-              <a class="page-btn" href="{{ url_for('messages', page=pagination.next_page, q=filters.q, from_date=filters.from_date, to_date=filters.to_date, sender=filters.sender) }}">Next</a>
+              <a class="page-btn" data-ajax-link="true" data-ajax-target="#messages-page-root" href="{{ url_for('messages', page=pagination.next_page, q=filters.q, from_date=filters.from_date, to_date=filters.to_date, sender=filters.sender) }}">Next</a>
               {% else %}
               <span class="page-btn disabled" aria-disabled="true">Next</span>
               {% endif %}
@@ -224,19 +224,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-  <script>
-    (function () {
-      var filterForm = document.getElementById("messages-filter-form");
-      if (!filterForm) {
-        return;
-      }
-      var autoSubmitInputs = filterForm.querySelectorAll("input[type='date'], select");
-      autoSubmitInputs.forEach(function (field) {
-        field.addEventListener("change", function () {
-          filterForm.submit();
-        });
-      });
-    })();
-  </script>
+  <script src="{{ url_for('static', filename='ux-enhancements.js') }}"></script>
 </body>
 </html>

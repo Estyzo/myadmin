@@ -6,7 +6,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 from urllib.error import HTTPError, URLError
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
 
 from flask import Flask, Response, jsonify, redirect, render_template, request, url_for
@@ -43,6 +43,14 @@ elif sender_config_api_url.startswith("/"):
 if sender_config_api_url.startswith("http://southerntechnologies.tech"):
     sender_config_api_url = "https://" + sender_config_api_url[len("http://") :]
 app.config["SENDER_CONFIG_API_URL"] = sender_config_api_url
+send_money_api_url = os.getenv("SEND_MONEY_API_URL", "").strip()
+if not send_money_api_url:
+    send_money_api_url = f"{api_base_url.rstrip('/')}/send-money"
+elif send_money_api_url.startswith("/"):
+    send_money_api_url = f"{api_base_url.rstrip('/')}/{send_money_api_url.lstrip('/')}"
+if send_money_api_url.startswith("http://southerntechnologies.tech"):
+    send_money_api_url = "https://" + send_money_api_url[len("http://") :]
+app.config["SEND_MONEY_API_URL"] = send_money_api_url
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "transferflow-dev-key")
 
 TRANSACTION_CACHE_TTL_SECONDS = 20
@@ -1354,6 +1362,110 @@ def api_sender_configurations():
             },
         }
     ), http_status
+
+
+def normalize_tz_phone_number(value):
+    digits = "".join(ch for ch in str(value or "").strip() if ch.isdigit())
+    if digits.startswith("255") and len(digits) == 12:
+        return f"+{digits}"
+    if digits.startswith("0") and len(digits) == 10:
+        return f"+255{digits[1:]}"
+    if len(digits) == 9:
+        return f"+255{digits}"
+    return ""
+
+
+@app.route("/api/send-money", methods=["POST"])
+def api_send_money():
+    payload = request.get_json(silent=True) or {}
+
+    sender_raw = payload.get("sender_mobile_number")
+    receiver_raw = payload.get("receiver_phone_number")
+    amount_raw = payload.get("amount")
+
+    sender_number = normalize_tz_phone_number(sender_raw)
+    receiver_number = normalize_tz_phone_number(receiver_raw)
+
+    validation_errors = {}
+    if not sender_number:
+        validation_errors["sender_mobile_number"] = "Sender number is invalid."
+    if not receiver_number:
+        validation_errors["receiver_phone_number"] = "Receiver number is invalid."
+    try:
+        amount_value = float(str(amount_raw).strip())
+        if amount_value <= 0:
+            raise ValueError
+    except (TypeError, ValueError):
+        amount_value = 0.0
+        validation_errors["amount"] = "Amount must be greater than zero."
+
+    if validation_errors:
+        return jsonify(
+            {
+                "ok": False,
+                "error": "Validation failed.",
+                "errors": validation_errors,
+            }
+        ), 400
+
+    upstream_payload = {
+        "sender_mobile_number": sender_number,
+        "receiver_phone_number": receiver_number,
+        "amount": round(amount_value, 2),
+    }
+    endpoint = app.config["SEND_MONEY_API_URL"]
+    request_bytes = json.dumps(upstream_payload).encode("utf-8")
+    upstream_request = Request(
+        endpoint,
+        data=request_bytes,
+        headers={"Content-Type": "application/json", "Accept": "application/json"},
+        method="POST",
+    )
+
+    try:
+        with urlopen(upstream_request, timeout=12) as response:
+            response_body = response.read().decode("utf-8")
+            try:
+                upstream_data = json.loads(response_body) if response_body else {}
+            except json.JSONDecodeError:
+                upstream_data = {"raw": response_body}
+            upstream_status = int(getattr(response, "status", response.getcode()))
+    except HTTPError as exc:
+        error_body = ""
+        try:
+            error_body = exc.read().decode("utf-8")
+        except Exception:
+            error_body = ""
+
+        error_message = f"Transfer API returned HTTP {exc.code}."
+        if error_body:
+            try:
+                parsed_error = json.loads(error_body)
+                if isinstance(parsed_error, dict):
+                    error_message = str(parsed_error.get("error") or parsed_error.get("message") or error_message)
+                else:
+                    error_message = str(parsed_error)
+            except json.JSONDecodeError:
+                error_message = error_body[:240]
+
+        return jsonify(
+            {
+                "ok": False,
+                "error": error_message,
+                "upstream_status": exc.code,
+            }
+        ), 502
+    except (URLError, TimeoutError):
+        return jsonify({"ok": False, "error": "Unable to reach transfer API."}), 502
+
+    return jsonify(
+        {
+            "ok": True,
+            "message": "Transfer request submitted successfully.",
+            "upstream_status": upstream_status,
+            "data": upstream_data,
+        }
+    ), 200
 
 
 @app.route("/send-money")
