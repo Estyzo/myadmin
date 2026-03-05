@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="api-base-url" content="{{ api_base_url }}">
+  <title>TransferFlow Messages</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <script>window.API_BASE_URL = "{{ api_base_url }}";</script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo-wrap">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="14" rx="3"></rect>
+            <path d="M3 10h18"></path>
+            <path d="M8 14h5"></path>
+          </svg>
+        </div>
+        <span>TransferFlow</span>
+      </div>
+
+      <nav class="side-nav">
+        <a href="{{ url_for('dashboard') }}" class="nav-item">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11h7V3H3zM14 21h7v-7h-7zM14 10h7V3h-7zM3 21h7v-7H3z"></path></svg>
+          <span>Dashboard</span>
+        </a>
+        <a href="{{ url_for('send_money') }}" class="nav-item">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4z"></path></svg>
+          <span>Send Money</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          <span>Customers</span>
+        </a>
+        <a href="{{ url_for('messages') }}" class="nav-item active">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+          <span>Messages</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"></path><path d="M18 17V9"></path><path d="M13 17V5"></path><path d="M8 17v-3"></path></svg>
+          <span>Reports</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7H4"></path><path d="M20 12H4"></path><path d="M20 17H4"></path></svg>
+          <span>Balance</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19V5"></path><path d="M10 19V9"></path><path d="M14 19V7"></path><path d="M18 19V11"></path></svg>
+          <span>Loans</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.7" y="5" width="18.6" height="14" rx="2.3"></rect><path d="M2.7 10.5h18.6"></path><path d="M7 15.2h4.5"></path></svg>
+          <span>Commissions</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20"></path><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14.5a3.5 3.5 0 0 1 0 7H7"></path></svg>
+          <span>Expenses</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 8 4.5v11L12 22l-8-4.5v-11z"></path><path d="m12 12 8-4.5"></path><path d="m12 12-8-4.5"></path><path d="M12 22V12"></path></svg>
+          <span>Assets</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          <span>Audit Logs</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><path d="M20 8v6"></path><path d="M23 11h-6"></path></svg>
+          <span>Users</span>
+        </a>
+        <a href="{{ url_for('settings') }}" class="nav-item">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15A1.65 1.65 0 0 0 20 16.82l.1.1a2 2 0 1 1-2.83 2.83l-.1-.1A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1V21a2 2 0 1 1-4 0v-.2a1.65 1.65 0 0 0-.33-1 1.65 1.65 0 0 0-1-.6 1.65 1.65 0 0 0-1.82.6l-.1.1a2 2 0 1 1-2.83-2.83l.1-.1A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1-.33H3a2 2 0 1 1 0-4h.2a1.65 1.65 0 0 0 1-.33 1.65 1.65 0 0 0 .6-1 1.65 1.65 0 0 0-.6-1.82l-.1-.1a2 2 0 1 1 2.83-2.83l.1.1A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .33-1V3a2 2 0 1 1 4 0v.2a1.65 1.65 0 0 0 .33 1 1.65 1.65 0 0 0 1 .6 1.65 1.65 0 0 0 1.82-.6l.1-.1a2 2 0 1 1 2.83 2.83l-.1.1A1.65 1.65 0 0 0 19.4 9c.27.32.47.7.6 1.1H21a2 2 0 1 1 0 4h-.2a1.65 1.65 0 0 0-1 .33z"></path></svg>
+          <span>Settings</span>
+        </a>
+      </nav>
+      <button class="collapse-btn" aria-label="Collapse sidebar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+      </button>
+    </aside>
+
+    <main class="content">
+      <header class="topbar">
+        <h1>Messages</h1>
+        <div class="profile">L</div>
+      </header>
+
+      <section class="page-wrap messages-page">
+        <div class="messages-header">
+          <div class="messages-heading">
+            <div class="messages-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            </div>
+            <div>
+              <h2>Messages</h2>
+              <p>View all received messages</p>
+            </div>
+          </div>
+          <a class="ghost-btn strong" href="{{ url_for('messages', page=pagination.page, q=filters.q, from_date=filters.from_date, to_date=filters.to_date, sender=filters.sender, refresh=1) }}">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15.5-6.4L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15.5 6.4L3 16"></path></svg>
+            Refresh
+          </a>
+        </div>
+
+        <section class="messages-filter-shell">
+          <form id="messages-filter-form" method="get" action="{{ url_for('messages') }}">
+            <label class="messages-search">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+              <input type="text" name="q" value="{{ filters.q }}" placeholder="Search messages, phone numbers...">
+            </label>
+
+            <div class="messages-filter-grid">
+              <label class="messages-filter-field">
+                <span>From Date</span>
+                <input type="date" name="from_date" value="{{ filters.from_date }}">
+              </label>
+              <label class="messages-filter-field">
+                <span>To Date</span>
+                <input type="date" name="to_date" value="{{ filters.to_date }}">
+              </label>
+              <label class="messages-filter-field">
+                <span>Sender</span>
+                <select name="sender">
+                  <option value="">All Senders</option>
+                  {% for sender in sender_options %}
+                  <option value="{{ sender }}" {% if filters.sender == sender %}selected{% endif %}>{{ sender }}</option>
+                  {% endfor %}
+                </select>
+              </label>
+            </div>
+
+            <div class="messages-filter-actions">
+              <button class="filter-btn" type="submit">Apply</button>
+              {% if filters.q or filters.from_date or filters.to_date or filters.sender %}
+              <a class="filter-btn clear-filter-btn" href="{{ url_for('messages') }}">Clear</a>
+              {% endif %}
+            </div>
+          </form>
+        </section>
+
+        <section class="messages-list-shell">
+          <div class="messages-list-head">
+            <h3>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+              Latest Messages ({{ pagination.total }})
+            </h3>
+            <p>Showing {{ pagination.start_row }}-{{ pagination.end_row }} of {{ pagination.total }} matching messages</p>
+          </div>
+
+          <p class="messages-sync-note {{ data_status.level }}">
+            <strong>{{ data_status.title }}:</strong> {{ data_status.message }} Last updated {{ data_status.last_updated }}.
+          </p>
+
+          {% if messages %}
+          <div class="table-wrap messages-table-wrap">
+            <table class="messages-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Sender</th>
+                  <th>Phone Info</th>
+                  <th>Message</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for message in messages %}
+                <tr>
+                  <td class="messages-date-cell">
+                    <strong>{{ message.date_label }}</strong>
+                    {% if message.time_label %}
+                    <span>{{ message.time_label }}</span>
+                    {% endif %}
+                  </td>
+                  <td class="messages-sender-cell">
+                    <span class="messages-sender-name">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+                      {{ message.sender }}
+                    </span>
+                  </td>
+                  <td class="messages-phone-cell">
+                    <strong>{{ message.phone_info }}</strong>
+                    <span>ID: {{ message.device_id }}</span>
+                  </td>
+                  <td class="messages-body-cell">{{ message.message }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="table-pagination">
+            <p class="pagination-info">
+              Showing {{ pagination.start_row }}-{{ pagination.end_row }} of {{ pagination.total }} messages
+            </p>
+            <div class="pagination-links">
+              {% if pagination.has_prev %}
+              <a class="page-btn" href="{{ url_for('messages', page=pagination.prev_page, q=filters.q, from_date=filters.from_date, to_date=filters.to_date, sender=filters.sender) }}">Previous</a>
+              {% else %}
+              <span class="page-btn disabled" aria-disabled="true">Previous</span>
+              {% endif %}
+              <span class="page-current">Page {{ pagination.page }} of {{ pagination.total_pages }}</span>
+              {% if pagination.has_next %}
+              <a class="page-btn" href="{{ url_for('messages', page=pagination.next_page, q=filters.q, from_date=filters.from_date, to_date=filters.to_date, sender=filters.sender) }}">Next</a>
+              {% else %}
+              <span class="page-btn disabled" aria-disabled="true">Next</span>
+              {% endif %}
+            </div>
+          </div>
+          {% else %}
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            <h5>No messages found</h5>
+            <p>Try changing filters or click refresh to fetch new messages.</p>
+          </div>
+          {% endif %}
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      var filterForm = document.getElementById("messages-filter-form");
+      if (!filterForm) {
+        return;
+      }
+      var autoSubmitInputs = filterForm.querySelectorAll("input[type='date'], select");
+      autoSubmitInputs.forEach(function (field) {
+        field.addEventListener("change", function () {
+          filterForm.submit();
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

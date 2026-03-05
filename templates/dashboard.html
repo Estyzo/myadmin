@@ -38,7 +38,7 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
           <span>Customers</span>
         </a>
-        <a href="#" class="nav-item">
+        <a href="{{ url_for('messages') }}" class="nav-item">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
           <span>Messages</span>
         </a>
@@ -126,6 +126,10 @@
             <div>
               <p class="label">{{ stats.total_label }}</p>
               <h3>{{ stats.total_volume }}</h3>
+              <p class="stat-trend {{ stats.total_trend.delta_direction }}">{{ stats.total_trend.delta_text }}</p>
+              <svg class="stat-sparkline {{ stats.total_trend.delta_direction }}" viewBox="0 0 96 24" role="img" aria-label="Total trend">
+                <polyline points="{{ stats.total_trend.sparkline_points }}"></polyline>
+              </svg>
               <p class="subtle">{{ stats.total_transactions }} transactions</p>
             </div>
             <div class="card-icon lilac">
@@ -137,6 +141,10 @@
             <div>
               <p class="label">{{ stats.sent_label }}</p>
               <h3>{{ stats.sent_amount }}</h3>
+              <p class="stat-trend {{ stats.sent_trend.delta_direction }}">{{ stats.sent_trend.delta_text }}</p>
+              <svg class="stat-sparkline {{ stats.sent_trend.delta_direction }}" viewBox="0 0 96 24" role="img" aria-label="Sent trend">
+                <polyline points="{{ stats.sent_trend.sparkline_points }}"></polyline>
+              </svg>
               <p class="subtle">{{ stats.outgoing_transfers }} outgoing transfers</p>
             </div>
             <div class="card-icon blue">
@@ -148,6 +156,10 @@
             <div>
               <p class="label">{{ stats.received_label }}</p>
               <h3>{{ stats.received_amount }}</h3>
+              <p class="stat-trend {{ stats.received_trend.delta_direction }}">{{ stats.received_trend.delta_text }}</p>
+              <svg class="stat-sparkline {{ stats.received_trend.delta_direction }}" viewBox="0 0 96 24" role="img" aria-label="Received trend">
+                <polyline points="{{ stats.received_trend.sparkline_points }}"></polyline>
+              </svg>
               <p class="subtle">{{ stats.incoming_transfers }} incoming transfers</p>
             </div>
             <div class="card-icon cyan">

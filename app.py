@@ -41,6 +41,8 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY", "transferflow-dev-key")
 
 TRANSACTION_CACHE_TTL_SECONDS = 20
 TRANSACTION_CACHE = {"fetched_at": 0.0, "items": [], "last_error": "", "source": "none"}
+MESSAGES_CACHE_TTL_SECONDS = 20
+MESSAGES_CACHE = {"fetched_at": 0.0, "items": [], "last_error": "", "source": "none"}
 
 
 def get_db():
@@ -165,6 +167,240 @@ def format_timestamp(value):
         return text
 
     return parsed.astimezone(get_app_timezone()).strftime("%d %b %Y, %I:%M %p")
+
+
+def parse_flexible_timestamp(value):
+    parsed = parse_timestamp(value)
+    if parsed is not None:
+        return parsed.astimezone(get_app_timezone())
+
+    if value is None:
+        return None
+
+    text = str(value).strip()
+    if not text:
+        return None
+
+    try:
+        numeric_value = float(text)
+        if numeric_value > 10**12:
+            numeric_value /= 1000.0
+        return datetime.fromtimestamp(numeric_value, tz=get_app_timezone())
+    except (TypeError, ValueError, OSError):
+        pass
+
+    common_formats = (
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%d %H:%M",
+        "%d/%m/%Y %H:%M:%S",
+        "%d/%m/%Y %H:%M",
+        "%m/%d/%Y %H:%M:%S",
+        "%m/%d/%Y %H:%M",
+        "%Y-%m-%d",
+    )
+    for pattern in common_formats:
+        try:
+            parsed_dt = datetime.strptime(text, pattern)
+            return parsed_dt.replace(tzinfo=get_app_timezone())
+        except ValueError:
+            continue
+    return None
+
+
+def parse_date_filter(value):
+    text = (value or "").strip()
+    if not text:
+        return None
+    try:
+        return datetime.strptime(text, "%Y-%m-%d").date()
+    except ValueError:
+        return None
+
+
+def normalize_message_text(value, fallback="-"):
+    if value is None:
+        return fallback
+    text = str(value).strip()
+    return text if text else fallback
+
+
+def pick_first_available(item, keys, fallback="-"):
+    if not isinstance(item, dict):
+        return fallback
+    for key in keys:
+        value = item.get(key)
+        if value is None:
+            continue
+        text = str(value).strip()
+        if text:
+            return text
+    return fallback
+
+
+def normalize_message_record(item):
+    if not isinstance(item, dict):
+        return None
+
+    sender = pick_first_available(item, ("sender", "sender_name", "from", "source", "name"), fallback="Unknown")
+    message_body = pick_first_available(
+        item,
+        ("message", "body", "text", "sms", "content", "payload"),
+        fallback="-",
+    )
+
+    phone_model = pick_first_available(
+        item,
+        ("phonename", "phone_info", "phone_model", "device_name", "device_model", "model", "device"),
+        fallback="-",
+    )
+    device_id = pick_first_available(item, ("android_id", "device_id", "identifier", "imei"), fallback="-")
+
+    created_raw = pick_first_available(
+        item,
+        ("created_at", "created_date", "received_at", "date", "timestamp", "time"),
+        fallback="",
+    )
+    created_dt = parse_flexible_timestamp(created_raw)
+    if created_dt is not None:
+        date_label = f"{created_dt.strftime('%b')} {created_dt.day}, {created_dt.year}"
+        time_label = created_dt.strftime("%H:%M:%S")
+        date_key = created_dt.date().isoformat()
+        sort_value = created_dt.timestamp()
+    else:
+        date_label = created_raw if created_raw else "-"
+        time_label = ""
+        date_key = ""
+        sort_value = 0.0
+
+    return {
+        "sender": sender,
+        "message": normalize_message_text(message_body),
+        "phone_info": phone_model,
+        "device_id": device_id,
+        "date_label": date_label,
+        "time_label": time_label,
+        "created_date": date_key,
+        "created_sort": sort_value,
+    }
+
+
+def extract_message_records(payload):
+    if isinstance(payload, list):
+        return payload
+    if not isinstance(payload, dict):
+        return []
+
+    for key in ("data", "messages", "items", "results"):
+        records = payload.get(key)
+        if isinstance(records, list):
+            return records
+
+    return []
+
+
+def fetch_messages(force_refresh=False):
+    now = time.time()
+    cache_is_fresh = (
+        bool(MESSAGES_CACHE["items"])
+        and (now - MESSAGES_CACHE["fetched_at"]) < MESSAGES_CACHE_TTL_SECONDS
+    )
+    if cache_is_fresh and not force_refresh:
+        return list(MESSAGES_CACHE["items"]), {
+            "source": "cache",
+            "used_stale": False,
+            "last_updated": MESSAGES_CACHE["fetched_at"],
+            "error": "",
+        }
+
+    endpoint = f"{app.config['API_BASE_URL'].rstrip('/')}/getmessages"
+    fetch_error = ""
+    try:
+        with urlopen(endpoint, timeout=8) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except (HTTPError, URLError, TimeoutError, json.JSONDecodeError):
+        payload = None
+        fetch_error = "Unable to load messages from API."
+
+    if payload is not None:
+        raw_records = extract_message_records(payload)
+        normalized = []
+        for raw_item in raw_records:
+            record = normalize_message_record(raw_item)
+            if record is not None:
+                normalized.append(record)
+
+        normalized.sort(key=lambda msg: msg.get("created_sort", 0.0), reverse=True)
+        MESSAGES_CACHE["items"] = list(normalized)
+        MESSAGES_CACHE["fetched_at"] = time.time()
+        MESSAGES_CACHE["last_error"] = ""
+        MESSAGES_CACHE["source"] = "live"
+        return normalized, {
+            "source": "live",
+            "used_stale": False,
+            "last_updated": MESSAGES_CACHE["fetched_at"],
+            "error": "",
+        }
+
+    if MESSAGES_CACHE["items"]:
+        if fetch_error:
+            MESSAGES_CACHE["last_error"] = fetch_error
+        MESSAGES_CACHE["source"] = "stale_cache"
+        return list(MESSAGES_CACHE["items"]), {
+            "source": "cache",
+            "used_stale": True,
+            "last_updated": MESSAGES_CACHE["fetched_at"],
+            "error": fetch_error or MESSAGES_CACHE.get("last_error", ""),
+        }
+
+    return [], {
+        "source": "error",
+        "used_stale": False,
+        "last_updated": 0.0,
+        "error": fetch_error or "No messages are currently available.",
+    }
+
+
+def apply_message_filters(messages, search_query="", from_date=None, to_date=None, sender_filter=""):
+    search_term = (search_query or "").strip().lower()
+    sender_term = (sender_filter or "").strip().lower()
+
+    filtered = []
+    for message in messages:
+        sender_value = str(message.get("sender", "")).strip()
+        date_key = message.get("created_date")
+
+        if sender_term and sender_value.lower() != sender_term:
+            continue
+
+        if from_date or to_date:
+            if not date_key:
+                continue
+            try:
+                message_date = datetime.strptime(date_key, "%Y-%m-%d").date()
+            except ValueError:
+                continue
+            if from_date and message_date < from_date:
+                continue
+            if to_date and message_date > to_date:
+                continue
+
+        if search_term:
+            haystack = " ".join(
+                [
+                    message.get("sender", ""),
+                    message.get("phone_info", ""),
+                    message.get("device_id", ""),
+                    message.get("message", ""),
+                    message.get("date_label", ""),
+                    message.get("time_label", ""),
+                ]
+            ).lower()
+            if search_term not in haystack:
+                continue
+
+        filtered.append(message)
+
+    return filtered
 
 
 def paginate_transactions(items, page, per_page):
@@ -345,6 +581,109 @@ def build_trend_window(transactions, days):
         "points": points,
         "sent_total": format_currency_amount(sent_total),
         "received_total": format_currency_amount(received_total),
+    }
+
+
+def build_daily_metric_window(transactions, days=7):
+    tz = get_app_timezone()
+    today = datetime.now(tz).date()
+    start_date = today - timedelta(days=days - 1)
+    day_keys = [(start_date + timedelta(days=offset)).isoformat() for offset in range(days)]
+    sent_operations = {"transfer", "sent"}
+    received_operations = {"received", "receive"}
+
+    buckets = {
+        key: {"total": 0.0, "sent": 0.0, "received": 0.0}
+        for key in day_keys
+    }
+
+    for tx in transactions:
+        day_key = tx.get("created_at_date")
+        if day_key not in buckets:
+            continue
+
+        amount = tx.get("amount_value") or 0.0
+        operation_value = str(tx.get("operation", "")).strip().lower()
+        buckets[day_key]["total"] += amount
+        if operation_value in sent_operations:
+            buckets[day_key]["sent"] += amount
+        elif operation_value in received_operations:
+            buckets[day_key]["received"] += amount
+
+    series = {"total": [], "sent": [], "received": []}
+    for key in day_keys:
+        for metric_name in series:
+            series[metric_name].append(buckets[key][metric_name])
+
+    today_values = {metric_name: values[-1] if values else 0.0 for metric_name, values in series.items()}
+    yesterday_values = {
+        metric_name: values[-2] if len(values) > 1 else 0.0
+        for metric_name, values in series.items()
+    }
+    return {
+        "series": series,
+        "today": today_values,
+        "yesterday": yesterday_values,
+    }
+
+
+def build_sparkline_points(values, width=96.0, height=24.0):
+    numeric_values = [float(value or 0.0) for value in values]
+    if not numeric_values:
+        return f"0,{height / 2:.2f} {width:.2f},{height / 2:.2f}"
+
+    if len(numeric_values) == 1:
+        y_pos = height / 2
+        return f"0,{y_pos:.2f} {width:.2f},{y_pos:.2f}"
+
+    min_value = min(numeric_values)
+    max_value = max(numeric_values)
+    value_span = max_value - min_value
+    step_x = width / (len(numeric_values) - 1)
+
+    points = []
+    for index, value in enumerate(numeric_values):
+        x_pos = step_x * index
+        if value_span <= 0:
+            y_pos = height / 2
+        else:
+            scaled = (value - min_value) / value_span
+            y_pos = height - (scaled * height)
+        points.append(f"{x_pos:.2f},{y_pos:.2f}")
+    return " ".join(points)
+
+
+def build_delta_context(current_value, previous_value, comparison_suffix):
+    current = float(current_value or 0.0)
+    previous = float(previous_value or 0.0)
+
+    if previous <= 0:
+        delta_percent = 100.0 if current > 0 else 0.0
+    else:
+        delta_percent = ((current - previous) / previous) * 100.0
+
+    if abs(delta_percent) < 0.05:
+        delta_percent = 0.0
+
+    if delta_percent > 0:
+        direction = "up"
+    elif delta_percent < 0:
+        direction = "down"
+    else:
+        direction = "flat"
+
+    return {
+        "direction": direction,
+        "text": f"{delta_percent:+.1f}% {comparison_suffix}",
+    }
+
+
+def build_stat_trend_payload(current_value, previous_value, sparkline_values, comparison_suffix):
+    delta = build_delta_context(current_value, previous_value, comparison_suffix)
+    return {
+        "delta_direction": delta["direction"],
+        "delta_text": delta["text"],
+        "sparkline_points": build_sparkline_points(sparkline_values),
     }
 
 
@@ -555,6 +894,21 @@ def build_dashboard_data(
     sent_volume = sum(tx.get("amount_value") or 0.0 for tx in sent_transactions)
     received_volume = sum(tx.get("amount_value") or 0.0 for tx in received_transactions)
     period_suffix = "ALL TIME" if normalized_period == "all" else "TODAY"
+    daily_metrics = build_daily_metric_window(all_transactions, days=7)
+    comparison_suffix = "vs yesterday"
+
+    if normalized_period == "today":
+        total_delta_current = total_volume
+        sent_delta_current = sent_volume
+        received_delta_current = received_volume
+    else:
+        total_delta_current = daily_metrics["today"]["total"]
+        sent_delta_current = daily_metrics["today"]["sent"]
+        received_delta_current = daily_metrics["today"]["received"]
+
+    total_previous = daily_metrics["yesterday"]["total"]
+    sent_previous = daily_metrics["yesterday"]["sent"]
+    received_previous = daily_metrics["yesterday"]["received"]
 
     operator_options = sorted(
         {tx.get("operator", "").strip() for tx in scoped_transactions if tx.get("operator") and tx.get("operator") != "-"},
@@ -644,6 +998,24 @@ def build_dashboard_data(
             "received_amount": format_currency_amount(received_volume),
             "outgoing_transfers": len(sent_transactions),
             "incoming_transfers": len(received_transactions),
+            "total_trend": build_stat_trend_payload(
+                total_delta_current,
+                total_previous,
+                daily_metrics["series"]["total"],
+                comparison_suffix,
+            ),
+            "sent_trend": build_stat_trend_payload(
+                sent_delta_current,
+                sent_previous,
+                daily_metrics["series"]["sent"],
+                comparison_suffix,
+            ),
+            "received_trend": build_stat_trend_payload(
+                received_delta_current,
+                received_previous,
+                daily_metrics["series"]["received"],
+                comparison_suffix,
+            ),
         },
     }
 
@@ -885,6 +1257,80 @@ def export_transactions(file_format):
             sort_dir=dashboard_data["sort"]["dir"],
             per_page=dashboard_data["per_page"],
         )
+    )
+
+
+@app.route("/messages")
+def messages():
+    search_query = request.args.get("q", "")
+    from_date_raw = request.args.get("from_date", "")
+    to_date_raw = request.args.get("to_date", "")
+    sender_filter = request.args.get("sender", "")
+    force_refresh = request.args.get("refresh", "0") == "1"
+    try:
+        page = int(request.args.get("page", "1"))
+    except (TypeError, ValueError):
+        page = 1
+    per_page = 20
+
+    all_messages, fetch_meta = fetch_messages(force_refresh=force_refresh)
+    from_date = parse_date_filter(from_date_raw)
+    to_date = parse_date_filter(to_date_raw)
+    if from_date and to_date and from_date > to_date:
+        from_date, to_date = to_date, from_date
+
+    sender_options = sorted(
+        {msg.get("sender", "").strip() for msg in all_messages if msg.get("sender") and msg.get("sender") != "-"},
+        key=str.casefold,
+    )
+
+    cleaned_sender = (sender_filter or "").strip()
+    if cleaned_sender and cleaned_sender not in sender_options:
+        cleaned_sender = ""
+
+    filtered_messages = apply_message_filters(
+        all_messages,
+        search_query=search_query,
+        from_date=from_date,
+        to_date=to_date,
+        sender_filter=cleaned_sender,
+    )
+    paged_messages, pagination = paginate_transactions(filtered_messages, page=page, per_page=per_page)
+
+    if fetch_meta["source"] == "live":
+        status_level = "success"
+        status_title = "Messages Synced"
+        status_message = "Showing latest messages from live API."
+    elif fetch_meta["source"] == "cache" and fetch_meta["used_stale"]:
+        status_level = "warning"
+        status_title = "Using Cached Messages"
+        status_message = fetch_meta["error"] or "Live API unavailable. Showing latest cached messages."
+    elif fetch_meta["source"] == "cache":
+        status_level = "info"
+        status_title = "Using Cached Snapshot"
+        status_message = "Showing a recently cached message snapshot."
+    else:
+        status_level = "error"
+        status_title = "Messages Unavailable"
+        status_message = fetch_meta["error"] or "Unable to load messages."
+
+    return render_template(
+        "messages.html",
+        messages=paged_messages,
+        pagination=pagination,
+        sender_options=sender_options,
+        filters={
+            "q": (search_query or "").strip(),
+            "from_date": from_date.isoformat() if from_date else "",
+            "to_date": to_date.isoformat() if to_date else "",
+            "sender": cleaned_sender,
+        },
+        data_status={
+            "level": status_level,
+            "title": status_title,
+            "message": status_message,
+            "last_updated": format_cache_timestamp(fetch_meta.get("last_updated")),
+        },
     )
 
 

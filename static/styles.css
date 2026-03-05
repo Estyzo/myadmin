@@ -355,16 +355,75 @@ svg {
 }
 
 .stat-card h3 {
-  margin: 8px 0;
-  font-size: 46px;
-  letter-spacing: -0.04em;
-  line-height: 1;
+  margin: 8px 0 6px;
+  font-size: clamp(1.26rem, 2.03vw, 1.86rem);
+  letter-spacing: -0.02em;
+  line-height: 1.06;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .subtle {
   margin: 0;
   color: #8795ac;
   font-size: 15px;
+}
+
+.stat-trend {
+  margin: 0 0 4px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: #eff4fb;
+  color: #5a6e8b;
+}
+
+.stat-trend.up {
+  background: #e6f6ee;
+  color: #0d8b55;
+}
+
+.stat-trend.down {
+  background: #fdecee;
+  color: #bd3344;
+}
+
+.stat-trend.flat {
+  background: #eef3fb;
+  color: #627693;
+}
+
+.stat-sparkline {
+  display: block;
+  width: 100%;
+  max-width: 170px;
+  height: 24px;
+  margin: 0 0 8px;
+}
+
+.stat-sparkline polyline {
+  fill: none;
+  stroke: #7f90aa;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.stat-sparkline.up polyline {
+  stroke: #149b62;
+}
+
+.stat-sparkline.down polyline {
+  stroke: #cd4656;
+}
+
+.stat-sparkline.flat polyline {
+  stroke: #7f90aa;
 }
 
 .card-icon {
@@ -836,6 +895,275 @@ svg {
   margin: -8px 0 0;
   font-size: 16px;
   max-width: 380px;
+}
+
+.messages-page {
+  padding-top: 28px;
+  padding-bottom: 28px;
+}
+
+.messages-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.messages-heading {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.messages-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: linear-gradient(155deg, #3c8eff, #2e61e8);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 10px 20px rgba(48, 96, 223, 0.25);
+}
+
+.messages-icon svg {
+  width: 23px;
+  height: 23px;
+}
+
+.messages-heading h2 {
+  margin: 0;
+  font-size: 52px;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.messages-heading p {
+  margin: 8px 0 0;
+  color: #4e607d;
+  font-size: 16px;
+}
+
+.messages-filter-shell {
+  margin-top: 18px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: var(--soft-shadow);
+  padding: 18px;
+}
+
+.messages-search {
+  border: 1px solid var(--btn-border);
+  border-radius: 11px;
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  color: #93a3ba;
+}
+
+.messages-search svg {
+  width: 19px;
+  height: 19px;
+}
+
+.messages-search input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  font-family: inherit;
+  font-size: 15px;
+  color: #203149;
+  background: transparent;
+}
+
+.messages-filter-grid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.messages-filter-field {
+  display: grid;
+  gap: 6px;
+}
+
+.messages-filter-field span {
+  font-size: 14px;
+  font-weight: 700;
+  color: #3f526f;
+}
+
+.messages-filter-field input,
+.messages-filter-field select {
+  min-height: 46px;
+  border: 1px solid var(--btn-border);
+  border-radius: 11px;
+  background: #fff;
+  color: #1e2d46;
+  font-size: 15px;
+  font-family: inherit;
+  padding: 0 13px;
+}
+
+.messages-filter-field input:focus,
+.messages-filter-field select:focus {
+  outline: none;
+  border-color: #7cb6f0;
+  box-shadow: 0 0 0 3px rgba(67, 129, 222, 0.12);
+}
+
+.messages-filter-actions {
+  margin-top: 12px;
+  display: flex;
+  gap: 10px;
+}
+
+.messages-list-shell {
+  margin-top: 20px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: var(--soft-shadow);
+  padding: 16px;
+}
+
+.messages-list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.messages-list-head h3 {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 28px;
+  letter-spacing: -0.01em;
+  color: #15233c;
+}
+
+.messages-list-head h3 svg {
+  width: 20px;
+  height: 20px;
+}
+
+.messages-list-head p {
+  margin: 0;
+  color: #607089;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.messages-sync-note {
+  margin: 10px 0 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  color: #425675;
+  background: #f4f8fe;
+}
+
+.messages-sync-note.success {
+  background: #eaf7f0;
+  color: #1a7f4d;
+}
+
+.messages-sync-note.warning {
+  background: #fff7e9;
+  color: #97650d;
+}
+
+.messages-sync-note.error {
+  background: #fdecee;
+  color: #ad3342;
+}
+
+.messages-table-wrap {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.messages-table {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: collapse;
+}
+
+.messages-table thead th {
+  text-align: left;
+  padding: 13px 10px;
+  border-bottom: 2px solid #e2e7ef;
+  color: #3a4b65;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  background: #fff;
+}
+
+.messages-table tbody td {
+  padding: 13px 10px;
+  border-bottom: 1px solid #e4e8ef;
+  color: #1f2e47;
+  font-size: 14px;
+  vertical-align: top;
+}
+
+.messages-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.messages-date-cell strong {
+  display: block;
+  font-size: 15px;
+  color: #1b2a43;
+}
+
+.messages-date-cell span {
+  margin-top: 2px;
+  display: block;
+  color: #5f7190;
+  font-size: 14px;
+}
+
+.messages-sender-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.messages-sender-name svg {
+  width: 17px;
+  height: 17px;
+  color: #7e90ad;
+}
+
+.messages-phone-cell strong {
+  display: block;
+  color: #1d2d45;
+}
+
+.messages-phone-cell span {
+  margin-top: 4px;
+  display: block;
+  color: #5f7290;
+}
+
+.messages-body-cell {
+  color: #2f405b;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .send-page {
@@ -1567,7 +1895,7 @@ button {
   }
 
   .stat-card h3 {
-    font-size: clamp(2.1rem, 5.2vw, 2.8rem);
+    font-size: clamp(1.23rem, 3.22vw, 1.65rem);
   }
 
   .send-hero h2,
@@ -1581,6 +1909,14 @@ button {
 
   .settings-grid {
     grid-template-columns: 1fr;
+  }
+
+  .messages-heading h2 {
+    font-size: clamp(2.4rem, 6vw, 3rem);
+  }
+
+  .messages-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -1666,6 +2002,59 @@ button {
     padding-bottom: 20px;
   }
 
+  .messages-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .messages-heading {
+    align-items: flex-start;
+  }
+
+  .messages-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+  }
+
+  .messages-heading h2 {
+    font-size: clamp(2rem, 10.5vw, 2.5rem);
+  }
+
+  .messages-heading p {
+    font-size: 15px;
+  }
+
+  .messages-filter-shell {
+    padding: 12px;
+  }
+
+  .messages-filter-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .messages-filter-actions {
+    flex-wrap: wrap;
+  }
+
+  .messages-filter-actions .filter-btn {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .messages-list-shell {
+    padding: 12px;
+  }
+
+  .messages-list-head h3 {
+    font-size: 22px;
+  }
+
+  .messages-table {
+    min-width: 860px;
+  }
+
   .header-actions {
     width: 100%;
     flex-wrap: wrap;
@@ -1723,11 +2112,20 @@ button {
   }
 
   .stat-card h3 {
-    font-size: clamp(2rem, 11vw, 2.5rem);
+    font-size: clamp(1.02rem, 5.6vw, 1.37rem);
   }
 
   .subtle {
     font-size: 14px;
+  }
+
+  .stat-trend {
+    padding: 3px 8px;
+    font-size: 10px;
+  }
+
+  .stat-sparkline {
+    max-width: 100%;
   }
 
   .status-card {
@@ -2006,6 +2404,22 @@ button {
     min-height: 38px;
     padding: 0 12px;
     font-size: 14px;
+  }
+
+  .messages-heading {
+    gap: 10px;
+  }
+
+  .messages-heading h2 {
+    font-size: clamp(1.9rem, 12vw, 2.3rem);
+  }
+
+  .messages-filter-field span {
+    font-size: 13px;
+  }
+
+  .messages-list-head h3 {
+    font-size: 20px;
   }
 
   .trend-summary {
