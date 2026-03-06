@@ -217,22 +217,39 @@ def normalize_message_record(item):
         date_label = f"{created_dt.strftime('%b')} {created_dt.day}, {created_dt.year}"
         time_label = created_dt.strftime("%H:%M:%S")
         date_key = created_dt.date().isoformat()
+        date_value = created_dt.date()
         sort_value = created_dt.timestamp()
     else:
         date_label = created_raw if created_raw else "-"
         time_label = ""
         date_key = ""
+        date_value = None
         sort_value = 0.0
+
+    sender_key = sender.strip().lower()
+    search_text = " ".join(
+        [
+            sender,
+            phone_model,
+            device_id,
+            normalize_message_text(message_body),
+            date_label,
+            time_label,
+        ]
+    ).lower()
 
     return {
         "sender": sender,
+        "sender_key": sender_key,
         "message": normalize_message_text(message_body),
         "phone_info": phone_model,
         "device_id": device_id,
         "date_label": date_label,
         "time_label": time_label,
         "created_date": date_key,
+        "created_date_value": date_value,
         "created_sort": sort_value,
+        "search_text": search_text,
     }
 
 
@@ -442,37 +459,20 @@ def apply_message_filters(messages, search_query="", from_date=None, to_date=Non
 
     filtered = []
     for message in messages:
-        sender_value = str(message.get("sender", "")).strip()
-        date_key = message.get("created_date")
-
-        if sender_term and sender_value.lower() != sender_term:
+        if sender_term and message.get("sender_key", "") != sender_term:
             continue
 
         if from_date or to_date:
-            if not date_key:
-                continue
-            try:
-                message_date = datetime.strptime(date_key, "%Y-%m-%d").date()
-            except ValueError:
+            message_date = message.get("created_date_value")
+            if not message_date:
                 continue
             if from_date and message_date < from_date:
                 continue
             if to_date and message_date > to_date:
                 continue
 
-        if search_term:
-            haystack = " ".join(
-                [
-                    message.get("sender", ""),
-                    message.get("phone_info", ""),
-                    message.get("device_id", ""),
-                    message.get("message", ""),
-                    message.get("date_label", ""),
-                    message.get("time_label", ""),
-                ]
-            ).lower()
-            if search_term not in haystack:
-                continue
+        if search_term and search_term not in message.get("search_text", ""):
+            continue
 
         filtered.append(message)
 
@@ -524,27 +524,13 @@ def apply_transaction_filters(transactions, search_query="", operator_filter="",
 
     filtered = []
     for transaction in transactions:
-        operator_value = str(transaction.get("operator", "")).strip()
-        operation_value = str(transaction.get("operation", "")).strip()
-
-        if operator_term and operator_value.lower() != operator_term:
+        if operator_term and transaction.get("operator_key", "") != operator_term:
             continue
-        if operation_term and operation_value.lower() != operation_term:
+        if operation_term and transaction.get("operation_key", "") != operation_term:
             continue
 
-        if search_term:
-            searchable_parts = [
-                transaction.get("sender_number", ""),
-                transaction.get("receiver_number", ""),
-                transaction.get("operator", ""),
-                transaction.get("operation", ""),
-                transaction.get("amount", ""),
-                transaction.get("created_by", ""),
-                transaction.get("created_at", ""),
-            ]
-            haystack = " ".join(str(part) for part in searchable_parts).lower()
-            if search_term not in haystack:
-                continue
+        if search_term and search_term not in transaction.get("search_text", ""):
+            continue
 
         filtered.append(transaction)
 
@@ -583,7 +569,7 @@ def sort_transactions(transactions, sort_by, sort_dir):
     if normalized_by == "amount":
         key_fn = lambda tx: tx.get("amount_value") if tx.get("amount_value") is not None else -1.0
     elif normalized_by == "operator":
-        key_fn = lambda tx: str(tx.get("operator", "")).strip().lower()
+        key_fn = lambda tx: tx.get("operator_key", "")
     else:
         key_fn = lambda tx: tx.get("created_at_sort", 0.0)
 
@@ -605,8 +591,6 @@ def build_daily_metric_window(transactions, days=7):
     today = datetime.now(tz).date()
     start_date = today - timedelta(days=days - 1)
     day_keys = [(start_date + timedelta(days=offset)).isoformat() for offset in range(days)]
-    sent_operations = {"transfer", "sent"}
-    received_operations = {"received", "receive"}
 
     buckets = {
         key: {"total": 0.0, "sent": 0.0, "received": 0.0}
@@ -619,11 +603,10 @@ def build_daily_metric_window(transactions, days=7):
             continue
 
         amount = tx.get("amount_value") or 0.0
-        operation_value = str(tx.get("operation", "")).strip().lower()
         buckets[day_key]["total"] += amount
-        if operation_value in sent_operations:
+        if tx.get("is_sent"):
             buckets[day_key]["sent"] += amount
-        elif operation_value in received_operations:
+        elif tx.get("is_received"):
             buckets[day_key]["received"] += amount
 
     series = {"total": [], "sent": [], "received": []}
@@ -762,21 +745,47 @@ def fetch_transactions(page=1, page_size=15):
         amount_label = "-" if amount_value is None else format_currency_amount(amount_value, currency)
         created_value = item.get("created_date") or item.get("created_at")
         created_dt = parse_timestamp(created_value)
+        created_date_value = created_dt.astimezone(get_app_timezone()).date() if created_dt else None
+        operator_value = item.get("operator") or "-"
+        operation_value = item.get("operation") or "-"
+        created_by_value = item.get("created_by") or "-"
+        sender_number = item.get("normalizedPhone") or "-"
+        receiver_number = item.get("receiverPhone") or "-"
+        created_label = format_timestamp(created_value)
+        amount_label = "-" if amount_value is None else format_currency_amount(amount_value, currency)
+        operator_key = str(operator_value).strip().lower()
+        operation_key = str(operation_value).strip().lower()
 
         transactions.append(
             {
                 "id": item.get("id", "-"),
-                "sender_number": item.get("normalizedPhone") or "-",
-                "receiver_number": item.get("receiverPhone") or "-",
-                "operator": item.get("operator") or "-",
-                "operation": item.get("operation") or "-",
+                "sender_number": sender_number,
+                "receiver_number": receiver_number,
+                "operator": operator_value,
+                "operator_key": operator_key,
+                "operation": operation_value,
+                "operation_key": operation_key,
                 "amount": amount_label,
                 "amount_value": amount_value,
                 "status": (item.get("status") or "UNKNOWN").upper(),
-                "created_by": item.get("created_by") or "-",
-                "created_at": format_timestamp(created_value),
-                "created_at_date": created_dt.astimezone(get_app_timezone()).date().isoformat() if created_dt else "",
+                "created_by": created_by_value,
+                "created_at": created_label,
+                "created_at_date": created_date_value.isoformat() if created_date_value else "",
+                "created_date_value": created_date_value,
                 "created_at_sort": created_dt.timestamp() if created_dt else 0.0,
+                "is_sent": operation_key in {"transfer", "sent"},
+                "is_received": operation_key in {"received", "receive"},
+                "search_text": " ".join(
+                    [
+                        str(sender_number),
+                        str(receiver_number),
+                        str(operator_value),
+                        str(operation_value),
+                        str(amount_label),
+                        str(created_by_value),
+                        str(created_label),
+                    ]
+                ).lower(),
             }
         )
 
@@ -890,25 +899,43 @@ def build_dashboard_data(
     current_page = page if isinstance(page, int) and page > 0 else 1
 
     all_transactions, fetch_meta = fetch_all_transactions(page_size=100, force_refresh=force_refresh)
-    today_str = datetime.now(get_app_timezone()).date().isoformat()
+    today_date = datetime.now(get_app_timezone()).date()
+    scoped_transactions = []
+    operator_values = set()
+    operation_values = set()
+    total_volume = 0.0
+    sent_volume = 0.0
+    received_volume = 0.0
+    outgoing_transfers = 0
+    incoming_transfers = 0
+    latest_transaction_date = None
 
-    if normalized_period == "all":
-        scoped_transactions = all_transactions
-    else:
-        scoped_transactions = [tx for tx in all_transactions if tx.get("created_at_date") == today_str]
+    for tx in all_transactions:
+        tx_date_value = tx.get("created_date_value")
+        if tx_date_value and (latest_transaction_date is None or tx_date_value > latest_transaction_date):
+            latest_transaction_date = tx_date_value
 
-    sent_operations = {"transfer", "sent"}
-    received_operations = {"received", "receive"}
-    sent_transactions = [
-        tx for tx in scoped_transactions if str(tx.get("operation", "")).strip().lower() in sent_operations
-    ]
-    received_transactions = [
-        tx for tx in scoped_transactions if str(tx.get("operation", "")).strip().lower() in received_operations
-    ]
+        if normalized_period != "all" and tx.get("created_date_value") != today_date:
+            continue
 
-    total_volume = sum(tx.get("amount_value") or 0.0 for tx in scoped_transactions)
-    sent_volume = sum(tx.get("amount_value") or 0.0 for tx in sent_transactions)
-    received_volume = sum(tx.get("amount_value") or 0.0 for tx in received_transactions)
+        scoped_transactions.append(tx)
+        amount_value = tx.get("amount_value") or 0.0
+        total_volume += amount_value
+
+        if tx.get("is_sent"):
+            outgoing_transfers += 1
+            sent_volume += amount_value
+        elif tx.get("is_received"):
+            incoming_transfers += 1
+            received_volume += amount_value
+
+        operator_value = str(tx.get("operator", "")).strip()
+        operation_value = str(tx.get("operation", "")).strip()
+        if operator_value and operator_value != "-":
+            operator_values.add(operator_value)
+        if operation_value and operation_value != "-":
+            operation_values.add(operation_value)
+
     period_suffix = "ALL TIME" if normalized_period == "all" else "TODAY"
     daily_metrics = build_daily_metric_window(all_transactions, days=7)
     comparison_suffix = "vs yesterday"
@@ -926,14 +953,8 @@ def build_dashboard_data(
     sent_previous = daily_metrics["yesterday"]["sent"]
     received_previous = daily_metrics["yesterday"]["received"]
 
-    operator_options = sorted(
-        {tx.get("operator", "").strip() for tx in scoped_transactions if tx.get("operator") and tx.get("operator") != "-"},
-        key=str.casefold,
-    )
-    operation_options = sorted(
-        {tx.get("operation", "").strip() for tx in scoped_transactions if tx.get("operation") and tx.get("operation") != "-"},
-        key=str.casefold,
-    )
+    operator_options = sorted(operator_values, key=str.casefold)
+    operation_options = sorted(operation_values, key=str.casefold)
 
     cleaned_search = (search_query or "").strip()
     cleaned_operator = (operator_filter or "").strip()
@@ -965,6 +986,18 @@ def build_dashboard_data(
         status_level = "success"
         status_title = "Data Synced"
         status_message = "Live transaction data is up to date."
+        if normalized_period == "today" and not scoped_transactions:
+            status_level = "info"
+            status_title = "No Transactions For Today"
+            today_label = today_date.strftime("%d %b %Y")
+            if latest_transaction_date and latest_transaction_date < today_date:
+                latest_label = latest_transaction_date.strftime("%d %b %Y")
+                status_message = (
+                    f"Live data loaded successfully, but the latest transaction is from {latest_label}. "
+                    f"There are no transactions dated {today_label} yet."
+                )
+            else:
+                status_message = f"Live data loaded successfully, but there are no transactions dated {today_label} yet."
     elif fetch_meta["source"] == "cache" and fetch_meta["used_stale"]:
         status_level = "warning"
         status_title = "Using Cached Data"
@@ -1008,8 +1041,8 @@ def build_dashboard_data(
             "total_transactions": len(scoped_transactions),
             "sent_amount": format_currency_amount(sent_volume),
             "received_amount": format_currency_amount(received_volume),
-            "outgoing_transfers": len(sent_transactions),
-            "incoming_transfers": len(received_transactions),
+            "outgoing_transfers": outgoing_transfers,
+            "incoming_transfers": incoming_transfers,
             "total_trend": build_stat_trend_payload(
                 total_delta_current,
                 total_previous,
@@ -1180,6 +1213,10 @@ def inject_api_base_url():
     }
 
 
+def is_fragment_request():
+    return request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
+
 @app.route("/")
 @app.route("/dashboard")
 def dashboard():
@@ -1209,8 +1246,9 @@ def dashboard():
         force_refresh=force_refresh,
     )
 
+    template_name = "partials/dashboard_content.html" if is_fragment_request() else "dashboard.html"
     return render_template(
-        "dashboard.html",
+        template_name,
         stats=dashboard_data["stats"],
         transactions=dashboard_data["transactions"],
         pagination=dashboard_data["pagination"],
@@ -1320,8 +1358,9 @@ def messages():
         status_title = "Messages Unavailable"
         status_message = fetch_meta["error"] or "Unable to load messages."
 
+    template_name = "partials/messages_content.html" if is_fragment_request() else "messages.html"
     return render_template(
-        "messages.html",
+        template_name,
         messages=paged_messages,
         pagination=pagination,
         sender_options=sender_options,
@@ -1502,8 +1541,9 @@ def settings():
         status_title = "Sender Config Unavailable"
         status_message = fetch_meta["error"] or "Unable to load sender configurations."
 
+    template_name = "partials/settings_content.html" if is_fragment_request() else "settings.html"
     return render_template(
-        "settings.html",
+        template_name,
         sender_configs=sender_configs,
         sender_config_count=len(sender_configs),
         data_status={

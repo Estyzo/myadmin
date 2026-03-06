@@ -2,6 +2,8 @@
 (function () {
   "use strict";
 
+  var autoSubmitTimers = new WeakMap();
+
   function parseHtml(html) {
     return new DOMParser().parseFromString(html, "text/html");
   }
@@ -48,6 +50,9 @@
     }
     window.dispatchEvent(new CustomEvent("ux:content-updated", { detail: { target: targetSelector } }));
   }
+
+  window.CodexUX = window.CodexUX || {};
+  window.CodexUX.fetchAndSwap = fetchAndSwap;
 
   function buildGetUrl(form) {
     var action = form.getAttribute("action") || window.location.pathname;
@@ -320,7 +325,13 @@
       return;
     }
     if (field.matches("input[type='date'], select")) {
-      autoForm.requestSubmit();
+      if (autoSubmitTimers.has(autoForm)) {
+        window.clearTimeout(autoSubmitTimers.get(autoForm));
+      }
+      autoSubmitTimers.set(autoForm, window.setTimeout(function () {
+        autoSubmitTimers.delete(autoForm);
+        autoForm.requestSubmit();
+      }, 250));
     }
   });
 

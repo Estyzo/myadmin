@@ -1044,23 +1044,35 @@ svg {
 }
 
 .send-page {
-  max-width: 1140px;
+  max-width: 1080px;
   width: 100%;
   margin: 0 auto;
-  padding-top: 54px;
-  padding-bottom: 36px;
+  padding-top: 34px;
+  padding-bottom: 28px;
+}
+
+.send-page-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 290px;
+  gap: 24px;
+  align-items: start;
+}
+
+.send-main-column {
+  min-width: 0;
 }
 
 .send-hero {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 14px;
+  max-width: 640px;
 }
 
 .send-hero-icon {
-  width: 74px;
-  height: 74px;
-  border-radius: 22px;
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
   color: #109660;
   background: #b8e9d2;
   display: grid;
@@ -1069,44 +1081,44 @@ svg {
 }
 
 .send-hero-icon svg {
-  width: 34px;
-  height: 34px;
+  width: 26px;
+  height: 26px;
 }
 
 .send-hero h2 {
   margin: 0;
-  font-size: 62px;
+  font-size: 42px;
   letter-spacing: -0.03em;
-  line-height: 1.02;
+  line-height: 1.04;
 }
 
 .send-hero p {
-  margin: 12px 0 0;
+  margin: 6px 0 0;
   color: #4a5a73;
-  font-size: 19px;
+  font-size: 15px;
 }
 
 .send-card {
-  margin-top: 36px;
-  max-width: 980px;
+  margin-top: 22px;
+  max-width: 720px;
   width: 100%;
   background: #fff;
   border: 1px solid var(--border);
-  border-radius: 24px;
-  box-shadow: 0 16px 32px rgba(17, 27, 52, 0.08);
-  padding: 44px;
+  border-radius: 20px;
+  box-shadow: 0 14px 30px rgba(17, 27, 52, 0.08);
+  padding: 28px;
 }
 
 .send-card-head {
   display: flex;
-  align-items: center;
-  gap: 18px;
+  align-items: flex-start;
+  gap: 14px;
 }
 
 .send-card-icon {
-  width: 76px;
-  height: 76px;
-  border-radius: 22px;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
   color: #fff;
   background: linear-gradient(160deg, #22c58c, #11a870);
   display: grid;
@@ -1115,47 +1127,49 @@ svg {
 }
 
 .send-card-icon svg {
-  width: 34px;
-  height: 34px;
+  width: 24px;
+  height: 24px;
 }
 
 .send-card-head h3 {
   margin: 0;
-  font-size: 50px;
+  font-size: 30px;
   letter-spacing: -0.035em;
+  line-height: 1.05;
 }
 
 .send-card-head p {
-  margin: 8px 0 0;
+  margin: 5px 0 0;
   color: #6a717f;
-  font-size: 18px;
+  font-size: 14px;
 }
 
 .send-form {
-  margin-top: 30px;
+  margin-top: 22px;
   display: grid;
-  gap: 24px;
+  gap: 18px;
 }
 
 .send-field {
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .send-field span {
-  font-size: 17px;
+  font-size: 13px;
   font-weight: 700;
   color: #34425a;
+  letter-spacing: 0.01em;
 }
 
 .send-input-wrap {
-  min-height: 68px;
+  min-height: 56px;
   border: 1px solid #cfd6e0;
-  border-radius: 12px;
+  border-radius: 11px;
   background: #fff;
   display: flex;
   align-items: center;
-  padding: 0 20px;
+  padding: 0 16px;
 }
 
 .send-input-wrap:focus-within {
@@ -1175,7 +1189,7 @@ svg {
 .select-wrap::after {
   content: "";
   position: absolute;
-  right: 22px;
+  right: 18px;
   width: 8px;
   height: 8px;
   border-right: 2px solid #a4adbb;
@@ -1189,7 +1203,7 @@ svg {
   background: transparent;
   width: 100%;
   font-family: inherit;
-  font-size: 17px;
+  font-size: 15px;
   color: #202f46;
   outline: none;
 }
@@ -1205,51 +1219,51 @@ svg {
 }
 
 .field-icon {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   color: #8e9db7;
   flex-shrink: 0;
 }
 
 .with-leading-icon {
-  padding-left: 16px;
+  padding-left: 12px;
 }
 
 .amount-wrap strong {
   color: #617086;
   letter-spacing: 0.04em;
-  font-size: 17px;
+  font-size: 14px;
   font-weight: 700;
-  width: 52px;
+  width: 44px;
   flex-shrink: 0;
 }
 
 .amount-input {
-  padding-left: 8px;
+  padding-left: 6px;
 }
 
 .amount-field {
-  margin-top: 30px;
+  margin-top: 6px;
 }
 
 .send-submit {
   margin-top: 4px;
-  min-height: 74px;
+  min-height: 56px;
   border: 0;
   border-radius: 12px;
   background: #91c8b6;
   color: #ffffff;
-  font-size: 19px;
+  font-size: 16px;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 14px;
+  gap: 10px;
 }
 
 .send-submit svg {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
 }
 
 .send-submit:hover {
@@ -1273,6 +1287,69 @@ svg {
 
 .form-feedback.info {
   color: #3c5576;
+}
+
+.send-side-panel {
+  min-width: 0;
+}
+
+.send-side-card {
+  border: 1px solid #d8e6df;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #f6fbf8 0%, #edf7f1 100%);
+  box-shadow: 0 10px 24px rgba(25, 64, 47, 0.08);
+  padding: 22px 20px;
+}
+
+.send-side-kicker {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #0f7d54;
+}
+
+.send-side-card h3 {
+  margin: 10px 0 0;
+  font-size: 24px;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: #173625;
+}
+
+.send-side-card > p:last-of-type {
+  margin: 10px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #466252;
+}
+
+.send-checklist {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.send-checklist li {
+  position: relative;
+  padding-left: 16px;
+  color: #234133;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.send-checklist li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #109660;
 }
 
 .form-feedback.success {
@@ -2114,47 +2191,52 @@ button {
     padding-top: 28px;
   }
 
+  .send-page-shell {
+    grid-template-columns: 1fr;
+  }
+
   .send-hero {
     gap: 14px;
     align-items: flex-start;
   }
 
   .send-hero-icon {
-    width: 62px;
-    height: 62px;
+    width: 52px;
+    height: 52px;
     border-radius: 18px;
   }
 
   .send-hero h2 {
-    font-size: clamp(2.1rem, 11vw, 2.6rem);
+    font-size: clamp(1.95rem, 10vw, 2.3rem);
   }
 
   .send-hero p {
-    font-size: 16px;
+    font-size: 15px;
   }
 
   .send-card {
     padding: 20px 16px;
     border-radius: 18px;
+    max-width: none;
   }
 
   .send-card-head h3 {
-    font-size: 30px;
+    font-size: 28px;
   }
 
   .send-card-head p {
-    font-size: 15px;
+    font-size: 14px;
   }
 
   .send-card-icon {
-    width: 60px;
-    height: 60px;
+    width: 52px;
+    height: 52px;
     border-radius: 18px;
   }
 
   .send-card-icon svg {
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
   }
 
   .send-input-wrap {
@@ -2164,8 +2246,17 @@ button {
   }
 
   .send-submit {
-    min-height: 58px;
-    font-size: 17px;
+    min-height: 56px;
+    font-size: 16px;
+  }
+
+  .send-side-card {
+    padding: 18px 16px;
+    border-radius: 18px;
+  }
+
+  .send-side-card h3 {
+    font-size: 20px;
   }
 
   .settings-hero h2 {
@@ -2328,11 +2419,19 @@ button {
   }
 
   .send-field span {
-    font-size: 15px;
+    font-size: 13px;
   }
 
   .send-input {
-    font-size: 16px;
+    font-size: 15px;
+  }
+
+  .send-side-card h3 {
+    font-size: 20px;
+  }
+
+  .send-checklist li {
+    font-size: 13px;
   }
 
   .config-card h3 {

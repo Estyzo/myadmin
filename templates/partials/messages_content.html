@@ -1,0 +1,129 @@
+<section id="messages-page-root" class="page-wrap messages-page container-fluid px-3 px-md-4">
+  <div class="messages-header">
+    <div class="messages-heading">
+      <div class="messages-icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+      </div>
+      <div>
+        <h2>Messages</h2>
+        <p>View all received messages</p>
+      </div>
+    </div>
+    <a class="ghost-btn strong" data-ajax-link="true" data-ajax-target="#messages-page-root" href="{{ url_for('messages', page=pagination.page, q=filters.q, from_date=filters.from_date, to_date=filters.to_date, sender=filters.sender, refresh=1) }}">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15.5-6.4L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15.5 6.4L3 16"></path></svg>
+      Refresh
+    </a>
+  </div>
+
+  <section class="messages-filter-shell">
+    <form id="messages-filter-form" method="get" action="{{ url_for('messages') }}" data-ajax-form="true" data-ajax-target="#messages-page-root" data-auto-submit="true">
+      <label class="messages-search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+        <input type="text" name="q" value="{{ filters.q }}" placeholder="Search messages, phone numbers...">
+      </label>
+
+      <div class="messages-filter-grid">
+        <label class="messages-filter-field">
+          <span>From Date</span>
+          <input type="date" name="from_date" value="{{ filters.from_date }}">
+        </label>
+        <label class="messages-filter-field">
+          <span>To Date</span>
+          <input type="date" name="to_date" value="{{ filters.to_date }}">
+        </label>
+        <label class="messages-filter-field">
+          <span>Sender</span>
+          <select name="sender">
+            <option value="">All Senders</option>
+            {% for sender in sender_options %}
+            <option value="{{ sender }}" {% if filters.sender == sender %}selected{% endif %}>{{ sender }}</option>
+            {% endfor %}
+          </select>
+        </label>
+      </div>
+
+      <div class="messages-filter-actions">
+        <button class="filter-btn" type="submit">Apply</button>
+        {% if filters.q or filters.from_date or filters.to_date or filters.sender %}
+        <a class="filter-btn clear-filter-btn" data-ajax-link="true" data-ajax-target="#messages-page-root" href="{{ url_for('messages') }}">Clear</a>
+        {% endif %}
+      </div>
+    </form>
+  </section>
+
+  <section class="messages-list-shell">
+    <div class="messages-list-head">
+      <h3>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+        Latest Messages ({{ pagination.total }})
+      </h3>
+      <p>Showing {{ pagination.start_row }}-{{ pagination.end_row }} of {{ pagination.total }} matching messages</p>
+    </div>
+
+    <p class="messages-sync-note {{ data_status.level }}">
+      <strong>{{ data_status.title }}:</strong> {{ data_status.message }} Last updated {{ data_status.last_updated }}.
+    </p>
+
+    {% if messages %}
+    <div class="table-wrap messages-table-wrap table-responsive">
+      <table class="messages-table table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Sender</th>
+            <th>Phone Info</th>
+            <th>Message</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for message in messages %}
+          <tr>
+            <td class="messages-date-cell">
+              <strong>{{ message.date_label }}</strong>
+              {% if message.time_label %}
+              <span>{{ message.time_label }}</span>
+              {% endif %}
+            </td>
+            <td class="messages-sender-cell">
+              <span class="messages-sender-name">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+                {{ message.sender }}
+              </span>
+            </td>
+            <td class="messages-phone-cell">
+              <strong>{{ message.phone_info }}</strong>
+              <span>ID: {{ message.device_id }}</span>
+            </td>
+            <td class="messages-body-cell">{{ message.message }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="table-pagination">
+      <p class="pagination-info">
+        Showing {{ pagination.start_row }}-{{ pagination.end_row }} of {{ pagination.total }} messages
+      </p>
+      <div class="pagination-links">
+        {% if pagination.has_prev %}
+        <a class="page-btn" data-ajax-link="true" data-ajax-target="#messages-page-root" href="{{ url_for('messages', page=pagination.prev_page, q=filters.q, from_date=filters.from_date, to_date=filters.to_date, sender=filters.sender) }}">Previous</a>
+        {% else %}
+        <span class="page-btn disabled" aria-disabled="true">Previous</span>
+        {% endif %}
+        <span class="page-current">Page {{ pagination.page }} of {{ pagination.total_pages }}</span>
+        {% if pagination.has_next %}
+        <a class="page-btn" data-ajax-link="true" data-ajax-target="#messages-page-root" href="{{ url_for('messages', page=pagination.next_page, q=filters.q, from_date=filters.from_date, to_date=filters.to_date, sender=filters.sender) }}">Next</a>
+        {% else %}
+        <span class="page-btn disabled" aria-disabled="true">Next</span>
+        {% endif %}
+      </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+      <h5>No messages found</h5>
+      <p>Try changing filters or click refresh to fetch new messages.</p>
+    </div>
+    {% endif %}
+  </section>
+</section>
