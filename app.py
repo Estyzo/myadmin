@@ -43,6 +43,10 @@ elif sender_config_api_url.startswith("/"):
 if sender_config_api_url.startswith("http://southerntechnologies.tech"):
     sender_config_api_url = "https://" + sender_config_api_url[len("http://") :]
 app.config["SENDER_CONFIG_API_URL"] = sender_config_api_url
+dashboard_api_url = os.getenv("DASHBOARD_API_URL", "").strip()
+if dashboard_api_url.startswith("http://southerntechnologies.tech"):
+    dashboard_api_url = "https://" + dashboard_api_url[len("http://") :]
+app.config["DASHBOARD_API_URL"] = dashboard_api_url
 send_money_api_url = os.getenv("SEND_MONEY_API_URL", "").strip()
 if not send_money_api_url:
     send_money_api_url = f"{api_base_url.rstrip('/')}/send-money"
@@ -550,6 +554,31 @@ def normalize_per_page(value):
     return parsed if parsed in {15, 30, 50} else 15
 
 
+def is_truthy_flag(value):
+    return str(value or "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def parse_dashboard_request_params(args=None):
+    source = args or request.args
+    try:
+        page = int(source.get("page", "1"))
+    except (TypeError, ValueError):
+        page = 1
+
+    return {
+        "period": normalize_period(source.get("period", "today")),
+        "search_query": source.get("q", ""),
+        "operator_filter": source.get("operator", ""),
+        "operation_filter": source.get("operation", ""),
+        "sort_by": source.get("sort_by", "date"),
+        "sort_dir": source.get("sort_dir", "desc"),
+        "page": page if page > 0 else 1,
+        "per_page": normalize_per_page(source.get("per_page", 15)),
+        "force_refresh": is_truthy_flag(source.get("refresh", "0")),
+        "include_filtered_transactions": is_truthy_flag(source.get("include_filtered", "0")),
+    }
+
+
 def normalize_sort(sort_by, sort_dir):
     normalized_by = (sort_by or "date").strip().lower()
     if normalized_by not in {"date", "amount", "operator"}:
@@ -1015,6 +1044,13 @@ def build_dashboard_data(
         "period": normalized_period,
         "per_page": rows_per_page,
         "per_page_options": [15, 30, 50],
+        "fetch_meta": {
+            "source": fetch_meta["source"],
+            "used_stale": fetch_meta["used_stale"],
+            "last_updated": fetch_meta.get("last_updated", 0.0),
+            "last_updated_label": format_cache_timestamp(fetch_meta.get("last_updated")),
+            "error": fetch_meta.get("error", ""),
+        },
         "filters": {
             "q": cleaned_search,
             "operator": cleaned_operator,
@@ -1063,6 +1099,147 @@ def build_dashboard_data(
             ),
         },
     }
+
+
+def build_dashboard_api_payload(
+    period,
+    search_query="",
+    operator_filter="",
+    operation_filter="",
+    sort_by="date",
+    sort_dir="desc",
+    page=1,
+    per_page=15,
+    force_refresh=False,
+    include_filtered_transactions=False,
+):
+    dashboard_data = build_dashboard_data(
+        period=period,
+        search_query=search_query,
+        operator_filter=operator_filter,
+        operation_filter=operation_filter,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
+        page=page,
+        per_page=per_page,
+        force_refresh=force_refresh,
+    )
+    response_data = {
+        "period": dashboard_data["period"],
+        "per_page": dashboard_data["per_page"],
+        "per_page_options": dashboard_data["per_page_options"],
+        "filters": dashboard_data["filters"],
+        "operator_options": dashboard_data["operator_options"],
+        "operation_options": dashboard_data["operation_options"],
+        "transactions": dashboard_data["transactions"],
+        "pagination": dashboard_data["pagination"],
+        "sort": dashboard_data["sort"],
+        "data_status": dashboard_data["data_status"],
+        "stats": dashboard_data["stats"],
+    }
+    if include_filtered_transactions:
+        response_data["filtered_transactions"] = dashboard_data["filtered_transactions"]
+
+    return {
+        "ok": True,
+        "data": response_data,
+        "meta": {
+            "contract_version": "2026-03-06",
+            "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "source": dashboard_data["fetch_meta"]["source"],
+            "used_stale": dashboard_data["fetch_meta"]["used_stale"],
+            "last_updated": dashboard_data["fetch_meta"]["last_updated"],
+            "last_updated_label": dashboard_data["fetch_meta"]["last_updated_label"],
+            "error": dashboard_data["fetch_meta"]["error"],
+        },
+    }
+
+
+def fetch_dashboard_api_payload(
+    period,
+    search_query="",
+    operator_filter="",
+    operation_filter="",
+    sort_by="date",
+    sort_dir="desc",
+    page=1,
+    per_page=15,
+    force_refresh=False,
+    include_filtered_transactions=False,
+):
+    dashboard_api_url = app.config.get("DASHBOARD_API_URL", "").strip()
+    if not dashboard_api_url:
+        return build_dashboard_api_payload(
+            period=period,
+            search_query=search_query,
+            operator_filter=operator_filter,
+            operation_filter=operation_filter,
+            sort_by=sort_by,
+            sort_dir=sort_dir,
+            page=page,
+            per_page=per_page,
+            force_refresh=force_refresh,
+            include_filtered_transactions=include_filtered_transactions,
+        )
+
+    url = dashboard_api_url
+    query_params = {
+        "period": period,
+        "q": search_query,
+        "operator": operator_filter,
+        "operation": operation_filter,
+        "sort_by": sort_by,
+        "sort_dir": sort_dir,
+        "page": page,
+        "per_page": per_page,
+    }
+    if force_refresh:
+        query_params["refresh"] = 1
+    if include_filtered_transactions:
+        query_params["include_filtered"] = 1
+    encoded_query = urlencode({key: value for key, value in query_params.items() if value not in (None, "")})
+    separator = "&" if "?" in url else "?"
+    request_url = f"{url}{separator}{encoded_query}" if encoded_query else url
+
+    api_request = Request(
+        request_url,
+        headers={
+            "Accept": "application/json",
+            "X-Requested-With": "XMLHttpRequest",
+        },
+    )
+    try:
+        with urlopen(api_request, timeout=8) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except (HTTPError, URLError, TimeoutError, json.JSONDecodeError):
+        return build_dashboard_api_payload(
+            period=period,
+            search_query=search_query,
+            operator_filter=operator_filter,
+            operation_filter=operation_filter,
+            sort_by=sort_by,
+            sort_dir=sort_dir,
+            page=page,
+            per_page=per_page,
+            force_refresh=force_refresh,
+            include_filtered_transactions=include_filtered_transactions,
+        )
+
+    if not isinstance(payload, dict) or not isinstance(payload.get("data"), dict):
+        return build_dashboard_api_payload(
+            period=period,
+            search_query=search_query,
+            operator_filter=operator_filter,
+            operation_filter=operation_filter,
+            sort_by=sort_by,
+            sort_dir=sort_dir,
+            page=page,
+            per_page=per_page,
+            force_refresh=force_refresh,
+            include_filtered_transactions=include_filtered_transactions,
+        )
+
+    return payload
 
 
 def escape_pdf_text(value):
@@ -1217,34 +1394,20 @@ def is_fragment_request():
     return request.headers.get("X-Requested-With") == "XMLHttpRequest"
 
 
+@app.route("/api/dashboard-data")
+def api_dashboard_data():
+    params = parse_dashboard_request_params()
+    payload = build_dashboard_api_payload(**params)
+    http_status = 200 if payload.get("ok", True) else 502
+    return jsonify(payload), http_status
+
+
 @app.route("/")
 @app.route("/dashboard")
 def dashboard():
-    period = normalize_period(request.args.get("period", "today"))
-    search_query = request.args.get("q", "")
-    operator_filter = request.args.get("operator", "")
-    operation_filter = request.args.get("operation", "")
-    sort_by = request.args.get("sort_by", "date")
-    sort_dir = request.args.get("sort_dir", "desc")
-    force_refresh = request.args.get("refresh", "0") == "1"
-    per_page = normalize_per_page(request.args.get("per_page", 15))
-
-    try:
-        page = int(request.args.get("page", "1"))
-    except (TypeError, ValueError):
-        page = 1
-
-    dashboard_data = build_dashboard_data(
-        period=period,
-        search_query=search_query,
-        operator_filter=operator_filter,
-        operation_filter=operation_filter,
-        sort_by=sort_by,
-        sort_dir=sort_dir,
-        page=page,
-        per_page=per_page,
-        force_refresh=force_refresh,
-    )
+    params = parse_dashboard_request_params()
+    dashboard_payload = fetch_dashboard_api_payload(**params)
+    dashboard_data = dashboard_payload["data"]
 
     template_name = "partials/dashboard_content.html" if is_fragment_request() else "dashboard.html"
     return render_template(
@@ -1265,24 +1428,12 @@ def dashboard():
 
 @app.route("/dashboard/export/<string:file_format>")
 def export_transactions(file_format):
-    period = normalize_period(request.args.get("period", "today"))
-    search_query = request.args.get("q", "")
-    operator_filter = request.args.get("operator", "")
-    operation_filter = request.args.get("operation", "")
-    sort_by = request.args.get("sort_by", "date")
-    sort_dir = request.args.get("sort_dir", "desc")
-    per_page = normalize_per_page(request.args.get("per_page", 15))
-
-    dashboard_data = build_dashboard_data(
-        period=period,
-        search_query=search_query,
-        operator_filter=operator_filter,
-        operation_filter=operation_filter,
-        sort_by=sort_by,
-        sort_dir=sort_dir,
-        page=1,
-        per_page=per_page,
-    )
+    params = parse_dashboard_request_params(request.args)
+    params["page"] = 1
+    params["include_filtered_transactions"] = True
+    dashboard_payload = fetch_dashboard_api_payload(**params)
+    dashboard_data = dashboard_payload["data"]
+    period = dashboard_data["period"]
 
     normalized_format = (file_format or "").strip().lower()
     if normalized_format == "csv":
