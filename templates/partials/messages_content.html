@@ -1,4 +1,4 @@
-<section id="messages-page-root" class="page-wrap messages-page container-fluid px-3 px-md-4">
+<section id="messages-page-root" class="page-wrap messages-page container-fluid px-3 px-md-4" tabindex="-1">
   <div class="messages-header">
     <div class="messages-heading">
       <div class="messages-icon">
@@ -18,6 +18,7 @@
   <section class="messages-filter-shell">
     <form id="messages-filter-form" method="get" action="{{ url_for('messages') }}" data-ajax-form="true" data-ajax-target="#messages-page-root" data-auto-submit="true">
       <label class="messages-search">
+        <span class="sr-only">Search messages</span>
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
         <input type="text" name="q" value="{{ filters.q }}" placeholder="Search messages, phone numbers...">
       </label>
@@ -49,6 +50,22 @@
         {% endif %}
       </div>
     </form>
+
+    {% if sender_options %}
+    <div class="messages-quick-filters" aria-label="Quick sender filters">
+      <span class="messages-quick-label">Quick senders</span>
+      {% for sender in sender_options[:6] %}
+      <a
+        class="quick-sender-chip {% if filters.sender == sender %}active{% endif %}"
+        data-ajax-link="true"
+        data-ajax-target="#messages-page-root"
+        href="{{ url_for('messages', q=filters.q, from_date=filters.from_date, to_date=filters.to_date, sender=sender) }}"
+      >
+        {{ sender }}
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
   </section>
 
   <section class="messages-list-shell">
@@ -69,32 +86,40 @@
       <table class="messages-table table table-hover align-middle">
         <thead>
           <tr>
-            <th>Date</th>
-            <th>Sender</th>
-            <th>Phone Info</th>
-            <th>Message</th>
+            <th scope="col">Date</th>
+            <th scope="col">Sender</th>
+            <th scope="col">Phone Info</th>
+            <th scope="col">Message</th>
           </tr>
         </thead>
         <tbody>
           {% for message in messages %}
           <tr>
-            <td class="messages-date-cell">
+            <td class="messages-date-cell" data-label="Date">
               <strong>{{ message.date_label }}</strong>
               {% if message.time_label %}
               <span>{{ message.time_label }}</span>
               {% endif %}
             </td>
-            <td class="messages-sender-cell">
+            <td class="messages-sender-cell" data-label="Sender">
               <span class="messages-sender-name">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
                 {{ message.sender }}
               </span>
             </td>
-            <td class="messages-phone-cell">
+            <td class="messages-phone-cell" data-label="Phone Info">
               <strong>{{ message.phone_info }}</strong>
               <span>ID: {{ message.device_id }}</span>
             </td>
-            <td class="messages-body-cell">{{ message.message }}</td>
+            <td class="messages-body-cell" data-label="Message">
+              <div class="message-body-copy">
+                <p class="message-body-text" data-message-text>{{ message.message }}</p>
+                <div class="message-row-actions">
+                  <button class="message-action-btn" type="button" data-message-toggle="true" aria-expanded="false">Expand</button>
+                  <button class="message-action-btn secondary" type="button" data-copy-message="true">Copy</button>
+                </div>
+              </div>
+            </td>
           </tr>
           {% endfor %}
         </tbody>

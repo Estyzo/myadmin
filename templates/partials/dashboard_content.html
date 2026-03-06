@@ -1,4 +1,4 @@
-<section id="dashboard-page-root" class="page-wrap container-fluid px-3 px-md-4">
+<section id="dashboard-page-root" class="page-wrap container-fluid px-3 px-md-4" tabindex="-1">
   <div class="page-header">
     <div>
       <h2>Dashboard</h2>
@@ -94,6 +94,7 @@
       <input type="hidden" name="sort_by" value="{{ sort.by }}">
       <input type="hidden" name="sort_dir" value="{{ sort.dir }}">
       <label class="search-box">
+        <span class="sr-only">Search transactions</span>
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
         <input type="text" name="q" value="{{ filters.q }}" placeholder="Search by phone number, receiver, creator..." />
       </label>
@@ -178,18 +179,18 @@
       <table class="transaction-table table table-hover align-middle">
         <thead>
           <tr>
-            <th data-col="sender">Sender</th>
-            <th data-col="receiver">Receiver</th>
-            <th data-col="operator">
-              <a class="sort-link {% if sort.by == 'operator' %}active{% endif %}" data-ajax-link="true" data-ajax-target="#dashboard-page-root" href="{{ url_for('dashboard', period=period, q=filters.q, operator=filters.operator, operation=filters.operation, sort_by='operator', sort_dir='desc' if sort.by == 'operator' and sort.dir == 'asc' else 'asc', per_page=per_page) }}">
+              <th scope="col" data-col="sender">Sender</th>
+              <th scope="col" data-col="receiver">Receiver</th>
+              <th scope="col" data-col="operator" aria-sort="{{ 'ascending' if sort.by == 'operator' and sort.dir == 'asc' else 'descending' if sort.by == 'operator' and sort.dir == 'desc' else 'none' }}">
+                <a class="sort-link {% if sort.by == 'operator' %}active{% endif %}" data-ajax-link="true" data-ajax-target="#dashboard-page-root" href="{{ url_for('dashboard', period=period, q=filters.q, operator=filters.operator, operation=filters.operation, sort_by='operator', sort_dir='desc' if sort.by == 'operator' and sort.dir == 'asc' else 'asc', per_page=per_page) }}">
                 Operator
                 {% if sort.by == 'operator' %}
                 <span class="sort-indicator">{{ '↑' if sort.dir == 'asc' else '↓' }}</span>
                 {% endif %}
               </a>
             </th>
-            <th data-col="operation">Operation</th>
-            <th data-col="amount">
+            <th scope="col" data-col="operation">Operation</th>
+            <th scope="col" data-col="amount" aria-sort="{{ 'ascending' if sort.by == 'amount' and sort.dir == 'asc' else 'descending' if sort.by == 'amount' and sort.dir == 'desc' else 'none' }}">
               <a class="sort-link {% if sort.by == 'amount' %}active{% endif %}" data-ajax-link="true" data-ajax-target="#dashboard-page-root" href="{{ url_for('dashboard', period=period, q=filters.q, operator=filters.operator, operation=filters.operation, sort_by='amount', sort_dir='asc' if sort.by == 'amount' and sort.dir == 'desc' else 'desc', per_page=per_page) }}">
                 Amount
                 {% if sort.by == 'amount' %}
@@ -197,8 +198,8 @@
                 {% endif %}
               </a>
             </th>
-            <th data-col="created_by">Created By</th>
-            <th data-col="date">
+            <th scope="col" data-col="created_by">Created By</th>
+            <th scope="col" data-col="date" aria-sort="{{ 'ascending' if sort.by == 'date' and sort.dir == 'asc' else 'descending' if sort.by == 'date' and sort.dir == 'desc' else 'none' }}">
               <a class="sort-link {% if sort.by == 'date' %}active{% endif %}" data-ajax-link="true" data-ajax-target="#dashboard-page-root" href="{{ url_for('dashboard', period=period, q=filters.q, operator=filters.operator, operation=filters.operation, sort_by='date', sort_dir='asc' if sort.by == 'date' and sort.dir == 'desc' else 'desc', per_page=per_page) }}">
                 Date
                 {% if sort.by == 'date' %}

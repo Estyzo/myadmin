@@ -43,10 +43,6 @@ elif sender_config_api_url.startswith("/"):
 if sender_config_api_url.startswith("http://southerntechnologies.tech"):
     sender_config_api_url = "https://" + sender_config_api_url[len("http://") :]
 app.config["SENDER_CONFIG_API_URL"] = sender_config_api_url
-dashboard_api_url = os.getenv("DASHBOARD_API_URL", "").strip()
-if dashboard_api_url.startswith("http://southerntechnologies.tech"):
-    dashboard_api_url = "https://" + dashboard_api_url[len("http://") :]
-app.config["DASHBOARD_API_URL"] = dashboard_api_url
 send_money_api_url = os.getenv("SEND_MONEY_API_URL", "").strip()
 if not send_money_api_url:
     send_money_api_url = f"{api_base_url.rstrip('/')}/send-money"
@@ -1155,93 +1151,6 @@ def build_dashboard_api_payload(
     }
 
 
-def fetch_dashboard_api_payload(
-    period,
-    search_query="",
-    operator_filter="",
-    operation_filter="",
-    sort_by="date",
-    sort_dir="desc",
-    page=1,
-    per_page=15,
-    force_refresh=False,
-    include_filtered_transactions=False,
-):
-    dashboard_api_url = app.config.get("DASHBOARD_API_URL", "").strip()
-    if not dashboard_api_url:
-        return build_dashboard_api_payload(
-            period=period,
-            search_query=search_query,
-            operator_filter=operator_filter,
-            operation_filter=operation_filter,
-            sort_by=sort_by,
-            sort_dir=sort_dir,
-            page=page,
-            per_page=per_page,
-            force_refresh=force_refresh,
-            include_filtered_transactions=include_filtered_transactions,
-        )
-
-    url = dashboard_api_url
-    query_params = {
-        "period": period,
-        "q": search_query,
-        "operator": operator_filter,
-        "operation": operation_filter,
-        "sort_by": sort_by,
-        "sort_dir": sort_dir,
-        "page": page,
-        "per_page": per_page,
-    }
-    if force_refresh:
-        query_params["refresh"] = 1
-    if include_filtered_transactions:
-        query_params["include_filtered"] = 1
-    encoded_query = urlencode({key: value for key, value in query_params.items() if value not in (None, "")})
-    separator = "&" if "?" in url else "?"
-    request_url = f"{url}{separator}{encoded_query}" if encoded_query else url
-
-    api_request = Request(
-        request_url,
-        headers={
-            "Accept": "application/json",
-            "X-Requested-With": "XMLHttpRequest",
-        },
-    )
-    try:
-        with urlopen(api_request, timeout=8) as response:
-            payload = json.loads(response.read().decode("utf-8"))
-    except (HTTPError, URLError, TimeoutError, json.JSONDecodeError):
-        return build_dashboard_api_payload(
-            period=period,
-            search_query=search_query,
-            operator_filter=operator_filter,
-            operation_filter=operation_filter,
-            sort_by=sort_by,
-            sort_dir=sort_dir,
-            page=page,
-            per_page=per_page,
-            force_refresh=force_refresh,
-            include_filtered_transactions=include_filtered_transactions,
-        )
-
-    if not isinstance(payload, dict) or not isinstance(payload.get("data"), dict):
-        return build_dashboard_api_payload(
-            period=period,
-            search_query=search_query,
-            operator_filter=operator_filter,
-            operation_filter=operation_filter,
-            sort_by=sort_by,
-            sort_dir=sort_dir,
-            page=page,
-            per_page=per_page,
-            force_refresh=force_refresh,
-            include_filtered_transactions=include_filtered_transactions,
-        )
-
-    return payload
-
-
 def escape_pdf_text(value):
     return str(value).replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
 
@@ -1406,7 +1315,7 @@ def api_dashboard_data():
 @app.route("/dashboard")
 def dashboard():
     params = parse_dashboard_request_params()
-    dashboard_payload = fetch_dashboard_api_payload(**params)
+    dashboard_payload = build_dashboard_api_payload(**params)
     dashboard_data = dashboard_payload["data"]
 
     template_name = "partials/dashboard_content.html" if is_fragment_request() else "dashboard.html"
@@ -1431,7 +1340,7 @@ def export_transactions(file_format):
     params = parse_dashboard_request_params(request.args)
     params["page"] = 1
     params["include_filtered_transactions"] = True
-    dashboard_payload = fetch_dashboard_api_payload(**params)
+    dashboard_payload = build_dashboard_api_payload(**params)
     dashboard_data = dashboard_payload["data"]
     period = dashboard_data["period"]
 
@@ -1565,6 +1474,41 @@ def normalize_tz_phone_number(value):
     return ""
 
 
+def extract_transfer_reference(payload, depth=0):
+    if depth > 3:
+        return ""
+
+    if isinstance(payload, dict):
+        for key in (
+            "reference",
+            "transaction_reference",
+            "transactionRef",
+            "transaction_id",
+            "transactionId",
+            "request_id",
+            "requestId",
+            "id",
+        ):
+            value = payload.get(key)
+            if value is None:
+                continue
+            text = str(value).strip()
+            if text:
+                return text
+        for value in payload.values():
+            nested = extract_transfer_reference(value, depth + 1)
+            if nested:
+                return nested
+
+    if isinstance(payload, list):
+        for item in payload:
+            nested = extract_transfer_reference(item, depth + 1)
+            if nested:
+                return nested
+
+    return ""
+
+
 @app.route("/api/send-money", methods=["POST"])
 def api_send_money():
     payload = request.get_json(silent=True) or {}
@@ -1654,6 +1598,15 @@ def api_send_money():
             "message": "Transfer request submitted successfully.",
             "upstream_status": upstream_status,
             "data": upstream_data,
+            "receipt": {
+                "sender_mobile_number": sender_number,
+                "receiver_phone_number": receiver_number,
+                "amount": format_currency_amount(round(amount_value, 2)),
+                "amount_value": round(amount_value, 2),
+                "submitted_at": datetime.now(get_app_timezone()).isoformat(),
+                "reference": extract_transfer_reference(upstream_data) or "-",
+                "status": f"HTTP {upstream_status}",
+            },
         }
     ), 200
 
