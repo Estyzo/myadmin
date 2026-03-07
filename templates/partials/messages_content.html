@@ -1,53 +1,93 @@
+{% set status_badge_variant = 'success' if data_status.level == 'success' else 'danger' if data_status.level == 'error' else 'loading' %}
+{% set active_filter_count = (1 if filters.q else 0) + (1 if filters.from_date else 0) + (1 if filters.to_date else 0) + (1 if filters.sender else 0) %}
 <section id="messages-page-root" class="page-wrap messages-page container-fluid px-3 px-md-4" tabindex="-1">
-  <div class="messages-header">
-    <div class="messages-heading">
-      <div class="messages-icon">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-      </div>
-      <div>
-        <h2>Messages</h2>
-        <p>View all received messages</p>
-      </div>
+  <div class="page-header messages-header">
+    <div class="page-copy">
+      <p class="page-eyebrow">Message monitoring</p>
+      <h2>Inbound message control room</h2>
+      <p>Filter inbound traffic quickly, inspect sender context, and move through recent activity without losing focus.</p>
     </div>
-    <a class="ghost-btn strong" data-ajax-link="true" data-ajax-target="#messages-page-root" href="{{ url_for('messages', page=pagination.page, q=filters.q, from_date=filters.from_date, to_date=filters.to_date, sender=filters.sender, refresh=1) }}">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15.5-6.4L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15.5 6.4L3 16"></path></svg>
-      Refresh
-    </a>
+    <div class="header-actions">
+      <a class="ghost-btn strong" data-ajax-link="true" data-ajax-target="#messages-page-root" href="{{ url_for('messages', page=pagination.page, q=filters.q, from_date=filters.from_date, to_date=filters.to_date, sender=filters.sender, refresh=1) }}">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15.5-6.4L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15.5 6.4L3 16"></path></svg>
+        Refresh feed
+      </a>
+    </div>
   </div>
 
-  <section class="messages-filter-shell">
-    <form id="messages-filter-form" method="get" action="{{ url_for('messages') }}" data-ajax-form="true" data-ajax-target="#messages-page-root" data-auto-submit="true">
-      <label class="messages-search">
-        <span class="sr-only">Search messages</span>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
-        <input type="text" name="q" value="{{ filters.q }}" placeholder="Search messages, phone numbers...">
-      </label>
+  <section class="messages-summary-grid" aria-label="Message summary">
+    <article class="summary-card">
+      <p class="label">Messages found</p>
+      <h3>{{ pagination.total }}</h3>
+      <p class="subtle">Across the current filter set</p>
+    </article>
+    <article class="summary-card">
+      <p class="label">Tracked senders</p>
+      <h3>{{ sender_options|length }}</h3>
+      <p class="subtle">Unique sender names available</p>
+    </article>
+    <article class="summary-card">
+      <p class="label">Active filters</p>
+      <h3>{{ active_filter_count }}</h3>
+      <p class="subtle">Search, sender, and date range filters</p>
+    </article>
+  </section>
 
+  <section class="messages-filter-shell">
+    <div class="messages-shell-head">
+      <span class="status-badge status-badge-{{ status_badge_variant }}">
+        <span class="status-badge-icon" aria-hidden="true"></span>
+        <span>{{ data_status.title }}</span>
+      </span>
+      <p class="messages-sync-copy">{{ data_status.message }} Last updated {{ data_status.last_updated }}.</p>
+    </div>
+
+    <form id="messages-filter-form" method="get" action="{{ url_for('messages') }}" data-ajax-form="true" data-ajax-target="#messages-page-root" data-auto-submit="true">
       <div class="messages-filter-grid">
-        <label class="messages-filter-field">
-          <span>From Date</span>
-          <input type="date" name="from_date" value="{{ filters.from_date }}">
+        <label class="floating-field floating-field-search messages-search-field">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+          <input type="text" name="q" value="{{ filters.q }}" placeholder=" " aria-label="Search messages">
+          <span class="floating-label">Search messages or phone numbers</span>
         </label>
-        <label class="messages-filter-field">
-          <span>To Date</span>
-          <input type="date" name="to_date" value="{{ filters.to_date }}">
+
+        <label class="floating-field">
+          <div class="messages-field-wrap">
+            <input type="date" name="from_date" value="{{ filters.from_date }}" placeholder=" " aria-label="Start date">
+            <span class="floating-label">From date</span>
+          </div>
         </label>
-        <label class="messages-filter-field">
-          <span>Sender</span>
-          <select name="sender">
-            <option value="">All Senders</option>
+
+        <label class="floating-field">
+          <div class="messages-field-wrap">
+            <input type="date" name="to_date" value="{{ filters.to_date }}" placeholder=" " aria-label="End date">
+            <span class="floating-label">To date</span>
+          </div>
+        </label>
+
+        <label class="floating-field floating-field-select">
+          <select name="sender" aria-label="Filter by sender">
+            <option value=""></option>
             {% for sender in sender_options %}
             <option value="{{ sender }}" {% if filters.sender == sender %}selected{% endif %}>{{ sender }}</option>
             {% endfor %}
           </select>
+          <span class="floating-label">Sender</span>
         </label>
       </div>
 
       <div class="messages-filter-actions">
-        <button class="filter-btn" type="submit">Apply</button>
-        {% if filters.q or filters.from_date or filters.to_date or filters.sender %}
-        <a class="filter-btn clear-filter-btn" data-ajax-link="true" data-ajax-target="#messages-page-root" href="{{ url_for('messages') }}">Clear</a>
-        {% endif %}
+        <div class="messages-range-shortcuts" aria-label="Date range presets">
+          <button class="range-chip" type="button" data-range-days="0">Today</button>
+          <button class="range-chip" type="button" data-range-days="7">7 days</button>
+          <button class="range-chip" type="button" data-range-days="30">30 days</button>
+          <button class="range-chip" type="button" data-range-days="clear">Clear dates</button>
+        </div>
+        <div class="messages-filter-buttons">
+          <button class="filter-btn" type="submit">Apply filters</button>
+          {% if filters.q or filters.from_date or filters.to_date or filters.sender %}
+          <a class="filter-btn clear-filter-btn" data-ajax-link="true" data-ajax-target="#messages-page-root" href="{{ url_for('messages') }}">Clear</a>
+          {% endif %}
+        </div>
       </div>
     </form>
 
@@ -70,16 +110,15 @@
 
   <section class="messages-list-shell">
     <div class="messages-list-head">
-      <h3>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-        Latest Messages ({{ pagination.total }})
-      </h3>
+      <div>
+        <p class="card-kicker">Message list</p>
+        <h3>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+          Latest messages ({{ pagination.total }})
+        </h3>
+      </div>
       <p>Showing {{ pagination.start_row }}-{{ pagination.end_row }} of {{ pagination.total }} matching messages</p>
     </div>
-
-    <p class="messages-sync-note {{ data_status.level }}">
-      <strong>{{ data_status.title }}:</strong> {{ data_status.message }} Last updated {{ data_status.last_updated }}.
-    </p>
 
     {% if messages %}
     <div class="table-wrap messages-table-wrap table-responsive">
@@ -88,13 +127,28 @@
           <tr>
             <th scope="col">Date</th>
             <th scope="col">Sender</th>
-            <th scope="col">Phone Info</th>
+            <th scope="col">Phone info</th>
             <th scope="col">Message</th>
           </tr>
         </thead>
         <tbody>
           {% for message in messages %}
-          <tr>
+          {% set message_datetime = message.date_label ~ (' · ' ~ message.time_label if message.time_label else '') %}
+          {% set message_detail = {
+            'eyebrow': 'Message details',
+            'title': message.sender,
+            'summary': message.message,
+            'tone': 'info',
+            'tone_label': message_datetime,
+            'fields': [
+              {'label': 'Date', 'value': message_datetime},
+              {'label': 'Sender', 'value': message.sender},
+              {'label': 'Phone info', 'value': message.phone_info},
+              {'label': 'Device ID', 'value': message.device_id},
+              {'label': 'Message', 'value': message.message}
+            ]
+          } %}
+          <tr class="message-row">
             <td class="messages-date-cell" data-label="Date">
               <strong>{{ message.date_label }}</strong>
               {% if message.time_label %}
@@ -107,7 +161,7 @@
                 {{ message.sender }}
               </span>
             </td>
-            <td class="messages-phone-cell" data-label="Phone Info">
+            <td class="messages-phone-cell" data-label="Phone info">
               <strong>{{ message.phone_info }}</strong>
               <span>ID: {{ message.device_id }}</span>
             </td>
@@ -115,6 +169,7 @@
               <div class="message-body-copy">
                 <p class="message-body-text" data-message-text>{{ message.message }}</p>
                 <div class="message-row-actions">
+                  <button class="message-action-btn" type="button" data-detail-trigger="true" data-detail-payload='{{ message_detail|tojson|forceescape }}'>Details</button>
                   <button class="message-action-btn" type="button" data-message-toggle="true" aria-expanded="false">Expand</button>
                   <button class="message-action-btn secondary" type="button" data-copy-message="true">Copy</button>
                 </div>
@@ -147,7 +202,7 @@
     <div class="empty-state">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
       <h5>No messages found</h5>
-      <p>Try changing filters or click refresh to fetch new messages.</p>
+      <p>Try changing the search or date range filters, then refresh the feed.</p>
     </div>
     {% endif %}
   </section>

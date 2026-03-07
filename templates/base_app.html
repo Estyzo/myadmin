@@ -5,6 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="api-base-url" content="{{ api_base_url }}">
   <title>{% block document_title %}TransferFlow{% endblock %}</title>
+  <script>
+    (function () {
+      try {
+        var storedTheme = window.localStorage.getItem("app.theme");
+        var preferredTheme = storedTheme || (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        if (preferredTheme === "dark") {
+          document.documentElement.classList.add("theme-dark");
+          document.documentElement.style.colorScheme = "dark";
+        }
+      } catch (_themeError) {}
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -13,21 +25,96 @@
   {% block page_styles %}{% endblock %}
   <script>window.API_BASE_URL = "{{ api_base_url }}";</script>
 </head>
-<body>
+<body class="app-body page-{{ active_page|default('app') }}">
+  <a class="skip-link" href="#main-content">Skip to main content</a>
   <div class="app-shell">
     {% include "partials/app_sidebar.html" %}
 
-    <main class="{{ main_content_classes|default('content') }}">
+    <main id="main-content" class="{{ main_content_classes|default('content') }}">
       {% if show_topbar|default(true) %}
       <header class="topbar">
-        <h1>{{ page_title|default("TransferFlow") }}</h1>
-        <div class="profile">{{ profile_initial|default("L") }}</div>
+        <div class="topbar-group">
+          <button class="menu-toggle" type="button" data-drawer-toggle="true" aria-controls="app-sidebar" aria-expanded="false" aria-label="Open navigation">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 7h16"></path>
+              <path d="M4 12h16"></path>
+              <path d="M4 17h16"></path>
+            </svg>
+          </button>
+          <div class="topbar-copy">
+            <p class="topbar-eyebrow">TransferFlow Control Center</p>
+            <h1>{{ page_title|default("TransferFlow") }}</h1>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <button class="topbar-utility" type="button" data-command-palette-toggle="true" aria-haspopup="dialog" aria-controls="command-palette" aria-expanded="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h16"></path><path d="M4 16h10"></path><path d="m18 13 3 3-3 3"></path></svg>
+            <span class="topbar-utility-label">Quick actions</span>
+            <kbd>Ctrl K</kbd>
+          </button>
+          <button class="topbar-utility theme-toggle" type="button" data-theme-toggle="true" aria-pressed="false" aria-label="Switch to dark mode">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg>
+            <span class="topbar-utility-label" data-theme-label>Dark mode</span>
+          </button>
+          <div class="shortcut-chip" aria-hidden="true">
+            <kbd>Esc</kbd>
+            <span>Close overlays</span>
+          </div>
+          <div class="profile-shell">
+            <div class="profile-meta">
+              <span class="profile-label">Secure session</span>
+              <strong>Admin console</strong>
+            </div>
+            <div class="profile">{{ profile_initial|default("L") }}</div>
+          </div>
+        </div>
       </header>
       {% endif %}
 
       {% block page_content %}{% endblock %}
     </main>
   </div>
+  <div class="app-drawer-scrim" data-drawer-overlay="true" hidden></div>
+  <div class="surface-overlay" data-command-overlay="true" hidden></div>
+  <section class="command-palette" id="command-palette" data-command-palette="true" role="dialog" aria-modal="true" aria-labelledby="command-palette-title" hidden>
+    <div class="command-palette-panel">
+      <div class="command-palette-head">
+        <div>
+          <p class="page-eyebrow">Quick actions</p>
+          <h2 id="command-palette-title">Command palette</h2>
+        </div>
+        <button class="panel-close-btn" type="button" data-command-palette-close="true" aria-label="Close command palette">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+        </button>
+      </div>
+      <label class="floating-field floating-field-search command-palette-field">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+        <input id="command-palette-input" type="text" placeholder=" " autocomplete="off" data-command-palette-input="true" aria-controls="command-palette-list" aria-describedby="command-palette-hint">
+        <span class="floating-label">Search pages and actions</span>
+      </label>
+      <p class="command-palette-hint" id="command-palette-hint">Use ↑ and ↓ to move, Enter to run, and Escape to close.</p>
+      <div class="command-palette-list" id="command-palette-list" data-command-palette-list="true" role="listbox" aria-label="Command results"></div>
+    </div>
+  </section>
+  <div class="surface-overlay" data-detail-overlay="true" hidden></div>
+  <aside class="detail-drawer" id="detail-drawer" data-detail-drawer="true" role="dialog" aria-modal="true" aria-labelledby="detail-drawer-title" hidden>
+    <div class="detail-drawer-panel">
+      <div class="detail-drawer-head">
+        <div class="detail-drawer-copy">
+          <p class="page-eyebrow" data-detail-eyebrow>Details</p>
+          <h2 id="detail-drawer-title" data-detail-title>Record details</h2>
+          <p data-detail-summary>Select a row to inspect more context.</p>
+        </div>
+        <button class="panel-close-btn" type="button" data-detail-close="true" aria-label="Close details">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+        </button>
+      </div>
+      <div class="detail-drawer-meta">
+        <span class="detail-chip" data-detail-chip hidden></span>
+      </div>
+      <dl class="detail-drawer-grid" data-detail-fields></dl>
+    </div>
+  </aside>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
   <script src="{{ url_for('static', filename='ux-enhancements.js') }}"></script>
   {% block page_scripts %}{% endblock %}

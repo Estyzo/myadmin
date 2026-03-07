@@ -1,13 +1,18 @@
-<section class="page-wrap send-page container-fluid px-3 px-md-4" tabindex="-1">
+<section id="send-money-page-root" class="page-wrap send-page container-fluid px-3 px-md-4" tabindex="-1">
   <div class="send-page-shell">
     <div class="send-main-column">
       <div class="send-hero">
-        <div class="send-hero-icon">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4z"></path></svg>
+        <div class="send-hero-copy">
+          <p class="page-eyebrow">Transfer execution</p>
+          <h2>Send money with confirmation-first controls</h2>
+          <p>Validate the sender line, confirm the transfer, and keep the latest receipt close at hand.</p>
         </div>
-        <div>
-          <h2>Send Money</h2>
-          <p>Initiate a mobile money transfer to any recipient</p>
+        <div class="send-hero-chips">
+          <span class="status-badge status-badge-success">
+            <span class="status-badge-icon" aria-hidden="true"></span>
+            <span>{{ sender_numbers|length }} verified sender lines</span>
+          </span>
+          <span class="metric-pill">TZS settlements</span>
         </div>
       </div>
 
@@ -17,46 +22,56 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4z"></path></svg>
           </div>
           <div>
-            <h3>New Transfer</h3>
-            <p>Send money to any mobile number in Tanzania</p>
+            <p class="card-kicker">Transfer desk</p>
+            <h3>New transfer</h3>
+            <p>Complete the fields below to prepare a new mobile money disbursement.</p>
           </div>
         </div>
 
         <form id="send-money-form" class="send-form" action="#" method="post" data-ajax-post="{{ url_for('api_send_money') }}" novalidate>
-          <label class="send-field">
-            <span>Sender Mobile Number</span>
+          <label class="send-field floating-field">
             <div class="send-input-wrap select-wrap">
               <select id="sender-mobile-number" class="send-input send-select" name="sender_mobile_number" aria-label="Sender mobile number" required>
-                <option value="">Select sender number</option>
+                <option value=""></option>
                 {% for sender in sender_numbers %}
                 <option value="{{ sender }}">{{ sender }}</option>
                 {% endfor %}
               </select>
+              <span class="floating-label">Sender mobile number</span>
             </div>
           </label>
 
-          <label class="send-field">
-            <span>Receiver Phone Number</span>
+          <label class="send-field floating-field">
             <div class="send-input-wrap">
               <svg class="field-icon" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M22 16.9v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.1A19.5 19.5 0 0 1 5.2 12.8 19.8 19.8 0 0 1 2.1 4.4 2 2 0 0 1 4.1 2.2h3a2 2 0 0 1 2 1.7 12.8 12.8 0 0 0 .7 2.8 2 2 0 0 1-.45 2.1L8.1 10a16 16 0 0 0 5.9 5.9l1.2-1.2a2 2 0 0 1 2.1-.45 12.8 12.8 0 0 0 2.8.7 2 2 0 0 1 1.7 2z"></path>
               </svg>
-              <input id="receiver-phone-number" class="send-input with-leading-icon" type="tel" name="receiver_phone_number" placeholder="0754 123 456 or +255 754 123 456" required>
+              <input id="receiver-phone-number" class="send-input with-leading-icon" type="tel" name="receiver_phone_number" placeholder=" " required>
+              <span class="floating-label">Receiver phone number</span>
             </div>
           </label>
 
-          <label class="send-field amount-field">
-            <span>Amount (TZS)</span>
+          <label class="send-field floating-field amount-field">
             <div class="send-input-wrap amount-wrap">
               <strong>TZS</strong>
-              <input id="transfer-amount" class="send-input amount-input" type="number" name="amount" min="0.01" step="0.01" placeholder="0.00" required>
+              <input id="transfer-amount" class="send-input amount-input" type="number" name="amount" min="0.01" step="0.01" placeholder=" " required>
+              <span class="floating-label">Amount</span>
             </div>
           </label>
+
+          <p class="send-form-note">Validation runs before the request is sent. Use <kbd>Esc</kbd> to dismiss the confirmation panel.</p>
 
           <section class="transfer-confirmation" id="transfer-confirmation" hidden aria-live="polite">
             <div class="transfer-confirmation-head">
-              <h4>Confirm transfer</h4>
-              <p>Double-check the transfer details before sending.</p>
+              <div>
+                <p class="card-kicker">Review step</p>
+                <h4>Confirm transfer</h4>
+                <p>Double-check the transfer details before sending.</p>
+              </div>
+              <span class="status-badge status-badge-loading">
+                <span class="status-badge-icon" aria-hidden="true"></span>
+                <span>Awaiting approval</span>
+              </span>
             </div>
             <dl class="transfer-confirmation-grid">
               <div>
@@ -73,24 +88,30 @@
               </div>
             </dl>
             <div class="transfer-confirmation-actions">
-              <button class="filter-btn" type="button" data-confirm-edit="true">Edit</button>
+              <button class="filter-btn" type="button" data-confirm-edit="true">Edit transfer</button>
               <button class="send-submit confirm-submit-btn" type="button" data-confirm-submit="true">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4z"></path></svg>
-                Confirm & Send
+                Confirm &amp; send
               </button>
             </div>
           </section>
 
           <button class="send-submit" type="submit">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4z"></path></svg>
-            Send Transfer
+            Prepare transfer
           </button>
           <p id="send-money-feedback" class="form-feedback" aria-live="polite"></p>
 
           <section class="transfer-receipt" id="transfer-receipt" hidden aria-live="polite">
             <div class="transfer-receipt-head">
-              <h4>Latest receipt</h4>
-              <span class="status-pill active">Sent</span>
+              <div>
+                <p class="card-kicker">Receipt</p>
+                <h4>Latest transfer receipt</h4>
+              </div>
+              <span class="status-badge status-badge-success" data-receipt-badge>
+                <span class="status-badge-icon" aria-hidden="true"></span>
+                <span>Sent</span>
+              </span>
             </div>
             <dl class="transfer-receipt-grid">
               <div>
@@ -125,20 +146,20 @@
 
     <aside class="send-side-panel" aria-label="Transfer guide">
       <article class="send-side-card">
-        <p class="send-side-kicker">Transfer Guide</p>
-        <h3>Compact, fast entry</h3>
-        <p>Use an approved sender line, enter a local receiver number, and submit the amount in Tanzanian shillings.</p>
+        <p class="send-side-kicker">Operator guide</p>
+        <h3>Use trusted inputs</h3>
+        <p>Transfers are confirmed before dispatch and the latest receipt stays visible for manual reconciliation.</p>
         <ul class="send-checklist">
-          <li>Active sender lines available: <strong>{{ sender_numbers|length }}</strong></li>
-          <li>Receiver accepts `0...` or `+255...` formats</li>
-          <li>Validation runs before the API request is sent</li>
+          <li>Approved sender lines available: <strong>{{ sender_numbers|length }}</strong></li>
+          <li>Receiver accepts local or international Tanzania formats</li>
+          <li>Validation, confirmation, and receipt steps all stay keyboard accessible</li>
         </ul>
       </article>
 
       <article class="send-side-card recent-transfers-card">
         <p class="send-side-kicker">Recent recipients</p>
         <h3>Reuse previous details</h3>
-        <p>Pick a recent transfer to refill the form faster.</p>
+        <p>Pick a recent transfer to prefill the form and speed up repeat disbursements.</p>
         <div class="recent-transfer-list" id="recent-transfer-list">
           <p class="recent-transfer-empty">No recent transfers yet.</p>
         </div>

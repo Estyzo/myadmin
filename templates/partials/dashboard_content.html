@@ -1,8 +1,10 @@
-<section id="dashboard-page-root" class="page-wrap container-fluid px-3 px-md-4" tabindex="-1">
-  <div class="page-header">
-    <div>
-      <h2>Dashboard</h2>
-      <p>Overview of your transactions and statistics</p>
+{% set status_badge_variant = 'success' if data_status.level == 'success' else 'danger' if data_status.level == 'error' else 'loading' %}
+<section id="dashboard-page-root" class="page-wrap dashboard-page container-fluid px-3 px-md-4" tabindex="-1">
+  <div class="page-header dashboard-header">
+    <div class="page-copy">
+      <p class="page-eyebrow">Financial operations</p>
+      <h2>Transfer command center</h2>
+      <p>Monitor volume, operator mix, and transaction quality in one real-time admin view.</p>
     </div>
     <div class="header-actions">
       <details class="export-menu">
@@ -19,18 +21,27 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15.5-6.4L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15.5 6.4L3 16"></path></svg>
         Refresh
       </a>
-      <span class="auto-refresh-pill">Auto refresh in <strong id="refresh-countdown">30s</strong></span>
-      <button class="ghost-btn refresh-toggle" id="refresh-toggle" type="button" aria-pressed="false">Pause</button>
+      <button class="ghost-btn refresh-toggle" id="refresh-toggle" type="button" aria-pressed="false">Pause refresh</button>
     </div>
   </div>
 
-  <div class="switch-wrap">
-    <a class="switch-btn {% if period == 'today' %}active{% endif %}" data-ajax-link="true" data-ajax-target="#dashboard-page-root" href="{{ url_for('dashboard', period='today', q=filters.q, operator=filters.operator, operation=filters.operation, sort_by=sort.by, sort_dir=sort.dir, per_page=per_page) }}">Today</a>
-    <a class="switch-btn {% if period == 'all' %}active{% endif %}" data-ajax-link="true" data-ajax-target="#dashboard-page-root" href="{{ url_for('dashboard', period='all', q=filters.q, operator=filters.operator, operation=filters.operation, sort_by=sort.by, sort_dir=sort.dir, per_page=per_page) }}">All Time</a>
-  </div>
+  <section class="period-toolbar" aria-label="Dashboard controls">
+    <div class="switch-wrap" role="tablist" aria-label="Dashboard period selector">
+      <a class="switch-btn {% if period == 'today' %}active{% endif %}" data-ajax-link="true" data-ajax-target="#dashboard-page-root" href="{{ url_for('dashboard', period='today', q=filters.q, operator=filters.operator, operation=filters.operation, sort_by=sort.by, sort_dir=sort.dir, per_page=per_page) }}">Today</a>
+      <a class="switch-btn {% if period == 'all' %}active{% endif %}" data-ajax-link="true" data-ajax-target="#dashboard-page-root" href="{{ url_for('dashboard', period='all', q=filters.q, operator=filters.operator, operation=filters.operation, sort_by=sort.by, sort_dir=sort.dir, per_page=per_page) }}">All time</a>
+    </div>
+    <div class="header-status-panel">
+      <span class="status-badge status-badge-{{ status_badge_variant }}">
+        <span class="status-badge-icon" aria-hidden="true"></span>
+        <span>{{ data_status.title }}</span>
+      </span>
+      <p>{{ data_status.message }}</p>
+      <span class="auto-refresh-pill">Auto refresh <strong id="refresh-countdown">30s</strong></span>
+    </div>
+  </section>
 
   <div class="stat-grid">
-    <article class="stat-card highlighted">
+    <article class="stat-card highlighted" data-accent="emerald">
       <div>
         <p class="label">{{ stats.total_label }}</p>
         <h3>{{ stats.total_volume }}</h3>
@@ -38,14 +49,14 @@
         <svg class="stat-sparkline {{ stats.total_trend.delta_direction }}" viewBox="0 0 96 24" role="img" aria-label="Total trend">
           <polyline points="{{ stats.total_trend.sparkline_points }}"></polyline>
         </svg>
-        <p class="subtle">{{ stats.total_transactions }} transactions</p>
+        <p class="subtle">{{ stats.total_transactions }} transactions tracked</p>
       </div>
-      <div class="card-icon lilac">
+      <div class="card-icon emerald">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4z"></path></svg>
       </div>
     </article>
 
-    <article class="stat-card">
+    <article class="stat-card" data-accent="teal">
       <div>
         <p class="label">{{ stats.sent_label }}</p>
         <h3>{{ stats.sent_amount }}</h3>
@@ -55,12 +66,12 @@
         </svg>
         <p class="subtle">{{ stats.outgoing_transfers }} outgoing transfers</p>
       </div>
-      <div class="card-icon blue">
+      <div class="card-icon teal">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7"></path><path d="M7 7h10v10"></path></svg>
       </div>
     </article>
 
-    <article class="stat-card">
+    <article class="stat-card" data-accent="navy">
       <div>
         <p class="label">{{ stats.received_label }}</p>
         <h3>{{ stats.received_amount }}</h3>
@@ -70,19 +81,52 @@
         </svg>
         <p class="subtle">{{ stats.incoming_transfers }} incoming transfers</p>
       </div>
-      <div class="card-icon cyan">
+      <div class="card-icon navy">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7 17 17"></path><path d="M17 7H7v10"></path></svg>
       </div>
     </article>
   </div>
 
+  <section class="dashboard-visuals" aria-label="Dashboard visualizations">
+    <article class="chart-card">
+      <div class="chart-card-head">
+        <div>
+          <p class="card-kicker">Trend view</p>
+          <h3>Transaction velocity</h3>
+        </div>
+        <p class="chart-note">Recent filtered transfer amounts</p>
+      </div>
+      <canvas id="dashboard-volume-chart" class="dashboard-chart" width="640" height="220" role="img" aria-label="Line chart of transaction velocity"></canvas>
+    </article>
+
+    <article class="chart-card">
+      <div class="chart-card-head">
+        <div>
+          <p class="card-kicker">Operator mix</p>
+          <h3>Network distribution</h3>
+        </div>
+        <p class="chart-note">Counts by mobile money operator</p>
+      </div>
+      <div class="operator-legend" aria-label="Operator legend">
+        <span class="operator-pill" data-operator="halotel">Halotel</span>
+        <span class="operator-pill" data-operator="airtel">Airtel</span>
+        <span class="operator-pill" data-operator="yas">Yas</span>
+        <span class="operator-pill" data-operator="vodacom">Vodacom</span>
+      </div>
+      <canvas id="dashboard-operator-chart" class="dashboard-chart" width="640" height="220" role="img" aria-label="Bar chart of operator distribution"></canvas>
+    </article>
+  </section>
+
   <article class="status-card {{ data_status.level }}">
-    <h4>
-      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg>
-      {{ data_status.title }}
-    </h4>
+    <div class="status-card-head">
+      <span class="status-badge status-badge-{{ status_badge_variant }}">
+        <span class="status-badge-icon" aria-hidden="true"></span>
+        <span>{{ data_status.title }}</span>
+      </span>
+      <p class="status-meta">Last updated: {{ data_status.last_updated }}</p>
+    </div>
+    <h4>{{ data_status.title }}</h4>
     <p>{{ data_status.message }}</p>
-    <p class="status-meta">Last updated: {{ data_status.last_updated }}</p>
     {% if data_status.can_retry %}
     <a class="status-retry" data-ajax-link="true" data-ajax-target="#dashboard-page-root" href="{{ url_for('dashboard', period=period, q=filters.q, operator=filters.operator, operation=filters.operation, sort_by=sort.by, sort_dir=sort.dir, per_page=per_page, refresh=1) }}">Retry now</a>
     {% endif %}
@@ -93,37 +137,41 @@
       <input type="hidden" name="period" value="{{ period }}">
       <input type="hidden" name="sort_by" value="{{ sort.by }}">
       <input type="hidden" name="sort_dir" value="{{ sort.dir }}">
-      <label class="search-box">
-        <span class="sr-only">Search transactions</span>
+
+      <label class="floating-field floating-field-search">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
-        <input type="text" name="q" value="{{ filters.q }}" placeholder="Search by phone number, receiver, creator..." />
+        <input type="text" name="q" value="{{ filters.q }}" placeholder=" " aria-label="Search transactions">
+        <span class="floating-label">Search phone, receiver, or creator</span>
       </label>
 
       <div class="filters">
-        <label class="filter-select-wrap">
+        <label class="floating-field floating-field-select">
           <select class="filter-select" name="operator" aria-label="Filter by operator">
-            <option value="">All Operators</option>
+            <option value=""></option>
             {% for operator in operator_options %}
             <option value="{{ operator }}" {% if filters.operator == operator %}selected{% endif %}>{{ operator }}</option>
             {% endfor %}
           </select>
+          <span class="floating-label">Operator</span>
         </label>
-        <label class="filter-select-wrap">
+        <label class="floating-field floating-field-select">
           <select class="filter-select" name="operation" aria-label="Filter by operation">
-            <option value="">All Operations</option>
+            <option value=""></option>
             {% for operation in operation_options %}
             <option value="{{ operation }}" {% if filters.operation == operation %}selected{% endif %}>{{ operation }}</option>
             {% endfor %}
           </select>
+          <span class="floating-label">Operation</span>
         </label>
-        <label class="filter-select-wrap per-page-wrap">
+        <label class="floating-field floating-field-select per-page-wrap">
           <select class="filter-select" name="per_page" aria-label="Rows per page">
             {% for option in per_page_options %}
-            <option value="{{ option }}" {% if per_page == option %}selected{% endif %}>{{ option }} rows</option>
+            <option value="{{ option }}" {% if per_page == option %}selected{% endif %}>{{ option }}</option>
             {% endfor %}
           </select>
+          <span class="floating-label">Rows</span>
         </label>
-        <button class="filter-btn" type="submit">Apply</button>
+        <button class="filter-btn" type="submit">Apply filters</button>
         {% if filters.q or filters.operator or filters.operation %}
         <a class="filter-btn clear-filter-btn" data-ajax-link="true" data-ajax-target="#dashboard-page-root" href="{{ url_for('dashboard', period=period, sort_by=sort.by, sort_dir=sort.dir, per_page=per_page) }}">Clear</a>
         {% endif %}
@@ -142,10 +190,11 @@
         <button class="filter-btn compact-mode-btn" id="compact-mode-toggle" type="button" aria-pressed="false">Compact cards</button>
       </div>
     </form>
+
     <div class="active-filters">
       {% if period == "all" %}
       <a class="filter-chip with-remove" data-ajax-link="true" data-ajax-target="#dashboard-page-root" href="{{ url_for('dashboard', period='today', q=filters.q, operator=filters.operator, operation=filters.operation, sort_by=sort.by, sort_dir=sort.dir, per_page=per_page) }}">
-        Period: All Time
+        Period: All time
         <span class="chip-remove" aria-hidden="true">×</span>
       </a>
       {% else %}
@@ -179,10 +228,10 @@
       <table class="transaction-table table table-hover align-middle">
         <thead>
           <tr>
-              <th scope="col" data-col="sender">Sender</th>
-              <th scope="col" data-col="receiver">Receiver</th>
-              <th scope="col" data-col="operator" aria-sort="{{ 'ascending' if sort.by == 'operator' and sort.dir == 'asc' else 'descending' if sort.by == 'operator' and sort.dir == 'desc' else 'none' }}">
-                <a class="sort-link {% if sort.by == 'operator' %}active{% endif %}" data-ajax-link="true" data-ajax-target="#dashboard-page-root" href="{{ url_for('dashboard', period=period, q=filters.q, operator=filters.operator, operation=filters.operation, sort_by='operator', sort_dir='desc' if sort.by == 'operator' and sort.dir == 'asc' else 'asc', per_page=per_page) }}">
+            <th scope="col" data-col="sender">Sender</th>
+            <th scope="col" data-col="receiver">Receiver</th>
+            <th scope="col" data-col="operator" aria-sort="{{ 'ascending' if sort.by == 'operator' and sort.dir == 'asc' else 'descending' if sort.by == 'operator' and sort.dir == 'desc' else 'none' }}">
+              <a class="sort-link {% if sort.by == 'operator' %}active{% endif %}" data-ajax-link="true" data-ajax-target="#dashboard-page-root" href="{{ url_for('dashboard', period=period, q=filters.q, operator=filters.operator, operation=filters.operation, sort_by='operator', sort_dir='desc' if sort.by == 'operator' and sort.dir == 'asc' else 'asc', per_page=per_page) }}">
                 Operator
                 {% if sort.by == 'operator' %}
                 <span class="sort-indicator">{{ '↑' if sort.dir == 'asc' else '↓' }}</span>
@@ -207,18 +256,40 @@
                 {% endif %}
               </a>
             </th>
+            <th scope="col" class="table-action-col">Details</th>
           </tr>
         </thead>
         <tbody>
           {% for transaction in transactions %}
-          <tr>
+          {% set transaction_detail = {
+            'eyebrow': 'Transaction details',
+            'title': transaction.operation ~ ' transaction',
+            'summary': transaction.sender_number ~ ' → ' ~ transaction.receiver_number,
+            'tone': transaction.operator|lower,
+            'tone_label': transaction.operator,
+            'fields': [
+              {'label': 'Sender', 'value': transaction.sender_number},
+              {'label': 'Receiver', 'value': transaction.receiver_number},
+              {'label': 'Operator', 'value': transaction.operator},
+              {'label': 'Operation', 'value': transaction.operation},
+              {'label': 'Amount', 'value': transaction.amount},
+              {'label': 'Created by', 'value': transaction.created_by},
+              {'label': 'Date', 'value': transaction.created_at}
+            ]
+          } %}
+          <tr class="transaction-row">
             <td data-col="sender" data-label="Sender">{{ transaction.sender_number }}</td>
             <td data-col="receiver" data-label="Receiver" class="receiver-cell">{{ transaction.receiver_number }}</td>
-            <td data-col="operator" data-label="Operator">{{ transaction.operator }}</td>
+            <td data-col="operator" data-label="Operator">
+              <span class="operator-pill" data-operator="{{ transaction.operator|lower }}">{{ transaction.operator }}</span>
+            </td>
             <td data-col="operation" data-label="Operation">{{ transaction.operation }}</td>
             <td data-col="amount" data-label="Amount" class="transaction-amount">{{ transaction.amount }}</td>
             <td data-col="created_by" data-label="Created By" class="monospace">{{ transaction.created_by }}</td>
             <td data-col="date" data-label="Date" class="transaction-date">{{ transaction.created_at }}</td>
+            <td data-label="Details" class="table-action-cell">
+              <button class="row-action-btn" type="button" data-detail-trigger="true" data-detail-payload='{{ transaction_detail|tojson|forceescape }}'>View</button>
+            </td>
           </tr>
           {% endfor %}
         </tbody>
@@ -246,7 +317,7 @@
     <div class="empty-state">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.1A19.5 19.5 0 0 1 5.2 12.8 19.8 19.8 0 0 1 2.1 4.4 2 2 0 0 1 4.1 2.2h3a2 2 0 0 1 2 1.7 12.8 12.8 0 0 0 .7 2.8 2 2 0 0 1-.45 2.1L8.1 10a16 16 0 0 0 5.9 5.9l1.2-1.2a2 2 0 0 1 2.1-.45 12.8 12.8 0 0 0 2.8.7 2 2 0 0 1 1.7 2z"></path></svg>
       <h5>No transactions found</h5>
-      <p>Transactions will appear once data is available from the API.</p>
+      <p>Transactions will appear here once the filtered dataset is available from the API.</p>
     </div>
     {% endif %}
   </section>

@@ -1,19 +1,32 @@
 {% set current_page = active_page|default('') %}
-<aside class="sidebar" id="app-sidebar">
-  <div class="brand">
-    <div class="logo-wrap">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <rect x="3" y="5" width="18" height="14" rx="3"></rect>
-        <path d="M3 10h18"></path>
-        <path d="M8 14h5"></path>
-      </svg>
+<aside class="sidebar" id="app-sidebar" aria-label="Primary navigation">
+  <div class="brand-panel">
+    <div class="brand">
+      <div class="logo-wrap">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="3" y="5" width="18" height="14" rx="3"></rect>
+          <path d="M3 10h18"></path>
+          <path d="M8 14h5"></path>
+        </svg>
+      </div>
+      <div class="brand-copy">
+        <span>TransferFlow</span>
+        <small>Financial operations</small>
+      </div>
     </div>
-    <span>TransferFlow</span>
+    <span class="brand-badge">Admin</span>
+  </div>
+
+  <div class="sidebar-context">
+    <p>Real-time oversight for mobile money transfers, message ingestion, and configuration controls.</p>
   </div>
 
   <nav class="side-nav" aria-label="Primary">
+    <div class="nav-section-label">Operations</div>
     <a href="{{ url_for('dashboard') }}" class="nav-item{% if current_page == 'dashboard' %} active{% endif %}"{% if current_page == 'dashboard' %} aria-current="page"{% endif %}>
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11h7V3H3zM14 21h7v-7h-7zM14 10h7V3h-7zM3 21h7v-7H3z"></path></svg>
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M3 11h7V3H3zM14 21h7v-7h-7zM14 10h7V3h-7zM3 21h7v-7H3z"></path>
+      </svg>
       <span>Dashboard</span>
     </a>
     <a href="{{ url_for('send_money') }}" class="nav-item{% if current_page == 'send-money' %} active{% endif %}"{% if current_page == 'send-money' %} aria-current="page"{% endif %}>
@@ -29,6 +42,12 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
       <span>Messages</span>
     </a>
+    <a href="{{ url_for('settings') }}" class="nav-item{% if current_page == 'settings' %} active{% endif %}"{% if current_page == 'settings' %} aria-current="page"{% endif %}>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15A1.65 1.65 0 0 0 20 16.82l.1.1a2 2 0 1 1-2.83 2.83l-.1-.1A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1V21a2 2 0 1 1-4 0v-.2a1.65 1.65 0 0 0-.33-1 1.65 1.65 0 0 0-1-.6 1.65 1.65 0 0 0-1.82.6l-.1.1a2 2 0 1 1-2.83-2.83l.1-.1A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1-.33H3a2 2 0 1 1 0-4h.2a1.65 1.65 0 0 0 1-.33 1.65 1.65 0 0 0 .6-1 1.65 1.65 0 0 0-.6-1.82l-.1-.1a2 2 0 1 1 2.83-2.83l.1.1A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .33-1V3a2 2 0 1 1 4 0v.2a1.65 1.65 0 0 0 .33 1 1.65 1.65 0 0 0 1 .6 1.65 1.65 0 0 0 1.82-.6l.1-.1a2 2 0 1 1 2.83 2.83l-.1.1A1.65 1.65 0 0 0 19.4 9c.27.32.47.7.6 1.1H21a2 2 0 1 1 0 4h-.2a1.65 1.65 0 0 0-1 .33z"></path></svg>
+      <span>Settings</span>
+    </a>
+
+    <div class="nav-section-label">Monitoring</div>
     <span class="nav-item nav-item-disabled" aria-disabled="true">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"></path><path d="M18 17V9"></path><path d="M13 17V5"></path><path d="M8 17v-3"></path></svg>
       <span>Reports</span>
@@ -69,12 +88,20 @@
       <span>Users</span>
       <span class="nav-badge">Soon</span>
     </span>
-    <a href="{{ url_for('settings') }}" class="nav-item{% if current_page == 'settings' %} active{% endif %}"{% if current_page == 'settings' %} aria-current="page"{% endif %}>
-      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15A1.65 1.65 0 0 0 20 16.82l.1.1a2 2 0 1 1-2.83 2.83l-.1-.1A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1V21a2 2 0 1 1-4 0v-.2a1.65 1.65 0 0 0-.33-1 1.65 1.65 0 0 0-1-.6 1.65 1.65 0 0 0-1.82.6l-.1.1a2 2 0 1 1-2.83-2.83l.1-.1A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1-.33H3a2 2 0 1 1 0-4h.2a1.65 1.65 0 0 0 1-.33 1.65 1.65 0 0 0 .6-1 1.65 1.65 0 0 0-.6-1.82l-.1-.1a2 2 0 1 1 2.83-2.83l.1.1A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .33-1V3a2 2 0 1 1 4 0v.2a1.65 1.65 0 0 0 .33 1 1.65 1.65 0 0 0 1 .6 1.65 1.65 0 0 0 1.82-.6l.1-.1a2 2 0 1 1 2.83 2.83l-.1.1A1.65 1.65 0 0 0 19.4 9c.27.32.47.7.6 1.1H21a2 2 0 1 1 0 4h-.2a1.65 1.65 0 0 0-1 .33z"></path></svg>
-      <span>Settings</span>
-    </a>
   </nav>
+
+  <div class="sidebar-footer">
+    <article class="sidebar-status-card">
+      <span class="sidebar-status-dot" aria-hidden="true"></span>
+      <div>
+        <strong>Live monitoring</strong>
+        <p>Operational health indicators and sync checks stay available from every page.</p>
+      </div>
+    </article>
+  </div>
+
   <button class="collapse-btn" type="button" data-sidebar-toggle="true" aria-controls="app-sidebar" aria-expanded="true" aria-label="Collapse sidebar">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+    <span>Collapse panel</span>
   </button>
 </aside>

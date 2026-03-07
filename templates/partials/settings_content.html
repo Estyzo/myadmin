@@ -1,22 +1,49 @@
+{% set status_badge_variant = 'success' if data_status.level == 'success' else 'danger' if data_status.level == 'error' else 'loading' %}
 <section id="settings-page-root" class="page-wrap settings-page container-fluid px-3 px-md-4" tabindex="-1">
-  <div class="settings-hero">
-    <div class="settings-hero-icon">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15A1.65 1.65 0 0 0 20 16.82l.1.1a2 2 0 1 1-2.83 2.83l-.1-.1A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1V21a2 2 0 1 1-4 0v-.2a1.65 1.65 0 0 0-.33-1 1.65 1.65 0 0 0-1-.6 1.65 1.65 0 0 0-1.82.6l-.1.1a2 2 0 1 1-2.83-2.83l.1-.1A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1-.33H3a2 2 0 1 1 0-4h.2a1.65 1.65 0 0 0 1-.33 1.65 1.65 0 0 0 .6-1 1.65 1.65 0 0 0-.6-1.82l-.1-.1a2 2 0 1 1 2.83-2.83l.1.1A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .33-1V3a2 2 0 1 1 4 0v.2a1.65 1.65 0 0 0 .33 1 1.65 1.65 0 0 0 1 .6 1.65 1.65 0 0 0 1.82-.6l.1-.1a2 2 0 1 1 2.83 2.83l-.1.1A1.65 1.65 0 0 0 19.4 9c.27.32.47.7.6 1.1H21a2 2 0 1 1 0 4h-.2a1.65 1.65 0 0 0-1 .33z"></path></svg>
+  <div class="page-header settings-header">
+    <div class="page-copy">
+      <p class="page-eyebrow">Configuration &amp; controls</p>
+      <h2>Settings cockpit</h2>
+      <p>Manage sender configuration visibility, operator safeguards, and notification preferences from one tabbed workspace.</p>
     </div>
-    <div>
-      <h2>Settings</h2>
-      <p>Configure system settings and user roles</p>
+    <div class="header-actions">
+      <span class="status-badge status-badge-{{ status_badge_variant }}">
+        <span class="status-badge-icon" aria-hidden="true"></span>
+        <span>{{ data_status.title }}</span>
+      </span>
+      <a class="ghost-btn strong" data-ajax-link="true" data-ajax-target="#settings-page-root" href="{{ url_for('settings', refresh=1) }}">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15.5-6.4L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15.5 6.4L3 16"></path></svg>
+        Refresh config
+      </a>
     </div>
   </div>
+
+  <section class="settings-summary-grid" aria-label="Settings summary">
+    <article class="summary-card">
+      <p class="label">Active sender configs</p>
+      <h3>{{ sender_config_count }}</h3>
+      <p class="subtle">Loaded from the API source</p>
+    </article>
+    <article class="summary-card">
+      <p class="label">Sync source</p>
+      <h3>API</h3>
+      <p class="subtle">{{ sender_config_api_url }}</p>
+    </article>
+    <article class="summary-card">
+      <p class="label">Notification policies</p>
+      <h3>3</h3>
+      <p class="subtle">Ready for operator-level tuning</p>
+    </article>
+  </section>
 
   <div class="settings-tabs" role="tablist" aria-label="Settings sections">
     <button id="settings-tab-sender-config" class="settings-tab active" type="button" role="tab" aria-selected="true" aria-controls="settings-panel-sender-config" tabindex="0" data-settings-tab="sender-config">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15A1.65 1.65 0 0 0 20 16.82l.1.1a2 2 0 1 1-2.83 2.83l-.1-.1A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1V21a2 2 0 1 1-4 0v-.2a1.65 1.65 0 0 0-.33-1 1.65 1.65 0 0 0-1-.6 1.65 1.65 0 0 0-1.82.6l-.1.1a2 2 0 1 1-2.83-2.83l.1-.1A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1-.33H3a2 2 0 1 1 0-4h.2a1.65 1.65 0 0 0 1-.33 1.65 1.65 0 0 0 .6-1 1.65 1.65 0 0 0-.6-1.82l-.1-.1a2 2 0 1 1 2.83-2.83l.1.1A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .33-1V3a2 2 0 1 1 4 0v.2a1.65 1.65 0 0 0 .33 1 1.65 1.65 0 0 0 1 .6 1.65 1.65 0 0 0 1.82-.6l.1-.1a2 2 0 1 1 2.83 2.83l-.1.1A1.65 1.65 0 0 0 19.4 9c.27.32.47.7.6 1.1H21a2 2 0 1 1 0 4h-.2a1.65 1.65 0 0 0-1 .33z"></path></svg>
-      Sender Config
+      Sender config
     </button>
     <button id="settings-tab-role-management" class="settings-tab" type="button" role="tab" aria-selected="false" aria-controls="settings-panel-role-management" tabindex="-1" data-settings-tab="role-management">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M20 8v6"></path><path d="M23 11h-6"></path></svg>
-      Role Management
+      Role controls
     </button>
     <button id="settings-tab-notifications" class="settings-tab" type="button" role="tab" aria-selected="false" aria-controls="settings-panel-notifications" tabindex="-1" data-settings-tab="notifications">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
@@ -27,33 +54,40 @@
   <section id="settings-panel-sender-config" class="settings-panel active" role="tabpanel" aria-labelledby="settings-tab-sender-config" data-settings-panel="sender-config">
     <div class="settings-grid">
       <article class="config-card add-config-card">
+        <p class="card-kicker">Sync source</p>
         <h3>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
-          Sender Config Source
+          Sender config source
         </h3>
-        <p class="subtle">
-          Sender configurations are managed by the API and are no longer stored in this app.
-        </p>
-        <p class="subtle">
-          Endpoint: <strong>{{ sender_config_api_url }}</strong>
-        </p>
+        <p class="subtle">Sender configurations are managed by the API and surfaced here for operator review only.</p>
+        <p class="subtle">Endpoint: <strong>{{ sender_config_api_url }}</strong></p>
+        <div class="settings-toggle-row">
+          <div>
+            <strong>Auto refresh on revisit</strong>
+            <p>Keep this tab up to date each time an operator returns to it.</p>
+          </div>
+          <button class="toggle-switch on" type="button" data-preference-toggle="sender-config.auto-refresh" data-default-state="true" aria-pressed="true" aria-label="Toggle auto refresh for sender config">
+            <span></span>
+          </button>
+        </div>
         <a class="status-retry" data-ajax-link="true" data-ajax-target="#settings-page-root" href="{{ url_for('settings', refresh=1) }}">Refresh from API</a>
       </article>
 
       <article class="config-card table-config-card">
+        <p class="card-kicker">Current records</p>
         <h3>
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15A1.65 1.65 0 0 0 20 16.82l.1.1a2 2 0 1 1-2.83 2.83l-.1-.1A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1V21a2 2 0 1 1-4 0v-.2a1.65 1.65 0 0 0-.33-1 1.65 1.65 0 0 0-1-.6 1.65 1.65 0 0 0-1.82.6l-.1.1a2 2 0 1 1-2.83-2.83l.1-.1A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1-.33H3a2 2 0 1 1 0-4h.2a1.65 1.65 0 0 0 1-.33 1.65 1.65 0 0 0 .6-1 1.65 1.65 0 0 0-.6-1.82l-.1-.1a2 2 0 1 1 2.83-2.83l.1.1A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .33-1V3a2 2 0 1 1 4 0v.2a1.65 1.65 0 0 0 .33 1 1.65 1.65 0 0 0 1 .6 1.65 1.65 0 0 0 1.82-.6l.1-.1a2 2 0 1 1 2.83 2.83l-.1.1A1.65 1.65 0 0 0 19.4 9c.27.32.47.7.6 1.1H21a2 2 0 1 1 0 4h-.2a1.65 1.65 0 0 0-1 .33z"></path></svg>
-          Sender Configurations ({{ sender_config_count }})
+          Sender configurations ({{ sender_config_count }})
         </h3>
 
         <div class="table-wrap table-responsive">
           <table class="sender-config-table table table-hover align-middle">
             <thead>
               <tr>
-                <th scope="col">Sender Number</th>
-                <th scope="col">Client Code</th>
-                <th scope="col">TIL Number</th>
-                <th scope="col">TIL Name</th>
+                <th scope="col">Sender number</th>
+                <th scope="col">Client code</th>
+                <th scope="col">TIL number</th>
+                <th scope="col">TIL name</th>
                 <th scope="col">Path</th>
                 <th scope="col">Status</th>
               </tr>
@@ -62,20 +96,20 @@
               {% if sender_configs %}
                 {% for config in sender_configs %}
                 <tr>
-                  <td data-label="Sender Number">
+                  <td data-label="Sender number">
                     <span class="cell-with-icon">
                       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.1A19.5 19.5 0 0 1 5.2 12.8 19.8 19.8 0 0 1 2.1 4.4 2 2 0 0 1 4.1 2.2h3a2 2 0 0 1 2 1.7 12.8 12.8 0 0 0 .7 2.8 2 2 0 0 1-.45 2.1L8.1 10a16 16 0 0 0 5.9 5.9l1.2-1.2a2 2 0 0 1 2.1-.45 12.8 12.8 0 0 0 2.8.7 2 2 0 0 1 1.7 2z"></path></svg>
                       <strong>{{ config.sender_number }}</strong>
                     </span>
                   </td>
-                  <td data-label="Client Code">
+                  <td data-label="Client code">
                     <span class="cell-with-icon monospace">
                       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m16 18 6-6-6-6"></path><path d="m8 6-6 6 6 6"></path></svg>
                       {{ config.client_code }}
                     </span>
                   </td>
-                  <td data-label="TIL Number">{{ config.til_number }}</td>
-                  <td data-label="TIL Name">{{ config.til_name or "-" }}</td>
+                  <td data-label="TIL number">{{ config.til_number }}</td>
+                  <td data-label="TIL name">{{ config.til_name or "-" }}</td>
                   <td class="path-cell" data-label="Path">{{ config.path }}</td>
                   <td data-label="Status">
                     <span class="status-pill {{ 'active' if config.is_active else 'inactive' }}">
@@ -96,35 +130,78 @@
     </div>
 
     <article class="status-card {{ data_status.level }}">
-      <h4>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg>
-        {{ data_status.title }}
-      </h4>
+      <div class="status-card-head">
+        <span class="status-badge status-badge-{{ status_badge_variant }}">
+          <span class="status-badge-icon" aria-hidden="true"></span>
+          <span>{{ data_status.title }}</span>
+        </span>
+        <p class="status-meta">Last updated: {{ data_status.last_updated }}</p>
+      </div>
+      <h4>{{ data_status.title }}</h4>
       <p>{{ data_status.message }}</p>
-      <p class="status-meta">Last updated: {{ data_status.last_updated }}</p>
       <a class="status-retry" data-ajax-link="true" data-ajax-target="#settings-page-root" href="{{ url_for('settings', refresh=1) }}">Retry now</a>
     </article>
   </section>
 
   <section id="settings-panel-role-management" class="settings-panel" role="tabpanel" aria-labelledby="settings-tab-role-management" data-settings-panel="role-management" hidden>
-    <article class="config-card settings-placeholder-card">
-      <h3>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M20 8v6"></path><path d="M23 11h-6"></path></svg>
-        Role management
-      </h3>
-      <p class="subtle">This area is reserved for permission groups, user-role assignment, and access reviews.</p>
-      <span class="coming-soon-pill">Coming soon</span>
-    </article>
+    <div class="settings-toggle-grid">
+      <article class="config-card preference-card">
+        <p class="card-kicker">Risk controls</p>
+        <h3>Dual approval</h3>
+        <p class="subtle">Require a second operator review before high-value transfers are released.</p>
+        <button class="toggle-switch on" type="button" data-preference-toggle="roles.dual-approval" data-default-state="true" aria-pressed="true" aria-label="Toggle dual approval">
+          <span></span>
+        </button>
+      </article>
+
+      <article class="config-card preference-card">
+        <p class="card-kicker">Session control</p>
+        <h3>Idle lock</h3>
+        <p class="subtle">Lock inactive operator sessions automatically to reduce exposure on shared machines.</p>
+        <button class="toggle-switch on" type="button" data-preference-toggle="roles.idle-lock" data-default-state="true" aria-pressed="true" aria-label="Toggle idle lock">
+          <span></span>
+        </button>
+      </article>
+
+      <article class="config-card preference-card">
+        <p class="card-kicker">Exports</p>
+        <h3>CSV access</h3>
+        <p class="subtle">Allow role holders to export transaction tables directly from the dashboard view.</p>
+        <button class="toggle-switch off" type="button" data-preference-toggle="roles.csv-export" data-default-state="false" aria-pressed="false" aria-label="Toggle CSV export access">
+          <span></span>
+        </button>
+      </article>
+    </div>
   </section>
 
   <section id="settings-panel-notifications" class="settings-panel" role="tabpanel" aria-labelledby="settings-tab-notifications" data-settings-panel="notifications" hidden>
-    <article class="config-card settings-placeholder-card">
-      <h3>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-        Notification rules
-      </h3>
-      <p class="subtle">Use this panel for delivery channels, alert thresholds, and escalation preferences.</p>
-      <span class="coming-soon-pill">Coming soon</span>
-    </article>
+    <div class="settings-toggle-grid">
+      <article class="config-card preference-card">
+        <p class="card-kicker">API health</p>
+        <h3>Gateway alerts</h3>
+        <p class="subtle">Notify operators when upstream transfer responses degrade or return elevated failure rates.</p>
+        <button class="toggle-switch on" type="button" data-preference-toggle="notifications.gateway-alerts" data-default-state="true" aria-pressed="true" aria-label="Toggle gateway alerts">
+          <span></span>
+        </button>
+      </article>
+
+      <article class="config-card preference-card">
+        <p class="card-kicker">Message ingestion</p>
+        <h3>SMS sync warnings</h3>
+        <p class="subtle">Surface alerts when inbound message ingestion pauses or falls behind the expected cadence.</p>
+        <button class="toggle-switch on" type="button" data-preference-toggle="notifications.sms-warnings" data-default-state="true" aria-pressed="true" aria-label="Toggle SMS sync warnings">
+          <span></span>
+        </button>
+      </article>
+
+      <article class="config-card preference-card">
+        <p class="card-kicker">Settlement drift</p>
+        <h3>Amount variance alerts</h3>
+        <p class="subtle">Highlight unusual deltas between expected and submitted disbursement amounts.</p>
+        <button class="toggle-switch off" type="button" data-preference-toggle="notifications.amount-variance" data-default-state="false" aria-pressed="false" aria-label="Toggle amount variance alerts">
+          <span></span>
+        </button>
+      </article>
+    </div>
   </section>
 </section>

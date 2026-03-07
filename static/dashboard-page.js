@@ -6,6 +6,13 @@
   var compactModeStorageKey = "dashboard.compactCardsMode";
   var dashboardPreferencesStorageKey = "dashboard.preferences";
   var dashboardRefreshPausedStorageKey = "dashboard.refreshPaused";
+  var operatorPalette = {
+    halotel: "#fb923c",
+    airtel: "#ef4444",
+    yas: "#facc15",
+    vodacom: "#3b82f6",
+    default: "#06b6d4",
+  };
   var dashboardState = window.DashboardPageState || {
     refreshTimerId: null,
     isPaused: false,
@@ -69,6 +76,239 @@
     try {
       window.localStorage.setItem(dashboardRefreshPausedStorageKey, isPaused ? "true" : "false");
     } catch (_error) {}
+  }
+
+  function normalizeOperatorKey(value) {
+    return String(value || "").trim().toLowerCase();
+  }
+
+  function parseAmountValue(value) {
+    var numeric = parseFloat(String(value || "").replace(/[^0-9.]/g, ""));
+    return Number.isFinite(numeric) ? numeric : 0;
+  }
+
+  function getCanvasContext(canvas) {
+    var rect;
+    var context;
+    var width;
+    var height;
+    var dpr;
+    if (!canvas) {
+      return null;
+    }
+
+    rect = canvas.getBoundingClientRect();
+    width = Math.max(Math.round(rect.width || 0), 220);
+    height = Number(canvas.getAttribute("height") || 220);
+    dpr = window.devicePixelRatio || 1;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    context = canvas.getContext("2d");
+    context.setTransform(dpr, 0, 0, dpr, 0, 0);
+    context.clearRect(0, 0, width, height);
+    return {
+      context: context,
+      width: width,
+      height: height,
+    };
+  }
+
+  function drawEmptyState(canvas, message) {
+    var chart = getCanvasContext(canvas);
+    if (!chart) {
+      return;
+    }
+    chart.context.fillStyle = "rgba(15, 24, 41, 0.45)";
+    chart.context.font = "600 14px Plus Jakarta Sans, sans-serif";
+    chart.context.textAlign = "center";
+    chart.context.fillText(message, chart.width / 2, chart.height / 2);
+  }
+
+  function collectDashboardChartData(root) {
+    var rows = Array.prototype.slice.call(root.querySelectorAll(".transaction-table tbody tr"));
+    var trendPoints = [];
+    var operatorCounts = { halotel: 0, airtel: 0, yas: 0, vodacom: 0 };
+
+    rows.forEach(function (row) {
+      var amountCell = row.querySelector("[data-col='amount']");
+      var dateCell = row.querySelector("[data-col='date']");
+      var operatorCell = row.querySelector(".operator-pill");
+      var amountValue = parseAmountValue(amountCell ? amountCell.textContent : "");
+      var dateLabel = dateCell ? String(dateCell.textContent || "").trim() : "";
+      var operatorKey = normalizeOperatorKey(operatorCell ? operatorCell.textContent : "");
+
+      if (amountValue > 0) {
+        trendPoints.push({
+          label: dateLabel ? dateLabel.slice(0, 10) : "Row " + String(trendPoints.length + 1),
+          value: amountValue,
+        });
+      }
+      if (Object.prototype.hasOwnProperty.call(operatorCounts, operatorKey)) {
+        operatorCounts[operatorKey] += 1;
+      }
+    });
+
+    trendPoints = trendPoints.slice(0, 8).reverse();
+
+    return {
+      trendLabels: trendPoints.map(function (point) {
+        return point.label;
+      }),
+      trendValues: trendPoints.map(function (point) {
+        return point.value;
+      }),
+      operatorLabels: ["halotel", "airtel", "yas", "vodacom"].filter(function (key) {
+        return operatorCounts[key] > 0;
+      }),
+      operatorValues: ["halotel", "airtel", "yas", "vodacom"].filter(function (key) {
+        return operatorCounts[key] > 0;
+      }).map(function (key) {
+        return operatorCounts[key];
+      }),
+    };
+  }
+
+  function drawLineChart(canvas, labels, values) {
+    var chart = getCanvasContext(canvas);
+    var context;
+    var padding;
+    var innerWidth;
+    var innerHeight;
+    var maxValue;
+    var minValue;
+    var range;
+    var gradient;
+
+    if (!chart) {
+      return;
+    }
+    if (!values || values.length === 0) {
+      drawEmptyState(canvas, "Add more transactions to plot the trend.");
+      return;
+    }
+
+    context = chart.context;
+    padding = { top: 18, right: 18, bottom: 30, left: 18 };
+    innerWidth = chart.width - padding.left - padding.right;
+    innerHeight = chart.height - padding.top - padding.bottom;
+    maxValue = Math.max.apply(null, values);
+    minValue = Math.min.apply(null, values);
+    range = Math.max(maxValue - minValue, maxValue || 1);
+
+    context.strokeStyle = "rgba(15, 24, 41, 0.08)";
+    context.lineWidth = 1;
+    [0, 0.33, 0.66, 1].forEach(function (step) {
+      var y = padding.top + innerHeight * step;
+      context.beginPath();
+      context.moveTo(padding.left, y);
+      context.lineTo(chart.width - padding.right, y);
+      context.stroke();
+    });
+
+    gradient = context.createLinearGradient(0, padding.top, 0, padding.top + innerHeight);
+    gradient.addColorStop(0, "rgba(6, 182, 212, 0.24)");
+    gradient.addColorStop(1, "rgba(6, 182, 212, 0)");
+
+    context.beginPath();
+    values.forEach(function (value, index) {
+      var x = padding.left + (innerWidth * index) / Math.max(values.length - 1, 1);
+      var y = padding.top + innerHeight - ((value - minValue) / range) * innerHeight;
+      if (index === 0) {
+        context.moveTo(x, y);
+      } else {
+        context.lineTo(x, y);
+      }
+    });
+
+    context.lineWidth = 3;
+    context.strokeStyle = operatorPalette.default;
+    context.stroke();
+
+    context.lineTo(chart.width - padding.right, chart.height - padding.bottom);
+    context.lineTo(padding.left, chart.height - padding.bottom);
+    context.closePath();
+    context.fillStyle = gradient;
+    context.fill();
+
+    context.fillStyle = "rgba(15, 24, 41, 0.54)";
+    context.font = "700 11px Plus Jakarta Sans, sans-serif";
+    context.textAlign = "center";
+    labels.forEach(function (label, index) {
+      var x = padding.left + (innerWidth * index) / Math.max(labels.length - 1, 1);
+      context.fillText(label, x, chart.height - 10);
+    });
+  }
+
+  function drawOperatorChart(canvas, labels, values) {
+    var chart = getCanvasContext(canvas);
+    var context;
+    var padding;
+    var innerWidth;
+    var innerHeight;
+    var maxValue;
+    var barWidth;
+    if (!chart) {
+      return;
+    }
+    if (!values || values.length === 0) {
+      drawEmptyState(canvas, "Operator distribution appears when transactions are available.");
+      return;
+    }
+
+    context = chart.context;
+    padding = { top: 18, right: 12, bottom: 34, left: 12 };
+    innerWidth = chart.width - padding.left - padding.right;
+    innerHeight = chart.height - padding.top - padding.bottom;
+    maxValue = Math.max.apply(null, values) || 1;
+    barWidth = innerWidth / Math.max(values.length, 1) - 18;
+
+    function drawRoundedBar(x, y, width, height, radius) {
+      if (typeof context.roundRect === "function") {
+        context.beginPath();
+        context.roundRect(x, y, width, height, radius);
+        context.fill();
+        return;
+      }
+      context.beginPath();
+      context.moveTo(x + radius, y);
+      context.lineTo(x + width - radius, y);
+      context.quadraticCurveTo(x + width, y, x + width, y + radius);
+      context.lineTo(x + width, y + height - radius);
+      context.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      context.lineTo(x + radius, y + height);
+      context.quadraticCurveTo(x, y + height, x, y + height - radius);
+      context.lineTo(x, y + radius);
+      context.quadraticCurveTo(x, y, x + radius, y);
+      context.closePath();
+      context.fill();
+    }
+
+    values.forEach(function (value, index) {
+      var x = padding.left + index * (barWidth + 18) + 9;
+      var barHeight = (value / maxValue) * (innerHeight - 12);
+      var y = padding.top + innerHeight - barHeight;
+      var label = labels[index];
+      var fill = operatorPalette[label] || operatorPalette.default;
+
+      context.fillStyle = fill;
+      drawRoundedBar(x, y, Math.max(barWidth, 34), barHeight, 14);
+
+      context.fillStyle = "rgba(15, 24, 41, 0.64)";
+      context.font = "700 11px Plus Jakarta Sans, sans-serif";
+      context.textAlign = "center";
+      context.fillText(String(value), x + Math.max(barWidth, 34) / 2, y - 8);
+      context.fillText(label.charAt(0).toUpperCase() + label.slice(1), x + Math.max(barWidth, 34) / 2, chart.height - 10);
+    });
+  }
+
+  function renderDashboardCharts(root) {
+    var chartData;
+    if (!root) {
+      return;
+    }
+    chartData = collectDashboardChartData(root);
+    drawLineChart(root.querySelector("#dashboard-volume-chart"), chartData.trendLabels, chartData.trendValues);
+    drawOperatorChart(root.querySelector("#dashboard-operator-chart"), chartData.operatorLabels, chartData.operatorValues);
   }
 
   function buildDashboardPreferences(root) {
@@ -368,6 +608,7 @@
     applyColumnVisibility(root);
     bindCompactModeToggle(root);
     persistDashboardPreferences(root);
+    renderDashboardCharts(root);
     initAutoRefresh(root);
   }
 
@@ -377,6 +618,17 @@
         return;
       }
       initDashboardPage();
+    });
+
+    window.addEventListener("resize", function () {
+      var root = getDashboardRoot();
+      if (!root) {
+        return;
+      }
+      window.clearTimeout(window.DashboardChartResizeTimer || 0);
+      window.DashboardChartResizeTimer = window.setTimeout(function () {
+        renderDashboardCharts(root);
+      }, 120);
     });
     window.DashboardPageListenerBound = true;
   }
