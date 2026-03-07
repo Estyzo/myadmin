@@ -3,28 +3,18 @@
     <div class="send-main-column">
       <div class="send-hero">
         <div class="send-hero-copy">
-          <p class="page-eyebrow">Transfer execution</p>
-          <h2>Send money with confirmation-first controls</h2>
-          <p>Validate the sender line, confirm the transfer, and keep the latest receipt close at hand.</p>
-        </div>
-        <div class="send-hero-chips">
-          <span class="status-badge status-badge-success">
-            <span class="status-badge-icon" aria-hidden="true"></span>
-            <span>{{ sender_numbers|length }} verified sender lines</span>
-          </span>
-          <span class="metric-pill">TZS settlements</span>
+          <p class="page-eyebrow">Send money</p>
+          <h2>Prepare a transfer</h2>
+          <p>Enter the transfer details, confirm them, and keep the latest receipt nearby.</p>
         </div>
       </div>
 
       <article class="send-card">
         <div class="send-card-head">
-          <div class="send-card-icon">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4z"></path></svg>
-          </div>
           <div>
-            <p class="card-kicker">Transfer desk</p>
+            <p class="card-kicker">Transfer form</p>
             <h3>New transfer</h3>
-            <p>Complete the fields below to prepare a new mobile money disbursement.</p>
+            <p>Complete the fields below to prepare a mobile money disbursement.</p>
           </div>
         </div>
 
@@ -142,28 +132,16 @@
           </section>
         </form>
       </article>
+      <section class="send-support" aria-label="Recent recipients">
+        <article class="send-side-card recent-transfers-card">
+          <p class="card-kicker">Recent recipients</p>
+          <h3>Reuse previous details</h3>
+          <p class="subtle">Pick a recent transfer to prefill the form for repeat disbursements.</p>
+          <div class="recent-transfer-list" id="recent-transfer-list">
+            <p class="recent-transfer-empty">No recent transfers yet.</p>
+          </div>
+        </article>
+      </section>
     </div>
-
-    <aside class="send-side-panel" aria-label="Transfer guide">
-      <article class="send-side-card">
-        <p class="send-side-kicker">Operator guide</p>
-        <h3>Use trusted inputs</h3>
-        <p>Transfers are confirmed before dispatch and the latest receipt stays visible for manual reconciliation.</p>
-        <ul class="send-checklist">
-          <li>Approved sender lines available: <strong>{{ sender_numbers|length }}</strong></li>
-          <li>Receiver accepts local or international Tanzania formats</li>
-          <li>Validation, confirmation, and receipt steps all stay keyboard accessible</li>
-        </ul>
-      </article>
-
-      <article class="send-side-card recent-transfers-card">
-        <p class="send-side-kicker">Recent recipients</p>
-        <h3>Reuse previous details</h3>
-        <p>Pick a recent transfer to prefill the form and speed up repeat disbursements.</p>
-        <div class="recent-transfer-list" id="recent-transfer-list">
-          <p class="recent-transfer-empty">No recent transfers yet.</p>
-        </div>
-      </article>
-    </aside>
   </div>
 </section>

@@ -2,9 +2,9 @@
 <section id="dashboard-page-root" class="page-wrap dashboard-page container-fluid px-3 px-md-4" tabindex="-1">
   <div class="page-header dashboard-header">
     <div class="page-copy">
-      <p class="page-eyebrow">Financial operations</p>
-      <h2>Transfer command center</h2>
-      <p>Monitor volume, operator mix, and transaction quality in one real-time admin view.</p>
+      <p class="page-eyebrow">Dashboard</p>
+      <h2>Transfer overview</h2>
+      <p>Track totals, refresh status, and recent transactions.</p>
     </div>
     <div class="header-actions">
       <details class="export-menu">
@@ -21,7 +21,6 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15.5-6.4L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15.5 6.4L3 16"></path></svg>
         Refresh
       </a>
-      <button class="ghost-btn refresh-toggle" id="refresh-toggle" type="button" aria-pressed="false">Pause refresh</button>
     </div>
   </div>
 
@@ -35,8 +34,13 @@
         <span class="status-badge-icon" aria-hidden="true"></span>
         <span>{{ data_status.title }}</span>
       </span>
-      <p>{{ data_status.message }}</p>
-      <span class="auto-refresh-pill">Auto refresh <strong id="refresh-countdown">30s</strong></span>
+      <p>{{ data_status.message }} Updated {{ data_status.last_updated }}.</p>
+      <div class="header-status-actions">
+        {% if data_status.can_retry %}
+        <a class="status-retry status-retry-inline" data-ajax-link="true" data-ajax-target="#dashboard-page-root" href="{{ url_for('dashboard', period=period, q=filters.q, operator=filters.operator, operation=filters.operation, sort_by=sort.by, sort_dir=sort.dir, per_page=per_page, refresh=1) }}">Retry</a>
+        {% endif %}
+        <span class="auto-refresh-pill">Refreshes in <strong id="refresh-countdown">30s</strong></span>
+      </div>
     </div>
   </section>
 
@@ -92,45 +96,13 @@
       <div class="chart-card-head">
         <div>
           <p class="card-kicker">Trend view</p>
-          <h3>Transaction velocity</h3>
+          <h3>Transaction trend</h3>
         </div>
         <p class="chart-note">Recent filtered transfer amounts</p>
       </div>
       <canvas id="dashboard-volume-chart" class="dashboard-chart" width="640" height="220" role="img" aria-label="Line chart of transaction velocity"></canvas>
     </article>
-
-    <article class="chart-card">
-      <div class="chart-card-head">
-        <div>
-          <p class="card-kicker">Operator mix</p>
-          <h3>Network distribution</h3>
-        </div>
-        <p class="chart-note">Counts by mobile money operator</p>
-      </div>
-      <div class="operator-legend" aria-label="Operator legend">
-        <span class="operator-pill" data-operator="halotel">Halotel</span>
-        <span class="operator-pill" data-operator="airtel">Airtel</span>
-        <span class="operator-pill" data-operator="yas">Yas</span>
-        <span class="operator-pill" data-operator="vodacom">Vodacom</span>
-      </div>
-      <canvas id="dashboard-operator-chart" class="dashboard-chart" width="640" height="220" role="img" aria-label="Bar chart of operator distribution"></canvas>
-    </article>
   </section>
-
-  <article class="status-card {{ data_status.level }}">
-    <div class="status-card-head">
-      <span class="status-badge status-badge-{{ status_badge_variant }}">
-        <span class="status-badge-icon" aria-hidden="true"></span>
-        <span>{{ data_status.title }}</span>
-      </span>
-      <p class="status-meta">Last updated: {{ data_status.last_updated }}</p>
-    </div>
-    <h4>{{ data_status.title }}</h4>
-    <p>{{ data_status.message }}</p>
-    {% if data_status.can_retry %}
-    <a class="status-retry" data-ajax-link="true" data-ajax-target="#dashboard-page-root" href="{{ url_for('dashboard', period=period, q=filters.q, operator=filters.operator, operation=filters.operation, sort_by=sort.by, sort_dir=sort.dir, per_page=per_page, refresh=1) }}">Retry now</a>
-    {% endif %}
-  </article>
 
   <section class="list-shell">
     <form class="list-controls" method="get" action="{{ url_for('dashboard') }}" data-ajax-form="true" data-ajax-target="#dashboard-page-root">
@@ -175,53 +147,8 @@
         {% if filters.q or filters.operator or filters.operation %}
         <a class="filter-btn clear-filter-btn" data-ajax-link="true" data-ajax-target="#dashboard-page-root" href="{{ url_for('dashboard', period=period, sort_by=sort.by, sort_dir=sort.dir, per_page=per_page) }}">Clear</a>
         {% endif %}
-        <details class="column-menu">
-          <summary class="filter-btn">Columns</summary>
-          <div class="column-menu-panel">
-            <label class="column-option"><input type="checkbox" data-col-toggle="sender" checked> Sender</label>
-            <label class="column-option"><input type="checkbox" data-col-toggle="receiver" checked> Receiver</label>
-            <label class="column-option"><input type="checkbox" data-col-toggle="operator" checked> Operator</label>
-            <label class="column-option"><input type="checkbox" data-col-toggle="operation" checked> Operation</label>
-            <label class="column-option"><input type="checkbox" data-col-toggle="amount" checked> Amount</label>
-            <label class="column-option"><input type="checkbox" data-col-toggle="created_by" checked> Created By</label>
-            <label class="column-option"><input type="checkbox" data-col-toggle="date" checked> Date</label>
-          </div>
-        </details>
-        <button class="filter-btn compact-mode-btn" id="compact-mode-toggle" type="button" aria-pressed="false">Compact cards</button>
       </div>
     </form>
-
-    <div class="active-filters">
-      {% if period == "all" %}
-      <a class="filter-chip with-remove" data-ajax-link="true" data-ajax-target="#dashboard-page-root" href="{{ url_for('dashboard', period='today', q=filters.q, operator=filters.operator, operation=filters.operation, sort_by=sort.by, sort_dir=sort.dir, per_page=per_page) }}">
-        Period: All time
-        <span class="chip-remove" aria-hidden="true">×</span>
-      </a>
-      {% else %}
-      <span class="filter-chip">Period: Today</span>
-      {% endif %}
-      {% if filters.q %}
-      <a class="filter-chip with-remove" data-ajax-link="true" data-ajax-target="#dashboard-page-root" href="{{ url_for('dashboard', period=period, operator=filters.operator, operation=filters.operation, sort_by=sort.by, sort_dir=sort.dir, per_page=per_page) }}">
-        Search: {{ filters.q }}
-        <span class="chip-remove" aria-hidden="true">×</span>
-      </a>
-      {% endif %}
-      {% if filters.operator %}
-      <a class="filter-chip with-remove" data-ajax-link="true" data-ajax-target="#dashboard-page-root" href="{{ url_for('dashboard', period=period, q=filters.q, operation=filters.operation, sort_by=sort.by, sort_dir=sort.dir, per_page=per_page) }}">
-        Operator: {{ filters.operator }}
-        <span class="chip-remove" aria-hidden="true">×</span>
-      </a>
-      {% endif %}
-      {% if filters.operation %}
-      <a class="filter-chip with-remove" data-ajax-link="true" data-ajax-target="#dashboard-page-root" href="{{ url_for('dashboard', period=period, q=filters.q, operator=filters.operator, sort_by=sort.by, sort_dir=sort.dir, per_page=per_page) }}">
-        Operation: {{ filters.operation }}
-        <span class="chip-remove" aria-hidden="true">×</span>
-      </a>
-      {% endif %}
-      {% if period == "all" or filters.q or filters.operator or filters.operation %}
-      <a class="clear-all-link" data-ajax-link="true" data-ajax-target="#dashboard-page-root" href="{{ url_for('dashboard', sort_by=sort.by, sort_dir=sort.dir, per_page=per_page) }}">Clear all</a>
-      {% endif %}
-    </div>
 
     {% if transactions %}
     <div class="table-wrap dashboard-table-wrap table-responsive">

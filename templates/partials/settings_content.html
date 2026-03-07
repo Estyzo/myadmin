@@ -2,9 +2,9 @@
 <section id="settings-page-root" class="page-wrap settings-page container-fluid px-3 px-md-4" tabindex="-1">
   <div class="page-header settings-header">
     <div class="page-copy">
-      <p class="page-eyebrow">Configuration &amp; controls</p>
-      <h2>Settings cockpit</h2>
-      <p>Manage sender configuration visibility, operator safeguards, and notification preferences from one tabbed workspace.</p>
+      <p class="page-eyebrow">Settings</p>
+      <h2>Configuration</h2>
+      <p>Manage sender configurations, role controls, and notification preferences.</p>
     </div>
     <div class="header-actions">
       <span class="status-badge status-badge-{{ status_badge_variant }}">
@@ -17,24 +17,6 @@
       </a>
     </div>
   </div>
-
-  <section class="settings-summary-grid" aria-label="Settings summary">
-    <article class="summary-card">
-      <p class="label">Active sender configs</p>
-      <h3>{{ sender_config_count }}</h3>
-      <p class="subtle">Loaded from the API source</p>
-    </article>
-    <article class="summary-card">
-      <p class="label">Sync source</p>
-      <h3>API</h3>
-      <p class="subtle">{{ sender_config_api_url }}</p>
-    </article>
-    <article class="summary-card">
-      <p class="label">Notification policies</p>
-      <h3>3</h3>
-      <p class="subtle">Ready for operator-level tuning</p>
-    </article>
-  </section>
 
   <div class="settings-tabs" role="tablist" aria-label="Settings sections">
     <button id="settings-tab-sender-config" class="settings-tab active" type="button" role="tab" aria-selected="true" aria-controls="settings-panel-sender-config" tabindex="0" data-settings-tab="sender-config">
@@ -52,33 +34,24 @@
   </div>
 
   <section id="settings-panel-sender-config" class="settings-panel active" role="tabpanel" aria-labelledby="settings-tab-sender-config" data-settings-panel="sender-config">
-    <div class="settings-grid">
-      <article class="config-card add-config-card">
-        <p class="card-kicker">Sync source</p>
-        <h3>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
-          Sender config source
-        </h3>
-        <p class="subtle">Sender configurations are managed by the API and surfaced here for operator review only.</p>
-        <p class="subtle">Endpoint: <strong>{{ sender_config_api_url }}</strong></p>
-        <div class="settings-toggle-row">
-          <div>
-            <strong>Auto refresh on revisit</strong>
-            <p>Keep this tab up to date each time an operator returns to it.</p>
-          </div>
-          <button class="toggle-switch on" type="button" data-preference-toggle="sender-config.auto-refresh" data-default-state="true" aria-pressed="true" aria-label="Toggle auto refresh for sender config">
-            <span></span>
-          </button>
-        </div>
-        <a class="status-retry" data-ajax-link="true" data-ajax-target="#settings-page-root" href="{{ url_for('settings', refresh=1) }}">Refresh from API</a>
-      </article>
-
+    <div class="settings-grid settings-grid-simple">
       <article class="config-card table-config-card">
-        <p class="card-kicker">Current records</p>
-        <h3>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15A1.65 1.65 0 0 0 20 16.82l.1.1a2 2 0 1 1-2.83 2.83l-.1-.1A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1V21a2 2 0 1 1-4 0v-.2a1.65 1.65 0 0 0-.33-1 1.65 1.65 0 0 0-1-.6 1.65 1.65 0 0 0-1.82.6l-.1.1a2 2 0 1 1-2.83-2.83l.1-.1A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1-.33H3a2 2 0 1 1 0-4h.2a1.65 1.65 0 0 0 1-.33 1.65 1.65 0 0 0 .6-1 1.65 1.65 0 0 0-.6-1.82l-.1-.1a2 2 0 1 1 2.83-2.83l.1.1A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .33-1V3a2 2 0 1 1 4 0v.2a1.65 1.65 0 0 0 .33 1 1.65 1.65 0 0 0 1 .6 1.65 1.65 0 0 0 1.82-.6l.1-.1a2 2 0 1 1 2.83 2.83l-.1.1A1.65 1.65 0 0 0 19.4 9c.27.32.47.7.6 1.1H21a2 2 0 1 1 0 4h-.2a1.65 1.65 0 0 0-1 .33z"></path></svg>
-          Sender configurations ({{ sender_config_count }})
-        </h3>
+        <div class="settings-panel-head">
+          <div>
+            <p class="card-kicker">Sender config</p>
+            <h3>Sender configurations ({{ sender_config_count }})</h3>
+            <p class="subtle">Source: {{ sender_config_api_url }}</p>
+          </div>
+          <div class="settings-inline-tools">
+            <div class="settings-inline-copy">
+              <strong>Auto refresh</strong>
+              <p>Refresh when returning to this page.</p>
+            </div>
+            <button class="toggle-switch on" type="button" data-preference-toggle="sender-config.auto-refresh" data-default-state="true" aria-pressed="true" aria-label="Toggle auto refresh for sender config">
+              <span></span>
+            </button>
+          </div>
+        </div>
 
         <div class="table-wrap table-responsive">
           <table class="sender-config-table table table-hover align-middle">
@@ -128,19 +101,6 @@
         </div>
       </article>
     </div>
-
-    <article class="status-card {{ data_status.level }}">
-      <div class="status-card-head">
-        <span class="status-badge status-badge-{{ status_badge_variant }}">
-          <span class="status-badge-icon" aria-hidden="true"></span>
-          <span>{{ data_status.title }}</span>
-        </span>
-        <p class="status-meta">Last updated: {{ data_status.last_updated }}</p>
-      </div>
-      <h4>{{ data_status.title }}</h4>
-      <p>{{ data_status.message }}</p>
-      <a class="status-retry" data-ajax-link="true" data-ajax-target="#settings-page-root" href="{{ url_for('settings', refresh=1) }}">Retry now</a>
-    </article>
   </section>
 
   <section id="settings-panel-role-management" class="settings-panel" role="tabpanel" aria-labelledby="settings-tab-role-management" data-settings-panel="role-management" hidden>

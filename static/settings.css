@@ -280,3 +280,125 @@ body.theme-dark .sender-config-table tbody tr {
   background: rgba(20, 32, 51, 0.96);
   border-color: rgba(156, 174, 199, 0.14);
 }
+
+.settings-page {
+  gap: 18px;
+}
+
+.settings-tabs {
+  padding: 0;
+  background: transparent;
+}
+
+.settings-tab {
+  border: 1px solid rgba(15, 24, 41, 0.1);
+  background: var(--surface-strong);
+}
+
+.settings-tab.active {
+  background: rgba(28, 220, 139, 0.12);
+  border-color: rgba(28, 220, 139, 0.28);
+  box-shadow: none;
+}
+
+.settings-grid-simple {
+  grid-template-columns: 1fr;
+}
+
+.config-card {
+  padding: 20px;
+  border-radius: 20px;
+  background: var(--surface-strong);
+  border: 1px solid rgba(15, 24, 41, 0.08);
+  box-shadow: none;
+}
+
+.settings-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.settings-inline-tools {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(15, 24, 41, 0.04);
+}
+
+.settings-inline-copy strong {
+  display: block;
+  color: var(--navy);
+  font-size: 14px;
+}
+
+.settings-inline-copy p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+body.theme-dark .config-card {
+  background: var(--surface-strong);
+  border-color: rgba(156, 174, 199, 0.14);
+}
+
+body.theme-dark .settings-inline-tools {
+  background: rgba(156, 174, 199, 0.08);
+}
+
+body.theme-dark .settings-inline-copy strong {
+  color: var(--text);
+}
+
+@media (max-width: 760px) {
+  .settings-panel-head,
+  .settings-inline-tools {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.settings-page {
+  gap: 14px;
+}
+
+.settings-tab {
+  min-height: 42px;
+  padding: 0 14px;
+  border-radius: 12px;
+  font-size: 14px;
+}
+
+.config-card {
+  padding: 16px;
+  border-radius: 16px;
+}
+
+.config-card h3 {
+  font-size: 22px;
+}
+
+.settings-panel-head {
+  margin-bottom: 12px;
+}
+
+.settings-inline-tools {
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+}
+
+.sender-config-table thead th {
+  padding: 12px 10px;
+}
+
+.sender-config-table tbody td {
+  padding: 12px 10px;
+  font-size: 13px;
+}

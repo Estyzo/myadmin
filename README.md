@@ -34,6 +34,7 @@ Admin dashboard implemented as a modular Flask application.
 - `wsgi.py`
 - `celery_app.py`
 - `gunicorn.conf.py`
+- `docker-compose.redis.yml`
 - `templates/base_app.html`
 - `templates/partials/dashboard_content.html`
 - `templates/partials/messages_content.html`
@@ -77,6 +78,7 @@ Notes:
 - `SENDER_CONFIG_API_URL` is used by the settings page.
 - `SEND_MONEY_API_URL` is used by the send-money flow.
 - `REDIS_URL` is used by Flask-Caching and Celery when Redis is available.
+- `docker-compose.redis.yml` is the recommended local Redis setup.
 - `USE_CELERY_CACHE_WARMING` makes dashboard stale-cache refresh dispatch through Celery first, with a local fallback if the broker is unavailable.
 - `DASHBOARD_REFRESH_LOCK_TTL` prevents duplicate background dashboard refresh jobs from being queued repeatedly.
 - `HTTPX_*` values tune the pooled upstream client.
@@ -94,7 +96,29 @@ python3 -m venv .venv
 ./.venv/bin/pip install -r requirements.txt
 ```
 
-### 2. Start the Flask app (development)
+### 2. Start Redis locally
+
+Recommended local setup:
+
+```bash
+docker compose -f docker-compose.redis.yml up -d
+```
+
+Make sure Docker Desktop or the local Docker daemon is running first.
+
+Check Redis status:
+
+```bash
+docker compose -f docker-compose.redis.yml ps
+```
+
+If you already have Redis installed locally, use:
+
+```bash
+redis-server --appendonly yes
+```
+
+### 3. Start the Flask app (development)
 
 ```bash
 ./.venv/bin/python app.py
@@ -110,16 +134,24 @@ If port `5000` is occupied:
 ./.venv/bin/flask --app app:app run --debug -p 5001
 ```
 
-### 3. Start Gunicorn (production-style local run)
+### 4. Start Gunicorn (production-style local run)
 
 ```bash
 ./.venv/bin/gunicorn -c gunicorn.conf.py wsgi:application
 ```
 
-### 4. Start Celery worker
+### 5. Start Celery worker
 
 ```bash
 ./.venv/bin/celery -A celery_app.celery worker --loglevel=info
+```
+
+### 6. Stop local Redis
+
+If you used Docker:
+
+```bash
+docker compose -f docker-compose.redis.yml down
 ```
 
 ## Routes
@@ -149,3 +181,5 @@ If port `5000` is occupied:
 
 - There is no Node.js runtime in this repository anymore.
 - The previous Express implementation and npm dependencies were removed.
+- The checked-in `.env` now targets local Redis at `127.0.0.1:6379` for cache and Celery broker/backend.
+- If Redis is not running, the app degrades to in-process cache and thread-based dashboard refresh until Redis is available.

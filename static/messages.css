@@ -361,3 +361,66 @@ body.theme-dark .messages-table tbody tr {
     justify-content: center;
   }
 }
+
+.messages-page {
+  gap: 18px;
+}
+
+.messages-filter-shell,
+.messages-list-shell {
+  padding: 20px;
+  border-radius: 20px;
+  background: var(--surface-strong);
+  border: 1px solid rgba(15, 24, 41, 0.08);
+  box-shadow: none;
+}
+
+.messages-filter-actions {
+  justify-content: flex-end;
+}
+
+.messages-list-head h3 {
+  font-size: 24px;
+}
+
+.message-row:hover td {
+  background: rgba(15, 24, 41, 0.025);
+}
+
+body.theme-dark .messages-filter-shell,
+body.theme-dark .messages-list-shell {
+  background: var(--surface-strong);
+  border-color: rgba(156, 174, 199, 0.14);
+}
+
+.messages-page {
+  gap: 14px;
+}
+
+.messages-filter-shell,
+.messages-list-shell {
+  padding: 16px;
+  border-radius: 16px;
+}
+
+.messages-list-head h3 {
+  font-size: 20px;
+}
+
+.messages-table thead th {
+  padding: 12px 10px;
+}
+
+.messages-table tbody td {
+  padding: 12px 10px;
+  font-size: 13px;
+}
+
+.message-body-copy {
+  gap: 8px;
+}
+
+.message-action-btn {
+  min-height: 32px;
+  padding: 0 10px;
+}

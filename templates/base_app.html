@@ -32,7 +32,7 @@
 
     <main id="main-content" class="{{ main_content_classes|default('content') }}">
       {% if show_topbar|default(true) %}
-      <header class="topbar">
+      <header class="topbar topbar-minimal">
         <div class="topbar-group">
           <button class="menu-toggle" type="button" data-drawer-toggle="true" aria-controls="app-sidebar" aria-expanded="false" aria-label="Open navigation">
             <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -41,32 +41,14 @@
               <path d="M4 17h16"></path>
             </svg>
           </button>
-          <div class="topbar-copy">
-            <p class="topbar-eyebrow">TransferFlow Control Center</p>
-            <h1>{{ page_title|default("TransferFlow") }}</h1>
-          </div>
+          <h1>{{ page_title|default("TransferFlow") }}</h1>
         </div>
         <div class="topbar-actions">
-          <button class="topbar-utility" type="button" data-command-palette-toggle="true" aria-haspopup="dialog" aria-controls="command-palette" aria-expanded="false">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h16"></path><path d="M4 16h10"></path><path d="m18 13 3 3-3 3"></path></svg>
-            <span class="topbar-utility-label">Quick actions</span>
-            <kbd>Ctrl K</kbd>
-          </button>
-          <button class="topbar-utility theme-toggle" type="button" data-theme-toggle="true" aria-pressed="false" aria-label="Switch to dark mode">
+          <button class="topbar-utility topbar-utility-compact theme-toggle" type="button" data-theme-toggle="true" aria-pressed="false" aria-label="Switch to dark mode">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg>
-            <span class="topbar-utility-label" data-theme-label>Dark mode</span>
+            <span class="sr-only" data-theme-label>Dark mode</span>
           </button>
-          <div class="shortcut-chip" aria-hidden="true">
-            <kbd>Esc</kbd>
-            <span>Close overlays</span>
-          </div>
-          <div class="profile-shell">
-            <div class="profile-meta">
-              <span class="profile-label">Secure session</span>
-              <strong>Admin console</strong>
-            </div>
-            <div class="profile">{{ profile_initial|default("L") }}</div>
-          </div>
+          <div class="profile" aria-label="Admin console">{{ profile_initial|default("L") }}</div>
         </div>
       </header>
       {% endif %}

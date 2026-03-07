@@ -199,6 +199,18 @@ body.theme-dark .amount-wrap strong {
   padding-left: 50px !important;
 }
 
+.send-input-wrap .floating-label {
+  left: 16px;
+}
+
+.send-input-wrap.select-wrap .floating-label {
+  right: 42px;
+}
+
+.send-input-wrap .field-icon + .send-input + .floating-label {
+  left: 50px;
+}
+
 .amount-wrap strong {
   position: absolute;
   left: 18px;
@@ -213,6 +225,10 @@ body.theme-dark .amount-wrap strong {
 
 .amount-input {
   padding-left: 62px !important;
+}
+
+.amount-wrap .floating-label {
+  left: 62px;
 }
 
 .send-form-note {
@@ -482,4 +498,110 @@ body.theme-dark .recent-transfer-item {
   .recent-transfer-side {
     text-align: left;
   }
+}
+
+.send-page {
+  gap: 18px;
+}
+
+.send-page-shell {
+  grid-template-columns: minmax(0, 760px);
+  gap: 18px;
+}
+
+.send-main-column {
+  display: grid;
+  gap: 18px;
+}
+
+.send-hero {
+  display: block;
+}
+
+.send-hero-copy h2 {
+  font-size: clamp(2rem, 4vw, 2.8rem);
+}
+
+.send-card,
+.send-side-card {
+  padding: 20px;
+  border-radius: 20px;
+  background: var(--surface-strong);
+  border: 1px solid rgba(15, 24, 41, 0.08);
+  box-shadow: none;
+}
+
+.send-card-head {
+  display: block;
+}
+
+.send-form {
+  margin-top: 18px;
+}
+
+.transfer-confirmation,
+.transfer-receipt {
+  background: rgba(15, 24, 41, 0.03);
+}
+
+.transfer-receipt {
+  background: rgba(28, 220, 139, 0.08);
+}
+
+.send-support {
+  display: grid;
+}
+
+body.theme-dark .send-card,
+body.theme-dark .send-side-card {
+  background: var(--surface-strong);
+  border-color: rgba(156, 174, 199, 0.14);
+}
+
+.send-page {
+  gap: 14px;
+}
+
+.send-main-column {
+  gap: 14px;
+}
+
+.send-hero-copy h2 {
+  font-size: clamp(1.85rem, 3.2vw, 2.35rem);
+}
+
+.send-card,
+.send-side-card {
+  padding: 16px;
+  border-radius: 16px;
+}
+
+.send-card-head h3 {
+  font-size: 24px;
+}
+
+.send-form {
+  gap: 14px;
+}
+
+.transfer-confirmation,
+.transfer-receipt {
+  padding: 14px;
+  border-radius: 16px;
+}
+
+.transfer-confirmation-head h4,
+.transfer-receipt-head h4 {
+  font-size: 20px;
+}
+
+.transfer-confirmation-grid,
+.transfer-receipt-grid {
+  gap: 10px;
+}
+
+.transfer-confirmation-grid div,
+.transfer-receipt-grid div {
+  padding: 12px;
+  border-radius: 14px;
 }
