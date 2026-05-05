@@ -1,0 +1,25 @@
+{% set current_page = active_page|default('') %}
+<nav class="mobile-bottom-nav" aria-label="Mobile navigation">
+  <a href="{{ url_for('dashboard') }}" class="mobile-bottom-nav-item{% if current_page == 'dashboard' %} active{% endif %}"{% if current_page == 'dashboard' %} aria-current="page"{% endif %}>
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3 11h7V3H3zM14 21h7v-7h-7zM14 10h7V3h-7zM3 21h7v-7H3z"></path>
+    </svg>
+    <span>Home</span>
+  </a>
+  <a href="{{ url_for('send_money') }}" class="mobile-bottom-nav-item{% if current_page == 'send-money' %} active{% endif %}"{% if current_page == 'send-money' %} aria-current="page"{% endif %}>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4z"></path></svg>
+    <span>Send</span>
+  </a>
+  <a href="{{ url_for('recent_transfers') }}" class="mobile-bottom-nav-item{% if current_page == 'recent-transfers' %} active{% endif %}"{% if current_page == 'recent-transfers' %} aria-current="page"{% endif %}>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v6h6"></path><path d="M21 21v-6h-6"></path><path d="M21 9A9 9 0 0 0 6 5.3L3 9"></path><path d="M3 15a9 9 0 0 0 15 3.7l3-3.7"></path></svg>
+    <span>Recent</span>
+  </a>
+  <a href="{{ url_for('messages') }}" class="mobile-bottom-nav-item{% if current_page == 'messages' %} active{% endif %}"{% if current_page == 'messages' %} aria-current="page"{% endif %}>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+    <span>Msgs</span>
+  </a>
+  <a href="{{ url_for('settings') }}" class="mobile-bottom-nav-item{% if current_page == 'settings' %} active{% endif %}"{% if current_page == 'settings' %} aria-current="page"{% endif %}>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15A1.65 1.65 0 0 0 20 16.82l.1.1a2 2 0 1 1-2.83 2.83l-.1-.1A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1V21a2 2 0 1 1-4 0v-.2a1.65 1.65 0 0 0-.33-1 1.65 1.65 0 0 0-1-.6 1.65 1.65 0 0 0-1.82.6l-.1.1a2 2 0 1 1-2.83-2.83l.1-.1A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1-.33H3a2 2 0 1 1 0-4h.2a1.65 1.65 0 0 0 1-.33 1.65 1.65 0 0 0 .6-1 1.65 1.65 0 0 0-.6-1.82l-.1-.1a2 2 0 1 1 2.83-2.83l.1.1A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .33-1V3a2 2 0 1 1 4 0v.2a1.65 1.65 0 0 0 .33 1 1.65 1.65 0 0 0 1 .6 1.65 1.65 0 0 0 1.82-.6l.1-.1a2 2 0 1 1 2.83 2.83l-.1.1A1.65 1.65 0 0 0 19.4 9c.27.32.47.7.6 1.1H21a2 2 0 1 1 0 4h-.2a1.65 1.65 0 0 0-1 .33z"></path></svg>
+    <span>Settings</span>
+  </a>
+</nav>

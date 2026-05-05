@@ -1286,24 +1286,142 @@
     saveRecentTransfers(items.slice(0, maxRecentTransfers));
   }
 
+  function removeRecentTransfer(index) {
+    var items = getRecentTransfers();
+    if (index < 0 || index >= items.length) {
+      return false;
+    }
+    items.splice(index, 1);
+    saveRecentTransfers(items);
+    return true;
+  }
+
+  function getRecentTransferSearchQuery() {
+    var searchField = document.querySelector("[data-recent-transfer-search='true']");
+    return searchField ? String(searchField.value || "").trim().toLowerCase() : "";
+  }
+
+  function getRecentTransferSearchText(item) {
+    var receiverOperator = item.receiver_mobile_operator || inferMobileOperatorName(item.receiver_phone_number);
+    var senderOperator = item.mobile_operator || inferMobileOperatorName(item.sender_mobile_number);
+    return [
+      item.sender_mobile_number,
+      item.receiver_phone_number,
+      item.amount_value,
+      item.amount,
+      item.client_code,
+      senderOperator,
+      receiverOperator,
+      item.reference,
+      item.status,
+    ].join(" ").toLowerCase();
+  }
+
+  function getOperatorBadgeTone(operatorName) {
+    var normalized = String(operatorName || "").toLowerCase();
+    if (normalized.indexOf("voda") !== -1) {
+      return "vodacom";
+    }
+    if (normalized.indexOf("airtel") !== -1) {
+      return "airtel";
+    }
+    if (normalized.indexOf("halotel") !== -1) {
+      return "halotel";
+    }
+    if (normalized.indexOf("yas") !== -1 || normalized.indexOf("tigo") !== -1) {
+      return "yas";
+    }
+    return "neutral";
+  }
+
+  function renderOperatorBadge(operatorName) {
+    if (!operatorName) {
+      return "";
+    }
+    return '<span class="operator-badge operator-badge-' + getOperatorBadgeTone(operatorName) + '">' + escapeHtml(operatorName) + "</span>";
+  }
+
+  function buildRecentTransferDetailPayload(item) {
+    var receiverOperator = item.receiver_mobile_operator || inferMobileOperatorName(item.receiver_phone_number) || "-";
+    var senderOperator = item.mobile_operator || inferMobileOperatorName(item.sender_mobile_number) || "-";
+    return {
+      eyebrow: "Recent transfer",
+      title: item.receiver_phone_number || "Saved transfer",
+      summary: "Saved locally after a successful transfer request.",
+      tone: "info",
+      tone_label: item.status || "Saved",
+      fields: [
+        { label: "Receiver", value: item.receiver_phone_number || "-" },
+        { label: "Receiver operator", value: receiverOperator },
+        { label: "Sender", value: item.sender_mobile_number || "-" },
+        { label: "Sender operator", value: senderOperator },
+        { label: "Client code", value: item.client_code || "-" },
+        { label: "Amount", value: formatCurrencyAmount(item.amount_value || item.amount || 0) },
+        { label: "Reference", value: item.reference || "-" },
+        { label: "Saved", value: formatTransferTime(item.submitted_at) },
+      ],
+    };
+  }
+
   function renderRecentTransfers() {
     var list = document.getElementById("recent-transfer-list");
     var items = getRecentTransfers();
+    var query = getRecentTransferSearchQuery();
+    var filteredItems;
     if (!list) {
       return;
     }
     if (items.length === 0) {
-      list.innerHTML = '<p class="recent-transfer-empty">No recent transfers yet.</p>';
+      list.innerHTML =
+        '<div class="recent-transfer-empty-state">' +
+          '<strong>No recent transfers yet.</strong>' +
+          '<p>Successful transfer requests will appear here for quick reuse.</p>' +
+          '<a class="filter-btn" href="/send-money">New transfer</a>' +
+        "</div>";
       return;
     }
 
-    list.innerHTML = items
+    filteredItems = items
       .map(function (item, index) {
+        return { item: item, index: index };
+      })
+      .filter(function (entry) {
+        return !query || getRecentTransferSearchText(entry.item).indexOf(query) !== -1;
+      });
+
+    if (filteredItems.length === 0) {
+      list.innerHTML =
+        '<div class="recent-transfer-empty-state">' +
+          '<strong>No matching transfers.</strong>' +
+          '<p>Try a receiver number, sender number, amount, or operator.</p>' +
+        "</div>";
+      return;
+    }
+
+    list.innerHTML = filteredItems
+      .map(function (entry) {
+        var item = entry.item;
+        var index = entry.index;
+        var receiverOperator = item.receiver_mobile_operator || inferMobileOperatorName(item.receiver_phone_number);
+        var senderOperator = item.mobile_operator || inferMobileOperatorName(item.sender_mobile_number);
+        var detailPayload = escapeHtml(JSON.stringify(buildRecentTransferDetailPayload(item)));
         return (
-          '<button class="recent-transfer-item" type="button" data-reuse-transfer="' + index + '">' +
-            '<span class="recent-transfer-meta"><strong>' + item.receiver_phone_number + '</strong><span>' + item.sender_mobile_number + '</span></span>' +
-            '<span class="recent-transfer-side"><strong>' + formatCurrencyAmount(item.amount_value || item.amount || 0) + '</strong><span>' + formatTransferTime(item.submitted_at) + '</span></span>' +
-          "</button>"
+          '<article class="recent-transfer-item">' +
+            '<div class="recent-transfer-meta">' +
+              '<strong>' + escapeHtml(item.receiver_phone_number || "-") + '</strong>' +
+              '<span>' + escapeHtml(item.sender_mobile_number || "-") + "</span>" +
+              '<span class="recent-transfer-badges">' + renderOperatorBadge(receiverOperator) + renderOperatorBadge(senderOperator) + "</span>" +
+            "</div>" +
+            '<div class="recent-transfer-side">' +
+              '<strong>' + formatCurrencyAmount(item.amount_value || item.amount || 0) + "</strong>" +
+              '<span>' + formatTransferTime(item.submitted_at) + "</span>" +
+            "</div>" +
+            '<div class="recent-transfer-actions">' +
+              '<button class="filter-btn recent-transfer-action primary" type="button" data-reuse-transfer="' + index + '">Reuse</button>' +
+              '<button class="filter-btn recent-transfer-action" type="button" data-detail-trigger="true" data-detail-payload="' + detailPayload + '">Details</button>' +
+              '<button class="filter-btn recent-transfer-action danger" type="button" data-remove-transfer="' + index + '">Remove</button>' +
+            "</div>" +
+          "</article>"
         );
       })
       .join("");
@@ -2172,6 +2290,7 @@
     var confirmSubmitBtn = event.target.closest("[data-confirm-submit='true']");
     var confirmEditBtn = event.target.closest("[data-confirm-edit='true']");
     var reuseTransferBtn = event.target.closest("[data-reuse-transfer]");
+    var removeTransferBtn = event.target.closest("[data-remove-transfer]");
     var rangePresetBtn = event.target.closest("[data-range-days]");
     var approvalDecisionBtn = event.target.closest("[data-approval-decision]");
     var approvalCloseBtn = event.target.closest("[data-approval-close='true']");
@@ -2279,6 +2398,17 @@
         return;
       }
       submitTransferPayload(confirmForm, confirmForm._pendingTransferPayload);
+      return;
+    }
+
+    if (removeTransferBtn) {
+      var removeIndex = Number(removeTransferBtn.getAttribute("data-remove-transfer"));
+      event.preventDefault();
+      if (removeRecentTransfer(removeIndex)) {
+        renderRecentTransfers();
+        showToast("Recent transfer removed.", "success");
+        announceStatus("Recent transfer removed.");
+      }
       return;
     }
 
@@ -2413,6 +2543,10 @@
     if (!(field instanceof HTMLElement)) {
       return;
     }
+    if (field.matches("[data-recent-transfer-search='true']")) {
+      renderRecentTransfers();
+      return;
+    }
     if (!field.matches("form[data-ajax-form='true'] input[name='q']")) {
       return;
     }
@@ -2451,7 +2585,7 @@
   });
 
   document.addEventListener("pointerdown", function (event) {
-    var target = event.target.closest(".ghost-btn, .filter-btn, .send-submit, .settings-tab, .page-btn, .nav-item, .toggle-switch, .menu-toggle, .message-action-btn, .quick-sender-chip, .switch-btn, .range-chip, .collapse-btn, .topbar-utility, .panel-close-btn, .command-item, .row-action-btn, .install-confirm-btn, .install-dismiss-btn, .sender-status-toggle, .approval-approve-btn, .approval-reject-btn");
+    var target = event.target.closest(".ghost-btn, .filter-btn, .send-submit, .settings-tab, .page-btn, .nav-item, .mobile-bottom-nav-item, .toggle-switch, .menu-toggle, .message-action-btn, .quick-sender-chip, .switch-btn, .range-chip, .collapse-btn, .topbar-utility, .panel-close-btn, .command-item, .row-action-btn, .install-confirm-btn, .install-dismiss-btn, .sender-status-toggle, .approval-approve-btn, .approval-reject-btn");
     if (!target) {
       return;
     }
