@@ -1,4 +1,4 @@
-const CACHE_NAME = "transferflow-shell-v17";
+const CACHE_NAME = "transferflow-shell-v18";
 const APP_SHELL = [
   "/dashboard",
   "/static/manifest.webmanifest",

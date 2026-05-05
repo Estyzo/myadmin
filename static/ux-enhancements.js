@@ -83,6 +83,75 @@
     writeHistoryState(window.location.href, targetSelector, true);
   }
 
+  function syncNavigationState(nextDoc) {
+    var nextBody = nextDoc.querySelector("body");
+    var nextSidebar = nextDoc.querySelector("#app-sidebar");
+    var currentSidebar = document.querySelector("#app-sidebar");
+    var nextBottomNav = nextDoc.querySelector(".mobile-bottom-nav");
+    var currentBottomNav = document.querySelector(".mobile-bottom-nav");
+
+    if (nextBody) {
+      Array.prototype.slice.call(document.body.classList).forEach(function (className) {
+        if (className.indexOf("page-") === 0) {
+          document.body.classList.remove(className);
+        }
+      });
+      Array.prototype.slice.call(nextBody.classList).forEach(function (className) {
+        if (className.indexOf("page-") === 0) {
+          document.body.classList.add(className);
+        }
+      });
+    }
+    if (nextSidebar && currentSidebar) {
+      currentSidebar.replaceWith(nextSidebar);
+      initSidebarToggle();
+    }
+    if (nextBottomNav && currentBottomNav) {
+      currentBottomNav.replaceWith(nextBottomNav);
+    }
+  }
+
+  function ensureHeadAssets(nextDoc) {
+    var existingStyles = new Set(
+      Array.prototype.slice.call(document.querySelectorAll('link[rel="stylesheet"][href]')).map(function (link) {
+        return link.href;
+      })
+    );
+    var existingScripts = new Set(
+      Array.prototype.slice.call(document.querySelectorAll("script[src]")).map(function (script) {
+        return script.src;
+      })
+    );
+
+    nextDoc.querySelectorAll('link[rel="stylesheet"][href]').forEach(function (link) {
+      var href = link.href;
+      var nextLink;
+      if (!href || existingStyles.has(href)) {
+        return;
+      }
+      nextLink = document.createElement("link");
+      nextLink.rel = "stylesheet";
+      nextLink.href = href;
+      document.head.appendChild(nextLink);
+      existingStyles.add(href);
+    });
+
+    nextDoc.querySelectorAll("script[src]").forEach(function (script) {
+      var src = script.src;
+      var nextScript;
+      if (!src || existingScripts.has(src)) {
+        return;
+      }
+      nextScript = document.createElement("script");
+      nextScript.src = src;
+      if (script.type) {
+        nextScript.type = script.type;
+      }
+      document.body.appendChild(nextScript);
+      existingScripts.add(src);
+    });
+  }
+
   function beginPendingRequest(targetSelector, requestUrl) {
     var previousRequest = pendingFragmentRequests.get(targetSelector);
     var controller = new AbortController();
@@ -124,6 +193,24 @@
       document.title = nextTitle.textContent;
     }
     current.replaceWith(next);
+    return true;
+  }
+
+  function replacePageShellFromHtml(html) {
+    var currentMain = document.querySelector("#main-content");
+    var nextDoc = parseHtml(html);
+    var nextMain = nextDoc.querySelector("#main-content");
+    var nextTitle = nextDoc.querySelector("title");
+
+    if (!currentMain || !nextMain) {
+      return false;
+    }
+    ensureHeadAssets(nextDoc);
+    if (nextTitle && nextTitle.textContent) {
+      document.title = nextTitle.textContent;
+    }
+    currentMain.replaceWith(nextMain);
+    syncNavigationState(nextDoc);
     return true;
   }
 
@@ -1120,8 +1207,68 @@
     }
   }
 
+  async function fetchAndSwapPage(url, pushHistory, options) {
+    var settings = options || {};
+    var requestUrl = normalizeUrl(url);
+    var currentMain = document.querySelector("#main-content");
+    var targetSelector = inferFragmentTarget(requestUrl);
+    var controller = beginPendingRequest("#main-content", requestUrl);
+    var response;
+    var html;
+
+    setBusyState(currentMain, true);
+
+    try {
+      response = await fetch(requestUrl, {
+        headers: {
+          Accept: "text/html",
+        },
+        signal: controller.signal,
+      });
+      html = await response.text();
+      if (!isLatestPendingRequest("#main-content", controller)) {
+        return false;
+      }
+      if (!response.ok) {
+        throw new Error("Request failed (" + response.status + ").");
+      }
+      if (!replacePageShellFromHtml(html)) {
+        throw new Error("Unable to update page.");
+      }
+      if (pushHistory) {
+        writeHistoryState(requestUrl, targetSelector, false);
+      } else if (settings.replaceHistory) {
+        writeHistoryState(requestUrl, targetSelector, true);
+      }
+      if (clearPendingRequest("#main-content", controller)) {
+        setBusyState(document.querySelector("#main-content"), false);
+      }
+      if (settings.restoreFocus !== false) {
+        focusUpdatedContent(targetSelector || "#main-content");
+      }
+      if (settings.notify !== false) {
+        announceStatus(settings.message || "Content updated.");
+      }
+      window.dispatchEvent(new CustomEvent("ux:content-updated", { detail: { target: targetSelector || "#main-content" } }));
+      return true;
+    } catch (error) {
+      if (clearPendingRequest("#main-content", controller)) {
+        setBusyState(currentMain, false);
+      }
+      if (error && error.name === "AbortError") {
+        return false;
+      }
+      announceStatus(error && error.message ? error.message : "Request failed.");
+      if (!settings.suppressToast) {
+        showToast(error && error.message ? error.message : "Request failed.", "error");
+      }
+      throw error;
+    }
+  }
+
   window.CodexUX = window.CodexUX || {};
   window.CodexUX.fetchAndSwap = fetchAndSwap;
+  window.CodexUX.fetchAndSwapPage = fetchAndSwapPage;
   window.CodexUX.inferFragmentTarget = inferFragmentTarget;
   window.CodexUX.replaceHistoryState = function (url, targetSelector) {
     writeHistoryState(url || window.location.href, targetSelector || inferFragmentTarget(url), true);
@@ -2294,11 +2441,49 @@
     var rangePresetBtn = event.target.closest("[data-range-days]");
     var approvalDecisionBtn = event.target.closest("[data-approval-decision]");
     var approvalCloseBtn = event.target.closest("[data-approval-close='true']");
+    var mobileNavLink = event.target.closest(".mobile-bottom-nav-item[href]");
 
     if (themeToggleBtn) {
       event.preventDefault();
       toggleTheme();
       return;
+    }
+
+    if (mobileNavLink) {
+      var mobileNavHref = mobileNavLink.getAttribute("href");
+      var mobileNavUrl;
+      var mobileNavTarget;
+      if (
+        mobileNavHref &&
+        mobileNavHref.indexOf("#") !== 0 &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.shiftKey &&
+        !event.altKey &&
+        event.button === 0
+      ) {
+        mobileNavUrl = new URL(mobileNavHref, window.location.origin);
+        if (mobileNavUrl.origin === window.location.origin && mobileNavUrl.toString() !== window.location.href) {
+          event.preventDefault();
+          mobileNavTarget = inferFragmentTarget(mobileNavUrl.toString());
+          setElementLoadingState(mobileNavLink, true);
+          fetchAndSwapPage(mobileNavUrl.toString(), true, { notify: false })
+            .catch(function () {
+              window.location.assign(mobileNavUrl.toString());
+            })
+            .finally(function () {
+              setElementLoadingState(mobileNavLink, false);
+            });
+          return;
+        }
+        if (mobileNavTarget && document.querySelector(mobileNavTarget)) {
+          event.preventDefault();
+          fetchAndSwap(mobileNavUrl.toString(), mobileNavTarget, true, { notify: false }).catch(function () {
+            window.location.assign(mobileNavUrl.toString());
+          });
+          return;
+        }
+      }
     }
 
     if (commandPaletteToggle) {
@@ -2676,6 +2861,18 @@
 
     if (!targetSelector) {
       window.location.reload();
+      return;
+    }
+
+    if (!document.querySelector(targetSelector)) {
+      fetchAndSwapPage(stateUrl, false, {
+        restoreFocus: false,
+        notify: false,
+        suppressToast: true,
+        replaceHistory: true,
+      }).catch(function () {
+        window.location.reload();
+      });
       return;
     }
 
