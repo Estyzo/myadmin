@@ -1,5 +1,6 @@
 import csv
 import io
+import re
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
@@ -42,6 +43,68 @@ def format_currency_amount(amount, currency="TZS"):
     except (TypeError, ValueError):
         numeric = 0.0
     return f"{currency} {numeric:,.2f}"
+
+
+def mask_digit_sequence(value, leading=3, trailing=3):
+    text = str(value or "").strip()
+    digits = "".join(ch for ch in text if ch.isdigit())
+    if len(digits) <= leading + trailing:
+        return text or "-"
+    return f"{digits[:leading]}{'*' * max(3, len(digits) - leading - trailing)}{digits[-trailing:]}"
+
+
+def mask_numeric_sequences(value):
+    text = str(value or "").strip()
+    if not text:
+        return "-"
+
+    def replace_match(match):
+        return mask_digit_sequence(match.group(0))
+
+    return re.sub(r"\d[\d\s,+-]{6,}\d", replace_match, text)
+
+
+def mask_identifier(value, visible=3):
+    text = str(value or "").strip()
+    if not text or text == "-":
+        return "-"
+    if len(text) <= visible:
+        return "*" * len(text)
+    return f"{'*' * max(3, len(text) - visible)}{text[-visible:]}"
+
+
+def mask_name(value):
+    text = str(value or "").strip()
+    if not text or text == "-":
+        return "-"
+    parts = [part for part in re.split(r"\s+", text) if part]
+    initials = [part[0].upper() + "." for part in parts[:3] if part[0].isalpha()]
+    return " ".join(initials) if initials else "-"
+
+
+def mask_message_preview(value, limit=160):
+    text = normalize_message_text(value)
+    text = re.sub(
+        r"\b(?P<prefix>to|kwa|kwenda kwa|kutoka kwa)\s+(?P<name>[A-Z][A-Z0-9_ .&'-]{3,}?)(?=\s+(?:kwenda|kwa|to|limekamilika)|\s+\+?\d|[.,])",
+        lambda match: f"{match.group('prefix')} recipient",
+        text,
+    )
+    text = re.sub(
+        r"\b(?P<label>balance|salio)\s*[:#]?\s*[\d,]+(?:\.\d+)?(?:\s*(?:Tsh|TZS))?",
+        lambda match: f"{match.group('label')} ***",
+        text,
+        flags=re.IGNORECASE,
+    )
+    text = re.sub(
+        r"\b(?P<label>tid|kumbukumbu\s+no)\s*[:#]?\s*[\w./-]+",
+        lambda match: f"{match.group('label')} ***",
+        text,
+        flags=re.IGNORECASE,
+    )
+    text = re.sub(r"\b(?:Tsh|TZS)\s*[\d,]+(?:\.\d+)?\b", "TZS ***", text, flags=re.IGNORECASE)
+    text = re.sub(r"\b[\d,]+(?:\.\d+)?\s*(?:Tsh|TZS)\b", "TZS ***", text, flags=re.IGNORECASE)
+    text = mask_numeric_sequences(text)
+    return text if len(text) <= limit else text[: limit - 1].rstrip() + "…"
 
 
 def parse_timestamp(value):

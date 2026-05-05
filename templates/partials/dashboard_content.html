@@ -98,9 +98,20 @@
           <p class="card-kicker">Trend view</p>
           <h3>Transaction trend</h3>
         </div>
-        <p class="chart-note">Recent filtered transfer amounts</p>
+        <div class="trend-toolbar" role="tablist" aria-label="Transaction trend period">
+          <button class="trend-mode-btn active" type="button" data-trend-mode="daily" aria-pressed="true">Daily</button>
+          <button class="trend-mode-btn" type="button" data-trend-mode="monthly" aria-pressed="false">Monthly</button>
+        </div>
       </div>
-      <canvas id="dashboard-volume-chart" class="dashboard-chart" width="640" height="220" role="img" aria-label="Line chart of transaction velocity"></canvas>
+      <div class="trend-meta-row">
+        <p class="chart-note" data-trend-note>Last 7 days, filtered by current search controls</p>
+        <div class="trend-legend" aria-label="Trend legend">
+          <span><i class="trend-dot sent"></i>Sent</span>
+          <span><i class="trend-dot received"></i>Received</span>
+        </div>
+      </div>
+      <canvas id="dashboard-volume-chart" class="dashboard-chart" width="640" height="240" role="img" aria-label="Sparkline chart of sent and received transfer amounts"></canvas>
+      <script type="application/json" id="dashboard-trend-data">{{ trend_data|tojson }}</script>
     </article>
   </section>
 
@@ -191,22 +202,23 @@
           {% set transaction_detail = {
             'eyebrow': 'Transaction details',
             'title': transaction.operation ~ ' transaction',
-            'summary': transaction.sender_number ~ ' → ' ~ transaction.receiver_number,
+            'summary': (transaction.sender_number|mask_digits) ~ ' → ' ~ (transaction.receiver_number|mask_sensitive_numbers),
             'tone': transaction.operator|lower,
             'tone_label': transaction.operator,
             'fields': [
-              {'label': 'Sender', 'value': transaction.sender_number},
-              {'label': 'Receiver', 'value': transaction.receiver_number},
+              {'label': 'Sender', 'value': transaction.sender_number|mask_digits},
+              {'label': 'Receiver', 'value': transaction.receiver_number|mask_sensitive_numbers},
               {'label': 'Operator', 'value': transaction.operator},
               {'label': 'Operation', 'value': transaction.operation},
               {'label': 'Amount', 'value': transaction.amount},
               {'label': 'Created by', 'value': transaction.created_by},
+              {'label': 'Note', 'value': transaction.note|mask_sensitive_numbers},
               {'label': 'Date', 'value': transaction.created_at}
             ]
           } %}
           <tr class="transaction-row">
-            <td data-col="sender" data-label="Sender">{{ transaction.sender_number }}</td>
-            <td data-col="receiver" data-label="Receiver" class="receiver-cell">{{ transaction.receiver_number }}</td>
+            <td data-col="sender" data-label="Sender">{{ transaction.sender_number|mask_digits }}</td>
+            <td data-col="receiver" data-label="Receiver" class="receiver-cell">{{ transaction.receiver_number|mask_sensitive_numbers }}</td>
             <td data-col="operator" data-label="Operator">
               <span class="operator-pill" data-operator="{{ transaction.operator|lower }}">{{ transaction.operator }}</span>
             </td>

@@ -136,5 +136,15 @@ class TransferFlowApiClient:
         runtime_config = self._runtime_config(config)
         return self._request_json("POST", runtime_config["SEND_MONEY_API_URL"], payload=payload, config=runtime_config)
 
+    def get_request_focus(self, request_id, payload, config=None):
+        runtime_config = self._runtime_config(config)
+        endpoint = f"{runtime_config['REQUEST_FOCUS_API_URL'].rstrip('/')}/{request_id}"
+        return self._request_json("POST", endpoint, payload=payload, config=runtime_config)
+
+    def post_request_approval_decision(self, request_id, payload, config=None):
+        runtime_config = self._runtime_config(config)
+        endpoint = f"{runtime_config['REQUEST_APPROVAL_DECISION_API_URL'].rstrip('/')}/{request_id}"
+        return self._request_json("POST", endpoint, payload=payload, config=runtime_config)
+
 
 api_client = TransferFlowApiClient()

@@ -6,6 +6,7 @@
   var compactModeStorageKey = "dashboard.compactCardsMode";
   var dashboardPreferencesStorageKey = "dashboard.preferences";
   var dashboardRefreshPausedStorageKey = "dashboard.refreshPaused";
+  var trendModeStorageKey = "dashboard.trendMode";
   var operatorPalette = {
     halotel: "#fb923c",
     airtel: "#ef4444",
@@ -124,39 +125,46 @@
     chart.context.fillText(message, chart.width / 2, chart.height / 2);
   }
 
+  function readTrendMode() {
+    try {
+      return window.localStorage.getItem(trendModeStorageKey) === "monthly" ? "monthly" : "daily";
+    } catch (_error) {
+      return "daily";
+    }
+  }
+
+  function writeTrendMode(mode) {
+    try {
+      window.localStorage.setItem(trendModeStorageKey, mode === "monthly" ? "monthly" : "daily");
+    } catch (_error) {}
+  }
+
+  function readDashboardTrendData(root) {
+    var script = root ? root.querySelector("#dashboard-trend-data") : null;
+    if (!script) {
+      return {};
+    }
+    try {
+      return JSON.parse(script.textContent || "{}");
+    } catch (_error) {
+      return {};
+    }
+  }
+
   function collectDashboardChartData(root) {
     var rows = Array.prototype.slice.call(root.querySelectorAll(".transaction-table tbody tr"));
-    var trendPoints = [];
     var operatorCounts = { halotel: 0, airtel: 0, yas: 0, vodacom: 0 };
 
     rows.forEach(function (row) {
-      var amountCell = row.querySelector("[data-col='amount']");
-      var dateCell = row.querySelector("[data-col='date']");
       var operatorCell = row.querySelector(".operator-pill");
-      var amountValue = parseAmountValue(amountCell ? amountCell.textContent : "");
-      var dateLabel = dateCell ? String(dateCell.textContent || "").trim() : "";
       var operatorKey = normalizeOperatorKey(operatorCell ? operatorCell.textContent : "");
 
-      if (amountValue > 0) {
-        trendPoints.push({
-          label: dateLabel ? dateLabel.slice(0, 10) : "Row " + String(trendPoints.length + 1),
-          value: amountValue,
-        });
-      }
       if (Object.prototype.hasOwnProperty.call(operatorCounts, operatorKey)) {
         operatorCounts[operatorKey] += 1;
       }
     });
 
-    trendPoints = trendPoints.slice(0, 8).reverse();
-
     return {
-      trendLabels: trendPoints.map(function (point) {
-        return point.label;
-      }),
-      trendValues: trendPoints.map(function (point) {
-        return point.value;
-      }),
       operatorLabels: ["halotel", "airtel", "yas", "vodacom"].filter(function (key) {
         return operatorCounts[key] > 0;
       }),
@@ -168,32 +176,75 @@
     };
   }
 
-  function drawLineChart(canvas, labels, values) {
+  function drawTrendLine(context, points, color, shadowColor) {
+    if (!points.length) {
+      return;
+    }
+    context.save();
+    context.lineWidth = 3;
+    context.lineJoin = "round";
+    context.lineCap = "round";
+    context.strokeStyle = color;
+    context.shadowColor = shadowColor;
+    context.shadowBlur = 10;
+    context.beginPath();
+    points.forEach(function (point, index) {
+      if (index === 0) {
+        context.moveTo(point.x, point.y);
+      } else {
+        context.lineTo(point.x, point.y);
+      }
+    });
+    context.stroke();
+    context.restore();
+
+    points.forEach(function (point) {
+      context.beginPath();
+      context.arc(point.x, point.y, 3.5, 0, Math.PI * 2);
+      context.fillStyle = color;
+      context.fill();
+      context.lineWidth = 2;
+      context.strokeStyle = "#ffffff";
+      context.stroke();
+    });
+  }
+
+  function drawTrendChart(canvas, trendSeries) {
     var chart = getCanvasContext(canvas);
     var context;
     var padding;
     var innerWidth;
     var innerHeight;
     var maxValue;
-    var minValue;
     var range;
-    var gradient;
+    var labels;
+    var sentValues;
+    var receivedValues;
+    var allValues;
+    var sentPoints;
+    var receivedPoints;
 
     if (!chart) {
       return;
     }
-    if (!values || values.length === 0) {
-      drawEmptyState(canvas, "Add more transactions to plot the trend.");
+    labels = (trendSeries && trendSeries.labels) || [];
+    sentValues = (trendSeries && trendSeries.sent) || [];
+    receivedValues = (trendSeries && trendSeries.received) || [];
+    allValues = sentValues.concat(receivedValues).map(function (value) {
+      return Number(value || 0);
+    });
+
+    if (!labels.length || !allValues.some(function (value) { return value > 0; })) {
+      drawEmptyState(canvas, "Sent and received trend appears when matching transactions are available.");
       return;
     }
 
     context = chart.context;
-    padding = { top: 18, right: 18, bottom: 30, left: 18 };
+    padding = { top: 18, right: 18, bottom: 34, left: 18 };
     innerWidth = chart.width - padding.left - padding.right;
     innerHeight = chart.height - padding.top - padding.bottom;
-    maxValue = Math.max.apply(null, values);
-    minValue = Math.min.apply(null, values);
-    range = Math.max(maxValue - minValue, maxValue || 1);
+    maxValue = Math.max.apply(null, allValues);
+    range = Math.max(maxValue, 1);
 
     context.strokeStyle = "rgba(15, 24, 41, 0.08)";
     context.lineWidth = 1;
@@ -205,30 +256,19 @@
       context.stroke();
     });
 
-    gradient = context.createLinearGradient(0, padding.top, 0, padding.top + innerHeight);
-    gradient.addColorStop(0, "rgba(6, 182, 212, 0.24)");
-    gradient.addColorStop(1, "rgba(6, 182, 212, 0)");
+    function buildPoints(values) {
+      return values.map(function (value, index) {
+        return {
+          x: padding.left + (innerWidth * index) / Math.max(labels.length - 1, 1),
+          y: padding.top + innerHeight - (Number(value || 0) / range) * innerHeight,
+        };
+      });
+    }
 
-    context.beginPath();
-    values.forEach(function (value, index) {
-      var x = padding.left + (innerWidth * index) / Math.max(values.length - 1, 1);
-      var y = padding.top + innerHeight - ((value - minValue) / range) * innerHeight;
-      if (index === 0) {
-        context.moveTo(x, y);
-      } else {
-        context.lineTo(x, y);
-      }
-    });
-
-    context.lineWidth = 3;
-    context.strokeStyle = operatorPalette.default;
-    context.stroke();
-
-    context.lineTo(chart.width - padding.right, chart.height - padding.bottom);
-    context.lineTo(padding.left, chart.height - padding.bottom);
-    context.closePath();
-    context.fillStyle = gradient;
-    context.fill();
+    sentPoints = buildPoints(sentValues);
+    receivedPoints = buildPoints(receivedValues);
+    drawTrendLine(context, sentPoints, "#06b6d4", "rgba(6, 182, 212, 0.35)");
+    drawTrendLine(context, receivedPoints, "#1cdc8b", "rgba(28, 220, 139, 0.35)");
 
     context.fillStyle = "rgba(15, 24, 41, 0.54)";
     context.font = "700 11px Plus Jakarta Sans, sans-serif";
@@ -236,6 +276,34 @@
     labels.forEach(function (label, index) {
       var x = padding.left + (innerWidth * index) / Math.max(labels.length - 1, 1);
       context.fillText(label, x, chart.height - 10);
+    });
+  }
+
+  function syncTrendModeControls(root, mode) {
+    var note = root.querySelector("[data-trend-note]");
+    root.querySelectorAll("[data-trend-mode]").forEach(function (button) {
+      var isActive = button.getAttribute("data-trend-mode") === mode;
+      button.classList.toggle("active", isActive);
+      button.setAttribute("aria-pressed", isActive ? "true" : "false");
+    });
+    if (note) {
+      note.textContent = mode === "monthly"
+        ? "Last 6 months, filtered by current search controls"
+        : "Last 7 days, filtered by current search controls";
+    }
+  }
+
+  function initTrendModeControls(root) {
+    root.querySelectorAll("[data-trend-mode]").forEach(function (button) {
+      if (button.getAttribute("data-trend-bound") === "true") {
+        return;
+      }
+      button.setAttribute("data-trend-bound", "true");
+      button.addEventListener("click", function () {
+        var mode = button.getAttribute("data-trend-mode") === "monthly" ? "monthly" : "daily";
+        writeTrendMode(mode);
+        renderDashboardCharts(root);
+      });
     });
   }
 
@@ -303,11 +371,16 @@
 
   function renderDashboardCharts(root) {
     var chartData;
+    var trendData;
+    var trendMode;
     if (!root) {
       return;
     }
     chartData = collectDashboardChartData(root);
-    drawLineChart(root.querySelector("#dashboard-volume-chart"), chartData.trendLabels, chartData.trendValues);
+    trendData = readDashboardTrendData(root);
+    trendMode = readTrendMode();
+    syncTrendModeControls(root, trendMode);
+    drawTrendChart(root.querySelector("#dashboard-volume-chart"), trendData[trendMode] || trendData.daily || {});
     drawOperatorChart(root.querySelector("#dashboard-operator-chart"), chartData.operatorLabels, chartData.operatorValues);
   }
 
@@ -607,6 +680,7 @@
     bindColumnToggles(root);
     applyColumnVisibility(root);
     bindCompactModeToggle(root);
+    initTrendModeControls(root);
     persistDashboardPreferences(root);
     renderDashboardCharts(root);
     initAutoRefresh(root);

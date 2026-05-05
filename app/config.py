@@ -55,15 +55,28 @@ def build_config():
         sender_config_api_url = join_api_url(api_base_url, sender_config_api_url)
 
     if not send_money_api_url:
-        send_money_api_url = join_api_url(api_base_url, "send-money")
+        send_money_api_url = join_api_url(api_base_url, "insertRequest")
     elif send_money_api_url.startswith("/"):
         send_money_api_url = join_api_url(api_base_url, send_money_api_url)
+
+    request_focus_api_url = normalize_upstream_url(os.getenv("REQUEST_FOCUS_API_URL", ""))
+    request_approval_decision_api_url = normalize_upstream_url(os.getenv("REQUEST_APPROVAL_DECISION_API_URL", ""))
+    if not request_focus_api_url:
+        request_focus_api_url = join_api_url(api_base_url, "requestFocus")
+    elif request_focus_api_url.startswith("/"):
+        request_focus_api_url = join_api_url(api_base_url, request_focus_api_url)
+    if not request_approval_decision_api_url:
+        request_approval_decision_api_url = join_api_url(api_base_url, "requestApprovalDecision")
+    elif request_approval_decision_api_url.startswith("/"):
+        request_approval_decision_api_url = join_api_url(api_base_url, request_approval_decision_api_url)
 
     return {
         "API_BASE_URL": api_base_url,
         "APP_TIMEZONE": os.getenv("APP_TIMEZONE", "Africa/Dar_es_Salaam"),
         "SENDER_CONFIG_API_URL": sender_config_api_url,
         "SEND_MONEY_API_URL": send_money_api_url,
+        "REQUEST_FOCUS_API_URL": request_focus_api_url,
+        "REQUEST_APPROVAL_DECISION_API_URL": request_approval_decision_api_url,
         "SECRET_KEY": os.getenv("FLASK_SECRET_KEY", "transferflow-dev-key"),
         "TRANSACTION_CACHE_TTL_SECONDS": read_positive_int_env("TRANSACTION_CACHE_TTL_SECONDS", 180, minimum=20),
         "MESSAGES_CACHE_TTL_SECONDS": read_positive_int_env("MESSAGES_CACHE_TTL_SECONDS", 120, minimum=20),

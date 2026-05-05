@@ -7,6 +7,7 @@ from app.services.shared import format_cache_timestamp, pick_first_available
 
 SENDER_CONFIG_CACHE_KEY = "settings:sender-configurations"
 SENDER_CONFIG_META_KEY = "settings:sender-configurations:meta"
+SENDER_STATUS_OVERRIDES_KEY = "settings:sender-status-overrides"
 
 
 def parse_sender_status(value):
@@ -21,6 +22,34 @@ def parse_sender_status(value):
     if normalized in {"0", "false", "no", "inactive", "disabled", "off"}:
         return False
     return True
+
+
+def normalize_sender_status_key(sender_number):
+    return "".join(ch for ch in str(sender_number or "") if ch.isdigit())
+
+
+def _read_sender_status_overrides():
+    overrides = cache.get(SENDER_STATUS_OVERRIDES_KEY) or {}
+    return dict(overrides) if isinstance(overrides, dict) else {}
+
+
+def _write_sender_status_overrides(overrides):
+    cache.set(SENDER_STATUS_OVERRIDES_KEY, dict(overrides or {}), timeout=0)
+
+
+def apply_sender_status_overrides(rows):
+    overrides = _read_sender_status_overrides()
+    if not overrides:
+        return list(rows)
+
+    updated_rows = []
+    for row in rows:
+        updated = dict(row)
+        override_key = normalize_sender_status_key(updated.get("sender_number"))
+        if override_key in overrides:
+            updated["is_active"] = bool(overrides[override_key])
+        updated_rows.append(updated)
+    return updated_rows
 
 
 def extract_sender_config_records(payload):
@@ -55,15 +84,56 @@ def normalize_sender_config_record(item, fallback_id):
         normalized_id = fallback_id
 
     status_value = item.get("is_active", item.get("active", item.get("status", True)))
+    mobile_operator = pick_first_available(
+        item,
+        (
+            "mobile_operator",
+            "mobileOperator",
+            "mobile_operator_name",
+            "mobileOperatorName",
+            "operator",
+            "operator_name",
+            "operatorName",
+            "network",
+            "network_name",
+            "networkName",
+            "mno",
+            "mno_name",
+            "mnoName",
+        ),
+        fallback="",
+    )
     return {
         "id": normalized_id,
         "sender_number": sender_number,
         "client_code": pick_first_available(item, ("client_code", "clientCode"), fallback="-"),
+        "mobile_operator": mobile_operator or infer_mobile_operator_name(sender_number) or "-",
         "til_number": pick_first_available(item, ("til_number", "tilNumber"), fallback="-"),
         "til_name": pick_first_available(item, ("til_name", "tilName"), fallback="-"),
         "path": pick_first_available(item, ("path", "ussd_path", "ussdPath"), fallback="-"),
         "is_active": parse_sender_status(status_value),
     }
+
+
+def infer_mobile_operator_name(phone_number):
+    digits = "".join(ch for ch in str(phone_number or "") if ch.isdigit())
+    if digits.startswith("255"):
+        national = digits[3:]
+    elif digits.startswith("0"):
+        national = digits[1:]
+    else:
+        national = digits
+
+    prefix = national[:2]
+    if prefix in {"61", "62"}:
+        return "Halotel"
+    if prefix in {"68", "69", "78"}:
+        return "Airtel"
+    if prefix in {"65", "67", "71", "77"}:
+        return "Yas"
+    if prefix in {"74", "75", "76"}:
+        return "Vodacom"
+    return ""
 
 
 def _cache_timeout(config):
@@ -82,9 +152,54 @@ def _write_cached_sender_configurations(items, meta, config):
     cache.set(SENDER_CONFIG_META_KEY, dict(meta), timeout=timeout)
 
 
+def set_sender_configuration_status(config, sender_number, is_active):
+    normalized_key = normalize_sender_status_key(sender_number)
+    if not normalized_key:
+        return {
+            "ok": False,
+            "error": "Sender number is required.",
+        }, 400
+
+    all_items, fetch_meta = fetch_sender_configurations(config=config, active_only=False, force_refresh=False)
+    matched_item = None
+    updated_items = []
+    for item in all_items:
+        updated = dict(item)
+        if normalize_sender_status_key(updated.get("sender_number")) == normalized_key:
+            updated["is_active"] = bool(is_active)
+            matched_item = updated
+        updated_items.append(updated)
+
+    if matched_item is None:
+        return {
+            "ok": False,
+            "error": "Sender configuration was not found.",
+        }, 404
+
+    overrides = _read_sender_status_overrides()
+    overrides[normalized_key] = bool(is_active)
+    _write_sender_status_overrides(overrides)
+    _write_cached_sender_configurations(
+        updated_items,
+        {
+            "fetched_at": fetch_meta.get("last_updated", time.time()) or time.time(),
+            "last_error": fetch_meta.get("error", ""),
+            "source": fetch_meta.get("source", "cache"),
+        },
+        config,
+    )
+
+    return {
+        "ok": True,
+        "message": f"Sender configuration {'activated' if is_active else 'deactivated'}.",
+        "sender": matched_item,
+    }, 200
+
+
 def fetch_sender_configurations(config, active_only=False, force_refresh=False):
     def apply_filters(rows):
-        return [row for row in rows if row.get("is_active")] if active_only else rows
+        rows_with_overrides = apply_sender_status_overrides(rows)
+        return [row for row in rows_with_overrides if row.get("is_active")] if active_only else rows_with_overrides
 
     now = time.time()
     cached_items, cached_meta = _read_cached_sender_configurations()

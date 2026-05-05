@@ -5,8 +5,11 @@
         <div class="send-hero-copy">
           <p class="page-eyebrow">Send money</p>
           <h2>Prepare a transfer</h2>
-          <p>Enter the transfer details, confirm them, and keep the latest receipt nearby.</p>
+          <p>Enter the transfer details and confirm the server approval prompt.</p>
         </div>
+        <a class="filter-btn send-secondary-link" href="{{ url_for('recent_transfers') }}">
+          Recent transfers
+        </a>
       </div>
 
       <article class="send-card">
@@ -23,28 +26,46 @@
             <div class="send-input-wrap select-wrap">
               <select id="sender-mobile-number" class="send-input send-select" name="sender_mobile_number" aria-label="Sender mobile number" required>
                 <option value=""></option>
-                {% for sender in sender_numbers %}
-                <option value="{{ sender }}">{{ sender }}</option>
+                {% for sender in sender_options %}
+                <option value="{{ sender.sender_number }}" data-client-code="{{ sender.client_code }}" data-mobile-operator="{{ sender.mobile_operator }}" data-request-path="{{ sender.path }}">
+                  {{ sender.sender_number }} · {{ sender.mobile_operator }} · {{ sender.client_code }}
+                </option>
                 {% endfor %}
               </select>
               <span class="floating-label">Sender mobile number</span>
             </div>
           </label>
+          <div class="sender-detail-strip" data-sender-detail-strip hidden>
+            <span>
+              <small>Client code</small>
+              <strong data-sender-client-code>-</strong>
+            </span>
+            <span>
+              <small>Mobile operator</small>
+              <strong data-sender-mobile-operator>-</strong>
+            </span>
+          </div>
 
           <label class="send-field floating-field">
             <div class="send-input-wrap">
               <svg class="field-icon" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M22 16.9v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.1A19.5 19.5 0 0 1 5.2 12.8 19.8 19.8 0 0 1 2.1 4.4 2 2 0 0 1 4.1 2.2h3a2 2 0 0 1 2 1.7 12.8 12.8 0 0 0 .7 2.8 2 2 0 0 1-.45 2.1L8.1 10a16 16 0 0 0 5.9 5.9l1.2-1.2a2 2 0 0 1 2.1-.45 12.8 12.8 0 0 0 2.8.7 2 2 0 0 1 1.7 2z"></path>
               </svg>
-              <input id="receiver-phone-number" class="send-input with-leading-icon" type="tel" name="receiver_phone_number" placeholder=" " required>
+              <input id="receiver-phone-number" class="send-input with-leading-icon" type="tel" name="receiver_phone_number" inputmode="numeric" autocomplete="tel-national" placeholder=" " maxlength="16" required>
               <span class="floating-label">Receiver phone number</span>
             </div>
           </label>
+          <div class="receiver-detail-strip" data-receiver-detail-strip hidden>
+            <span>
+              <small>Detected receiver operator</small>
+              <strong data-receiver-mobile-operator>-</strong>
+            </span>
+          </div>
 
           <label class="send-field floating-field amount-field">
             <div class="send-input-wrap amount-wrap">
               <strong>TZS</strong>
-              <input id="transfer-amount" class="send-input amount-input" type="number" name="amount" min="0.01" step="0.01" placeholder=" " required>
+              <input id="transfer-amount" class="send-input amount-input" type="number" name="amount" min="1000" step="0.01" placeholder=" " required>
               <span class="floating-label">Amount</span>
             </div>
           </label>
@@ -65,8 +86,16 @@
             </div>
             <dl class="transfer-confirmation-grid">
               <div>
-                <dt>Sender</dt>
+                <dt>Sender details</dt>
                 <dd data-confirm-sender>-</dd>
+              </div>
+              <div>
+                <dt>Client code</dt>
+                <dd data-confirm-client-code>-</dd>
+              </div>
+              <div>
+                <dt>Mobile operator</dt>
+                <dd data-confirm-mobile-operator>-</dd>
               </div>
               <div>
                 <dt>Receiver</dt>
@@ -105,8 +134,16 @@
             </div>
             <dl class="transfer-receipt-grid">
               <div>
-                <dt>Sender</dt>
+                <dt>Sender details</dt>
                 <dd data-receipt-sender>-</dd>
+              </div>
+              <div>
+                <dt>Client code</dt>
+                <dd data-receipt-client-code>-</dd>
+              </div>
+              <div>
+                <dt>Mobile operator</dt>
+                <dd data-receipt-mobile-operator>-</dd>
               </div>
               <div>
                 <dt>Receiver</dt>
@@ -132,15 +169,30 @@
           </section>
         </form>
       </article>
-      <section class="send-support" aria-label="Recent recipients">
-        <article class="send-side-card recent-transfers-card">
-          <p class="card-kicker">Recent recipients</p>
-          <h3>Reuse previous details</h3>
-          <p class="subtle">Pick a recent transfer to prefill the form for repeat disbursements.</p>
-          <div class="recent-transfer-list" id="recent-transfer-list">
-            <p class="recent-transfer-empty">No recent transfers yet.</p>
+      <section class="transfer-approval-modal" id="transfer-approval-modal" data-transfer-approval-modal hidden role="dialog" aria-modal="true" aria-labelledby="transfer-approval-title">
+        <div class="transfer-approval-panel">
+          <div class="transfer-approval-head">
+            <div>
+              <p class="card-kicker">Approval required</p>
+              <h4 id="transfer-approval-title">Review server prompt</h4>
+            </div>
+            <button class="panel-close-btn" type="button" data-approval-close="true" aria-label="Close approval prompt">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+            </button>
           </div>
-        </article>
+          <p class="transfer-approval-message" data-approval-message>Waiting for server prompt.</p>
+          <label class="approval-note-field">
+            <span>Decision note</span>
+            <textarea data-approval-note rows="3" placeholder="Optional note"></textarea>
+          </label>
+          <div class="transfer-approval-actions">
+            <button class="filter-btn approval-reject-btn" type="button" data-approval-decision="REJECTED">Reject</button>
+            <button class="send-submit approval-approve-btn" type="button" data-approval-decision="APPROVED">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>
+              Approve
+            </button>
+          </div>
+        </div>
       </section>
     </div>
   </div>

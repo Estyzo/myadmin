@@ -193,15 +193,31 @@ body.theme-dark .sidebar {
 
 .brand-panel {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 14px;
+}
+
+.nav-toggle-btn {
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 14px;
+}
+
+.nav-toggle-btn svg {
+  width: 18px;
+  height: 18px;
 }
 
 .brand {
   display: flex;
   align-items: center;
   gap: 14px;
+  min-width: 0;
 }
 
 .brand-copy {
@@ -386,21 +402,11 @@ body.theme-dark .nav-item:hover {
 }
 
 .collapse-btn {
-  margin-top: 14px;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 14px;
-  min-height: 48px;
-  padding: 0 16px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
   color: rgba(255, 255, 255, 0.84);
   background: rgba(255, 255, 255, 0.04);
-}
-
-.collapse-btn span {
-  font-weight: 700;
+  align-self: center;
+  flex-shrink: 0;
 }
 
 body.sidebar-collapsed .app-shell {
@@ -473,17 +479,9 @@ body.theme-dark .topbar {
 
 .menu-toggle {
   display: none;
-  width: 48px;
-  height: 48px;
-  border-radius: 16px;
   border: 1px solid rgba(15, 24, 41, 0.1);
   background: rgba(255, 255, 255, 0.78);
   color: var(--navy);
-}
-
-.menu-toggle svg {
-  width: 18px;
-  height: 18px;
 }
 
 body.theme-dark .menu-toggle {
@@ -1182,6 +1180,96 @@ body.theme-dark .floating-label {
   background: linear-gradient(135deg, #d83333, #ef4444);
 }
 
+.install-app-card {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 1280;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  max-width: min(420px, calc(100vw - 28px));
+  padding: 16px;
+  border: 1px solid rgba(15, 24, 41, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 24px 52px rgba(15, 24, 41, 0.18);
+  color: var(--navy);
+  animation: toastIn 0.2s ease both;
+}
+
+.install-app-card[hidden] {
+  display: none;
+}
+
+.install-app-card strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.install-app-card p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+body.theme-dark .install-app-card {
+  border-color: rgba(156, 174, 199, 0.16);
+  background: rgba(20, 32, 51, 0.98);
+  color: var(--text);
+}
+
+.install-app-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.install-confirm-btn,
+.install-dismiss-btn {
+  border: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.install-confirm-btn {
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--emerald), var(--teal));
+  color: var(--navy);
+  box-shadow: 0 14px 28px rgba(6, 182, 212, 0.22);
+}
+
+.install-dismiss-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(15, 24, 41, 0.06);
+  color: var(--muted);
+}
+
+.install-dismiss-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+body.theme-dark .install-dismiss-btn {
+  background: rgba(156, 174, 199, 0.12);
+  color: var(--text);
+}
+
+.install-confirm-btn:hover,
+.install-dismiss-btn:hover {
+  transform: translateY(-1px);
+}
+
 .app-drawer-scrim,
 .surface-overlay {
   position: fixed;
@@ -1657,6 +1745,13 @@ body.theme-dark .detail-chip:not([data-tone]) {
     bottom: 16px;
     max-width: none;
   }
+
+  .install-app-card {
+    left: 14px;
+    right: 14px;
+    bottom: 14px;
+    max-width: none;
+  }
 }
 
 @media (max-width: 560px) {
@@ -1668,6 +1763,16 @@ body.theme-dark .detail-chip:not([data-tone]) {
 
   .topbar-utility {
     padding-inline: 12px;
+  }
+
+  .install-app-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .install-app-actions {
+    width: 100%;
+    justify-content: flex-end;
   }
 
   .page-copy p:last-child {

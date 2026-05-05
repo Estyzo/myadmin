@@ -1,0 +1,27 @@
+<section id="recent-transfers-page-root" class="page-wrap send-page recent-page container-fluid px-3 px-md-4" tabindex="-1">
+  <div class="send-page-shell">
+    <div class="send-main-column">
+      <div class="send-hero">
+        <div class="send-hero-copy">
+          <p class="page-eyebrow">Recent transfers</p>
+          <h2>Reuse previous details</h2>
+          <p>Select a saved transfer to prefill the Send Money form.</p>
+        </div>
+        <a class="filter-btn send-secondary-link" href="{{ url_for('send_money') }}">New transfer</a>
+      </div>
+
+      <article class="send-card recent-transfers-card">
+        <div class="send-card-head">
+          <div>
+            <p class="card-kicker">Saved locally</p>
+            <h3>Recent recipients</h3>
+            <p>These entries are stored in this browser after successful transfer requests.</p>
+          </div>
+        </div>
+        <div class="recent-transfer-list recent-transfer-list-page" id="recent-transfer-list">
+          <p class="recent-transfer-empty">No recent transfers yet.</p>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>

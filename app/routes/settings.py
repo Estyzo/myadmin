@@ -1,6 +1,6 @@
 from flask import current_app, jsonify, render_template, request
 
-from app.services.settings import build_settings_view_model, fetch_sender_configurations
+from app.services.settings import build_settings_view_model, fetch_sender_configurations, set_sender_configuration_status
 from app.services.shared import format_cache_timestamp, is_fragment_request
 
 
@@ -28,6 +28,16 @@ def api_sender_configurations():
     ), http_status
 
 
+def api_sender_configuration_status():
+    payload = request.get_json(silent=True) or {}
+    response_payload, status_code = set_sender_configuration_status(
+        current_app.config,
+        sender_number=payload.get("sender_number"),
+        is_active=payload.get("is_active"),
+    )
+    return jsonify(response_payload), status_code
+
+
 def settings():
     force_refresh = str(request.args.get("refresh", "0")).strip().lower() in {"1", "true", "yes"}
     view_model = build_settings_view_model(current_app.config, force_refresh=force_refresh)
@@ -37,4 +47,10 @@ def settings():
 
 def register_settings_routes(app):
     app.add_url_rule("/api/sender-configurations", view_func=api_sender_configurations, endpoint="api_sender_configurations")
+    app.add_url_rule(
+        "/api/sender-configurations/status",
+        view_func=api_sender_configuration_status,
+        endpoint="api_sender_configuration_status",
+        methods=["POST"],
+    )
     app.add_url_rule("/settings", view_func=settings, endpoint="settings")

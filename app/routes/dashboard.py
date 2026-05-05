@@ -32,6 +32,7 @@ def dashboard():
         filters=dashboard_data["filters"],
         sort=dashboard_data["sort"],
         data_status=dashboard_data["data_status"],
+        trend_data=dashboard_data["trend_data"],
         operator_options=dashboard_data["operator_options"],
         operation_options=dashboard_data["operation_options"],
     )

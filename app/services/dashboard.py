@@ -3,7 +3,7 @@ import io
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from flask import Response, current_app
 
@@ -19,12 +19,15 @@ from app.services.shared import (
     format_timestamp,
     get_app_timezone,
     is_truthy_flag,
+    mask_digit_sequence,
+    mask_numeric_sequences,
     normalize_per_page,
     normalize_period,
     normalize_sort,
     paginate_items,
     parse_amount_value,
     parse_timestamp,
+    pick_first_available,
 )
 
 
@@ -85,6 +88,61 @@ def sort_transactions(transactions, sort_by, sort_dir):
         key_fn = lambda tx: tx.get("created_at_sort", 0.0)
 
     return sorted(transactions, key=key_fn, reverse=reverse), normalized_by, normalized_dir
+
+
+def add_months(year, month, offset):
+    month_index = (year * 12) + (month - 1) + offset
+    return month_index // 12, (month_index % 12) + 1
+
+
+def build_transaction_trend_data(transactions, today_date):
+    daily_start = today_date - timedelta(days=6)
+    daily_keys = [(daily_start + timedelta(days=offset)).isoformat() for offset in range(7)]
+    daily_buckets = {key: {"sent": 0.0, "received": 0.0} for key in daily_keys}
+
+    month_keys = []
+    for offset in range(-5, 1):
+        year, month = add_months(today_date.year, today_date.month, offset)
+        month_keys.append(f"{year:04d}-{month:02d}")
+    monthly_buckets = {key: {"sent": 0.0, "received": 0.0} for key in month_keys}
+
+    for tx in transactions:
+        tx_date_value = tx.get("created_date_value")
+        if not tx_date_value:
+            continue
+        amount = tx.get("amount_value") or 0.0
+        daily_key = tx_date_value.isoformat()
+        monthly_key = f"{tx_date_value.year:04d}-{tx_date_value.month:02d}"
+        target_names = []
+        if tx.get("is_sent"):
+            target_names.append("sent")
+        if tx.get("is_received"):
+            target_names.append("received")
+
+        for target_name in target_names:
+            if daily_key in daily_buckets:
+                daily_buckets[daily_key][target_name] += amount
+            if monthly_key in monthly_buckets:
+                monthly_buckets[monthly_key][target_name] += amount
+
+    return {
+        "daily": {
+            "labels": [
+                (daily_start + timedelta(days=offset)).strftime("%d %b")
+                for offset in range(7)
+            ],
+            "sent": [round(daily_buckets[key]["sent"], 2) for key in daily_keys],
+            "received": [round(daily_buckets[key]["received"], 2) for key in daily_keys],
+        },
+        "monthly": {
+            "labels": [
+                datetime(year=int(key[:4]), month=int(key[5:7]), day=1).strftime("%b %Y")
+                for key in month_keys
+            ],
+            "sent": [round(monthly_buckets[key]["sent"], 2) for key in month_keys],
+            "received": [round(monthly_buckets[key]["received"], 2) for key in month_keys],
+        },
+    }
 
 
 def _cache_timeout(config):
@@ -183,6 +241,7 @@ def fetch_transactions(config, page=1, page_size=15):
         created_by_value = item.get("created_by") or "-"
         sender_number = item.get("normalizedPhone") or "-"
         receiver_number = item.get("receiverPhone") or "-"
+        note_value = pick_first_available(item, ("note", "Note", "notes", "Notes", "remark", "remarks"), fallback="-")
         created_label = format_timestamp(created_value)
         operator_key = str(operator_value).strip().lower()
         operation_key = str(operation_value).strip().lower()
@@ -201,6 +260,7 @@ def fetch_transactions(config, page=1, page_size=15):
                 "amount_value": amount_value,
                 "status": (item.get("status") or "UNKNOWN").upper(),
                 "created_by": created_by_value,
+                "note": note_value,
                 "created_at": created_label,
                 "created_at_date": created_date_value.isoformat() if created_date_value else "",
                 "created_date_value": created_date_value,
@@ -215,6 +275,7 @@ def fetch_transactions(config, page=1, page_size=15):
                         str(operation_value),
                         str(amount_label),
                         str(created_by_value),
+                        str(note_value),
                         str(created_label),
                     ]
                 ).lower(),
@@ -508,6 +569,12 @@ def build_dashboard_data(
         operator_filter=cleaned_operator,
         operation_filter=cleaned_operation,
     )
+    chart_transactions = apply_transaction_filters(
+        all_transactions,
+        search_query=cleaned_search,
+        operator_filter=cleaned_operator,
+        operation_filter=cleaned_operation,
+    )
     sorted_transactions, normalized_sort_by, normalized_sort_dir = sort_transactions(
         filtered_transactions,
         sort_by=sort_by,
@@ -566,6 +633,7 @@ def build_dashboard_data(
         "operation_options": operation_options,
         "transactions": paged_transactions,
         "filtered_transactions": sorted_transactions,
+        "trend_data": build_transaction_trend_data(chart_transactions, today_date),
         "pagination": pagination,
         "sort": {"by": normalized_sort_by, "dir": normalized_sort_dir},
         "data_status": {
@@ -602,6 +670,7 @@ def build_dashboard_api_payload(config, include_filtered_transactions=False, **p
         "operator_options": dashboard_data["operator_options"],
         "operation_options": dashboard_data["operation_options"],
         "transactions": dashboard_data["transactions"],
+        "trend_data": dashboard_data["trend_data"],
         "pagination": dashboard_data["pagination"],
         "sort": dashboard_data["sort"],
         "data_status": dashboard_data["data_status"],
@@ -633,8 +702,8 @@ def export_transactions_as_csv(transactions, period):
     for tx in transactions:
         writer.writerow(
             [
-                tx.get("sender_number", "-"),
-                tx.get("receiver_number", "-"),
+                mask_digit_sequence(tx.get("sender_number", "-")),
+                mask_numeric_sequences(tx.get("receiver_number", "-")),
                 tx.get("operator", "-"),
                 tx.get("operation", "-"),
                 tx.get("amount", "-"),
@@ -661,8 +730,8 @@ def export_transactions_as_pdf(transactions, period):
         lines.append("No transactions found for current filters.")
     else:
         for tx in transactions:
-            sender = str(tx.get("sender_number", "-"))[:12]
-            receiver = str(tx.get("receiver_number", "-"))[:30]
+            sender = str(mask_digit_sequence(tx.get("sender_number", "-")))[:12]
+            receiver = str(mask_numeric_sequences(tx.get("receiver_number", "-")))[:30]
             operator = str(tx.get("operator", "-"))[:10]
             operation = str(tx.get("operation", "-"))[:10]
             amount = str(tx.get("amount", "-"))[:14]

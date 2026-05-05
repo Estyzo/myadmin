@@ -8,10 +8,15 @@
   var toastStack = null;
   var sidebarStorageKey = "app.sidebarCollapsed";
   var themeStorageKey = "app.theme";
+  var installPromptStorageKey = "app.installPromptDismissedAt";
   var settingsTabStorageKey = "settings.activeTab";
   var settingsPreferenceStorageKey = "settings.preferences";
   var recentTransfersStorageKey = "sendMoney.recentTransfers";
+  var pendingRecentTransferStorageKey = "sendMoney.pendingRecentTransfer";
   var maxRecentTransfers = 5;
+  var deferredInstallPrompt = null;
+  var approvalPollTimer = null;
+  var activeApprovalContext = null;
   var pendingFragmentRequests = new Map();
   var commandPaletteState = {
     commands: [],
@@ -32,6 +37,11 @@
     return new URL(url || window.location.href, window.location.origin).toString();
   }
 
+  function getCsrfToken() {
+    var tokenMeta = document.querySelector('meta[name="csrf-token"]');
+    return tokenMeta ? tokenMeta.getAttribute("content") || "" : "";
+  }
+
   function inferFragmentTarget(url) {
     var pathname = new URL(url || window.location.href, window.location.origin).pathname;
 
@@ -43,6 +53,12 @@
     }
     if (pathname === "/settings") {
       return "#settings-page-root";
+    }
+    if (pathname === "/send-money") {
+      return "#send-money-page-root";
+    }
+    if (pathname === "/recent-transfers") {
+      return "#recent-transfers-page-root";
     }
     return "";
   }
@@ -219,6 +235,111 @@
     return hasToasts;
   }
 
+  function isStandaloneApp() {
+    return (
+      window.matchMedia("(display-mode: standalone)").matches ||
+      window.navigator.standalone === true
+    );
+  }
+
+  function shouldShowInstallPrompt() {
+    var dismissedAt = Number(window.localStorage.getItem(installPromptStorageKey) || 0);
+    var sevenDays = 7 * 24 * 60 * 60 * 1000;
+    return !dismissedAt || Date.now() - dismissedAt > sevenDays;
+  }
+
+  function isIosSafariInstallPath() {
+    var userAgent = window.navigator.userAgent || "";
+    var isIos = /iphone|ipad|ipod/i.test(userAgent);
+    var isSafari = /safari/i.test(userAgent) && !/crios|fxios|edgios/i.test(userAgent);
+    return isIos && isSafari && !isStandaloneApp();
+  }
+
+  function setInstallPromptVisible(isVisible, isIosHint) {
+    var card = document.querySelector("[data-install-card='true']");
+    var button = document.querySelector("[data-install-app='true']");
+    var confirm = document.querySelector("[data-install-confirm='true']");
+    var help = document.querySelector("[data-install-help]");
+
+    if (button) {
+      button.hidden = !isVisible || !!isIosHint;
+    }
+    if (!card) {
+      return;
+    }
+    card.hidden = !isVisible;
+    card.classList.toggle("is-ios-hint", !!isIosHint);
+    if (help) {
+      help.textContent = isIosHint
+        ? "Tap Share, then Add to Home Screen to install this app on iPhone."
+        : "Open it from your phone home screen with a faster app-like experience.";
+    }
+    if (confirm) {
+      confirm.textContent = isIosHint ? "Got it" : "Install";
+    }
+  }
+
+  function dismissInstallPrompt() {
+    window.localStorage.setItem(installPromptStorageKey, String(Date.now()));
+    setInstallPromptVisible(false, false);
+  }
+
+  function promptAppInstall() {
+    if (isIosSafariInstallPath()) {
+      dismissInstallPrompt();
+      return;
+    }
+    if (!deferredInstallPrompt) {
+      showToast("Install will appear when your browser says this device is ready.", "success");
+      return;
+    }
+    deferredInstallPrompt.prompt();
+    deferredInstallPrompt.userChoice.then(function (choice) {
+      if (choice && choice.outcome === "accepted") {
+        showToast("TransferFlow is installing.", "success");
+      }
+      deferredInstallPrompt = null;
+      setInstallPromptVisible(false, false);
+    });
+  }
+
+  function registerServiceWorker() {
+    if (!("serviceWorker" in window.navigator) || !window.isSecureContext) {
+      return;
+    }
+    window.navigator.serviceWorker.register("/service-worker.js").catch(function () {});
+  }
+
+  function initInstallPrompt() {
+    var installButton = document.querySelector("[data-install-app='true']");
+    var confirmButton = document.querySelector("[data-install-confirm='true']");
+    var dismissButton = document.querySelector("[data-install-dismiss='true']");
+
+    registerServiceWorker();
+
+    if (isStandaloneApp()) {
+      setInstallPromptVisible(false, false);
+      return;
+    }
+
+    if (installButton && installButton.getAttribute("data-install-bound") !== "true") {
+      installButton.setAttribute("data-install-bound", "true");
+      installButton.addEventListener("click", promptAppInstall);
+    }
+    if (confirmButton && confirmButton.getAttribute("data-install-bound") !== "true") {
+      confirmButton.setAttribute("data-install-bound", "true");
+      confirmButton.addEventListener("click", promptAppInstall);
+    }
+    if (dismissButton && dismissButton.getAttribute("data-install-bound") !== "true") {
+      dismissButton.setAttribute("data-install-bound", "true");
+      dismissButton.addEventListener("click", dismissInstallPrompt);
+    }
+
+    if (isIosSafariInstallPath() && shouldShowInstallPrompt()) {
+      setInstallPromptVisible(true, true);
+    }
+  }
+
   function createRipple(effectTarget, event) {
     var rect;
     var ripple;
@@ -363,6 +484,14 @@
         subtitle: "Create and confirm a transfer request.",
         keywords: "send money transfer payment payout",
         url: "/send-money",
+      },
+      {
+        icon: "R",
+        group: "Navigate",
+        title: "Open recent transfers",
+        subtitle: "Reuse saved transfer details.",
+        keywords: "recent transfers repeat recipients reuse",
+        url: "/recent-transfers",
       },
       {
         icon: "M",
@@ -790,6 +919,73 @@
     });
   }
 
+  function updateSenderStatusRow(button, isActive) {
+    var row = button ? button.closest("[data-sender-config-row]") : null;
+    var statusPill = row ? row.querySelector("[data-sender-status-pill]") : null;
+    if (!button) {
+      return;
+    }
+    button.classList.toggle("on", !!isActive);
+    button.classList.toggle("off", !isActive);
+    button.setAttribute("aria-pressed", isActive ? "true" : "false");
+    button.setAttribute("aria-label", (isActive ? "Deactivate " : "Activate ") + (button.getAttribute("data-sender-number") || "sender"));
+    if (statusPill) {
+      statusPill.classList.toggle("active", !!isActive);
+      statusPill.classList.toggle("inactive", !isActive);
+      statusPill.textContent = isActive ? "Active" : "Inactive";
+    }
+  }
+
+  function initSenderStatusToggles(scopeRoot) {
+    var root = scopeRoot && scopeRoot.querySelector ? scopeRoot : document;
+    root.querySelectorAll("[data-sender-status-toggle='true']").forEach(function (button) {
+      if (button.getAttribute("data-sender-status-bound") === "true") {
+        return;
+      }
+      button.setAttribute("data-sender-status-bound", "true");
+      button.addEventListener("click", async function () {
+        var nextState = !button.classList.contains("on");
+        var previousState = !nextState;
+        var senderNumber = button.getAttribute("data-sender-number") || "";
+
+        updateSenderStatusRow(button, nextState);
+        setElementLoadingState(button, true);
+        try {
+          var response = await fetch("/api/sender-configurations/status", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+              "X-Requested-With": "XMLHttpRequest",
+              "X-CSRF-Token": getCsrfToken(),
+            },
+            body: JSON.stringify({
+              sender_number: senderNumber,
+              is_active: nextState,
+            }),
+          });
+          var result = {};
+          try {
+            result = await response.json();
+          } catch (_jsonError) {
+            result = {};
+          }
+          if (!response.ok || result.ok === false) {
+            throw new Error(result.error || "Unable to update sender status.");
+          }
+          showToast(result.message || "Sender configuration updated.", "success");
+          announceStatus(result.message || "Sender configuration updated.");
+        } catch (error) {
+          updateSenderStatusRow(button, previousState);
+          showToast(error.message || "Unable to update sender status.", "error");
+          announceStatus(error.message || "Unable to update sender status.");
+        } finally {
+          setElementLoadingState(button, false);
+        }
+      });
+    });
+  }
+
   function formatDateForInput(date) {
     var adjusted = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
     return adjusted.toISOString().slice(0, 10);
@@ -948,6 +1144,25 @@
     return url.toString();
   }
 
+  function clearScheduledAutoSubmit(form) {
+    if (!form || !autoSubmitTimers.has(form)) {
+      return;
+    }
+    window.clearTimeout(autoSubmitTimers.get(form));
+    autoSubmitTimers.delete(form);
+  }
+
+  function scheduleAutoSubmit(form, delay) {
+    if (!form) {
+      return;
+    }
+    clearScheduledAutoSubmit(form);
+    autoSubmitTimers.set(form, window.setTimeout(function () {
+      autoSubmitTimers.delete(form);
+      form.requestSubmit();
+    }, delay || 250));
+  }
+
   function normalizePhone(value) {
     var digits = String(value || "").replace(/\D/g, "");
     if (digits.length === 9) {
@@ -958,6 +1173,47 @@
     }
     if (digits.length === 12 && digits.indexOf("255") === 0) {
       return "+" + digits;
+    }
+    return "";
+  }
+
+  function normalizeReceiverPhone(value) {
+    var digits = String(value || "").replace(/\D/g, "");
+    if (digits.length === 12 && digits.indexOf("255") === 0) {
+      digits = "0" + digits.slice(3);
+    } else if (digits.length === 9) {
+      digits = "0" + digits;
+    }
+    return digits.length === 10 && digits.charAt(0) === "0" ? digits : "";
+  }
+
+  function normalizeLocalPhone(value) {
+    return normalizeReceiverPhone(value);
+  }
+
+  function inferMobileOperatorName(phoneNumber) {
+    var digits = String(phoneNumber || "").replace(/\D/g, "");
+    var national;
+    var prefix;
+    if (digits.indexOf("255") === 0) {
+      national = digits.slice(3);
+    } else if (digits.charAt(0) === "0") {
+      national = digits.slice(1);
+    } else {
+      national = digits;
+    }
+    prefix = national.slice(0, 2);
+    if (prefix === "61" || prefix === "62") {
+      return "Halotel";
+    }
+    if (prefix === "68" || prefix === "69" || prefix === "78") {
+      return "Airtel";
+    }
+    if (prefix === "65" || prefix === "67" || prefix === "71" || prefix === "77") {
+      return "Yas";
+    }
+    if (prefix === "74" || prefix === "75" || prefix === "76") {
+      return "Vodacom";
     }
     return "";
   }
@@ -1002,6 +1258,23 @@
     } catch (_storageError) {}
   }
 
+  function savePendingRecentTransfer(item) {
+    try {
+      window.localStorage.setItem(pendingRecentTransferStorageKey, JSON.stringify(item || {}));
+    } catch (_storageError) {}
+  }
+
+  function takePendingRecentTransfer() {
+    var item = null;
+    try {
+      item = JSON.parse(window.localStorage.getItem(pendingRecentTransferStorageKey) || "null");
+      window.localStorage.removeItem(pendingRecentTransferStorageKey);
+    } catch (_storageError) {
+      item = null;
+    }
+    return item && typeof item === "object" ? item : null;
+  }
+
   function addRecentTransfer(record) {
     var items = getRecentTransfers();
     var key = [record.sender_mobile_number, record.receiver_phone_number, String(record.amount_value || record.amount || "")].join("|");
@@ -1036,11 +1309,97 @@
       .join("");
   }
 
+  function fillSendMoneyFormFromRecent(sendMoneyForm, recentItem) {
+    var senderField;
+    var senderValue;
+    var senderLocalValue;
+    if (!sendMoneyForm || !recentItem) {
+      return false;
+    }
+    senderField = sendMoneyForm.querySelector('[name="sender_mobile_number"]');
+    senderValue = normalizePhone(recentItem.sender_mobile_number) || recentItem.sender_mobile_number || "";
+    senderLocalValue = normalizeLocalPhone(recentItem.sender_mobile_number);
+    if (senderField) {
+      senderField.value = senderValue;
+      if (!senderField.value && senderLocalValue) {
+        senderField.value = senderLocalValue;
+      }
+    }
+    sendMoneyForm.querySelector('[name="receiver_phone_number"]').value = recentItem.receiver_phone_number || "";
+    sendMoneyForm.querySelector('[name="amount"]').value = recentItem.amount_value || recentItem.amount || "";
+    initFloatingFields(sendMoneyForm);
+    syncSenderDetails(sendMoneyForm);
+    syncReceiverDetails(sendMoneyForm);
+    resetTransferConfirmation(sendMoneyForm);
+    setFormFeedback(sendMoneyForm, "Recent transfer loaded. Review and submit when ready.", "info");
+    announceStatus("Recent transfer loaded.");
+    return true;
+  }
+
+  function applyPendingRecentTransfer() {
+    var sendMoneyForm = document.getElementById("send-money-form");
+    var pendingItem;
+    if (!sendMoneyForm) {
+      return;
+    }
+    pendingItem = takePendingRecentTransfer();
+    if (pendingItem) {
+      fillSendMoneyFormFromRecent(sendMoneyForm, pendingItem);
+    }
+  }
+
+  function getSelectedSenderDetails(form) {
+    var senderField = form ? form.querySelector('[name="sender_mobile_number"]') : null;
+    var selectedOption = senderField && senderField.options ? senderField.options[senderField.selectedIndex] : null;
+    return {
+      client_code: selectedOption ? String(selectedOption.getAttribute("data-client-code") || "").trim() : "",
+      mobile_operator: selectedOption ? String(selectedOption.getAttribute("data-mobile-operator") || "").trim() : "",
+      request_path: selectedOption ? String(selectedOption.getAttribute("data-request-path") || "").trim() : "",
+    };
+  }
+
+  function syncSenderDetails(form) {
+    var details = getSelectedSenderDetails(form);
+    var strip = form ? form.querySelector("[data-sender-detail-strip]") : null;
+    var clientCode = form ? form.querySelector("[data-sender-client-code]") : null;
+    var mobileOperator = form ? form.querySelector("[data-sender-mobile-operator]") : null;
+    var hasDetails = !!(details.client_code || details.mobile_operator);
+
+    if (strip) {
+      strip.hidden = !hasDetails;
+    }
+    if (clientCode) {
+      clientCode.textContent = details.client_code || "-";
+    }
+    if (mobileOperator) {
+      mobileOperator.textContent = details.mobile_operator || "-";
+    }
+  }
+
+  function syncReceiverDetails(form) {
+    var receiverField = form ? form.querySelector('[name="receiver_phone_number"]') : null;
+    var normalizedReceiver = normalizeReceiverPhone(receiverField && receiverField.value);
+    var receiverOperator = normalizedReceiver ? inferMobileOperatorName(normalizedReceiver) : "";
+    var strip = form ? form.querySelector("[data-receiver-detail-strip]") : null;
+    var mobileOperator = form ? form.querySelector("[data-receiver-mobile-operator]") : null;
+
+    if (strip) {
+      strip.hidden = !receiverOperator;
+    }
+    if (mobileOperator) {
+      mobileOperator.textContent = receiverOperator || "-";
+    }
+    return receiverOperator;
+  }
+
   function buildTransferReceipt(result, payload) {
     var receipt = result && result.receipt && typeof result.receipt === "object" ? result.receipt : {};
     return {
       sender_mobile_number: receipt.sender_mobile_number || payload.sender_mobile_number,
+      client_code: receipt.client_code || payload.client_code || "-",
+      mobile_operator: receipt.mobile_operator || payload.mobile_operator || "-",
       receiver_phone_number: receipt.receiver_phone_number || payload.receiver_phone_number,
+      receiver_mobile_operator: receipt.receiver_mobile_operator || payload.receiver_mobile_operator || "-",
       amount: receipt.amount || formatCurrencyAmount(payload.amount),
       amount_value: Number(receipt.amount_value || payload.amount || 0),
       submitted_at: receipt.submitted_at || new Date().toISOString(),
@@ -1076,6 +1435,8 @@
 
     form._pendingTransferPayload = payload;
     confirmation.querySelector("[data-confirm-sender]").textContent = payload.sender_mobile_number;
+    confirmation.querySelector("[data-confirm-client-code]").textContent = payload.client_code || "-";
+    confirmation.querySelector("[data-confirm-mobile-operator]").textContent = payload.mobile_operator || "-";
     confirmation.querySelector("[data-confirm-receiver]").textContent = payload.receiver_phone_number;
     confirmation.querySelector("[data-confirm-amount]").textContent = formatCurrencyAmount(payload.amount);
     toggleTransferSubmitButtons(form, true);
@@ -1093,6 +1454,8 @@
     }
     receiptCard.hidden = false;
     receiptCard.querySelector("[data-receipt-sender]").textContent = receipt.sender_mobile_number;
+    receiptCard.querySelector("[data-receipt-client-code]").textContent = receipt.client_code || "-";
+    receiptCard.querySelector("[data-receipt-mobile-operator]").textContent = receipt.mobile_operator || "-";
     receiptCard.querySelector("[data-receipt-receiver]").textContent = receipt.receiver_phone_number;
     receiptCard.querySelector("[data-receipt-amount]").textContent = receipt.amount;
     receiptCard.querySelector("[data-receipt-time]").textContent = formatTransferTime(receipt.submitted_at);
@@ -1103,6 +1466,192 @@
       badge.classList.remove("status-badge-success", "status-badge-danger", "status-badge-loading");
       badge.classList.add(badgeLabel === "Failed" ? "status-badge-danger" : "status-badge-success");
       badge.lastElementChild.textContent = badgeLabel;
+    }
+  }
+
+  function stopApprovalPolling() {
+    if (approvalPollTimer) {
+      window.clearInterval(approvalPollTimer);
+      approvalPollTimer = null;
+    }
+  }
+
+  function getApprovalModalElements() {
+    var modal = document.querySelector("[data-transfer-approval-modal]");
+    return {
+      modal: modal,
+      message: modal ? modal.querySelector("[data-approval-message]") : null,
+      note: modal ? modal.querySelector("[data-approval-note]") : null,
+      approveButton: modal ? modal.querySelector("[data-approval-decision='APPROVED']") : null,
+      rejectButton: modal ? modal.querySelector("[data-approval-decision='REJECTED']") : null,
+      closeButton: modal ? modal.querySelector("[data-approval-close='true']") : null,
+    };
+  }
+
+  function showApprovalModal(message) {
+    var elements = getApprovalModalElements();
+    if (!elements.modal) {
+      return;
+    }
+    if (elements.message) {
+      elements.message.textContent = message || "Approval required.";
+    }
+    elements.modal.hidden = false;
+    document.body.classList.add("detail-drawer-open");
+    if (elements.approveButton) {
+      elements.approveButton.focus();
+    }
+  }
+
+  function setApprovalDecisionControlsEnabled(isEnabled) {
+    var elements = getApprovalModalElements();
+    [elements.approveButton, elements.rejectButton].forEach(function (button) {
+      if (!button) {
+        return;
+      }
+      button.disabled = !isEnabled;
+      button.setAttribute("aria-disabled", isEnabled ? "false" : "true");
+    });
+  }
+
+  function hideApprovalModal() {
+    var elements = getApprovalModalElements();
+    if (elements.modal) {
+      elements.modal.hidden = true;
+    }
+    document.body.classList.remove("detail-drawer-open");
+  }
+
+  function buildApprovalRequestPayload() {
+    if (!activeApprovalContext) {
+      return null;
+    }
+    return {
+      request_id: activeApprovalContext.request_id,
+      owner_token: activeApprovalContext.owner_token,
+      initiated_by: activeApprovalContext.initiated_by,
+      client_request_id: activeApprovalContext.client_request_id,
+    };
+  }
+
+  async function pollApprovalStatusOnce(form) {
+    var requestPayload = buildApprovalRequestPayload();
+    var pollUrl = activeApprovalContext && activeApprovalContext.poll_url ? activeApprovalContext.poll_url : "/api/send-money/approval-status";
+    var response;
+    var result = {};
+    if (!requestPayload) {
+      return;
+    }
+    response = await fetch(pollUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        "X-Requested-With": "XMLHttpRequest",
+        "X-CSRF-Token": getCsrfToken(),
+      },
+      body: JSON.stringify(requestPayload),
+    });
+    try {
+      result = await response.json();
+    } catch (_jsonError) {
+      result = {};
+    }
+    if (!response.ok || result.ok === false) {
+      throw new Error(result.error || "Unable to poll approval status.");
+    }
+    if (result.approval_status === "APPROVED" || result.approval_status === "REJECTED") {
+      stopApprovalPolling();
+      hideApprovalModal();
+      setFormFeedback(form, result.message || "Approval decision already recorded.", result.approval_status === "APPROVED" ? "success" : "error");
+      showToast(result.message || "Approval decision already recorded.", result.approval_status === "APPROVED" ? "success" : "error");
+      return;
+    }
+    if (result.prompt_text) {
+      stopApprovalPolling();
+      showApprovalModal(result.prompt_text);
+      setApprovalDecisionControlsEnabled(true);
+      setFormFeedback(form, "Approval prompt received. Approve or reject to continue.", "info");
+      announceStatus("Approval prompt received.");
+      return;
+    }
+    showApprovalModal(result.message || "Waiting for the device to execute the transfer and send the approval prompt.");
+    setApprovalDecisionControlsEnabled(false);
+    if (form) {
+      setFormFeedback(form, "Transfer request created. Waiting for server reply.", "info");
+    }
+  }
+
+  function startApprovalPolling(form, approvalContext) {
+    stopApprovalPolling();
+    activeApprovalContext = approvalContext || null;
+    if (!activeApprovalContext || !activeApprovalContext.request_id || !activeApprovalContext.owner_token) {
+      return;
+    }
+    showApprovalModal("Waiting for the device to execute the transfer and send the approval prompt.");
+    setApprovalDecisionControlsEnabled(false);
+    setFormFeedback(form, "Transfer request created. Polling for server reply.", "info");
+    pollApprovalStatusOnce(form).catch(function () {});
+    approvalPollTimer = window.setInterval(function () {
+      pollApprovalStatusOnce(form).catch(function (error) {
+        setFormFeedback(form, error.message || "Approval polling failed.", "error");
+        stopApprovalPolling();
+      });
+    }, 3000);
+  }
+
+  async function submitApprovalDecision(decision) {
+    var requestPayload = buildApprovalRequestPayload();
+    var elements = getApprovalModalElements();
+    var note = elements.note ? elements.note.value : "";
+    var decisionUrl = activeApprovalContext && activeApprovalContext.decision_url ? activeApprovalContext.decision_url : "/api/send-money/approval-decision";
+    var response;
+    var result = {};
+    if (!requestPayload) {
+      return;
+    }
+    requestPayload.decision = decision;
+    requestPayload.note = note;
+    setElementLoadingState(elements.approveButton, true);
+    setElementLoadingState(elements.rejectButton, true);
+    try {
+      response = await fetch(decisionUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+          "X-CSRF-Token": getCsrfToken(),
+        },
+        body: JSON.stringify(requestPayload),
+      });
+      try {
+        result = await response.json();
+      } catch (_jsonError) {
+        result = {};
+      }
+      if (!response.ok || result.ok === false) {
+        throw new Error(result.error || "Unable to submit approval decision.");
+      }
+      stopApprovalPolling();
+      hideApprovalModal();
+      document.querySelectorAll("[data-receipt-status]").forEach(function (statusEl) {
+        statusEl.textContent = decision === "APPROVED" ? "Approved" : "Rejected";
+      });
+      document.querySelectorAll("[data-receipt-badge]").forEach(function (badge) {
+        badge.classList.remove("status-badge-success", "status-badge-danger", "status-badge-loading");
+        badge.classList.add(decision === "APPROVED" ? "status-badge-success" : "status-badge-danger");
+        if (badge.lastElementChild) {
+          badge.lastElementChild.textContent = decision === "APPROVED" ? "Approved" : "Rejected";
+        }
+      });
+      showToast(result.message || "Approval decision submitted.", decision === "APPROVED" ? "success" : "error");
+      announceStatus(result.message || "Approval decision submitted.");
+    } catch (error) {
+      showToast(error.message || "Unable to submit approval decision.", "error");
+    } finally {
+      setElementLoadingState(elements.approveButton, false);
+      setElementLoadingState(elements.rejectButton, false);
     }
   }
 
@@ -1260,6 +1809,9 @@
     }
     Object.keys(errors).forEach(function (name) {
       var field = form.querySelector('[name="' + name + '"]');
+      if (!field && (name === "client_code" || name === "mobile_operator")) {
+        field = form.querySelector('[name="sender_mobile_number"]');
+      }
       if (!field) {
         return;
       }
@@ -1275,6 +1827,7 @@
     var senderField = form.querySelector('[name="sender_mobile_number"]');
     var receiverField = form.querySelector('[name="receiver_phone_number"]');
     var amountField = form.querySelector('[name="amount"]');
+    var senderDetails = getSelectedSenderDetails(form);
     var firstInvalidField = null;
 
     [senderField, receiverField, amountField].forEach(clearFieldError);
@@ -1282,22 +1835,41 @@
 
     var hasErrors = false;
     var normalizedSender = normalizePhone(senderField && senderField.value);
-    var normalizedReceiver = normalizePhone(receiverField && receiverField.value);
+    var normalizedSenderLocal = normalizeLocalPhone(senderField && senderField.value);
+    var normalizedReceiver = normalizeReceiverPhone(receiverField && receiverField.value);
+    var receiverOperator = normalizedReceiver ? inferMobileOperatorName(normalizedReceiver) : "";
     var amount = amountField ? parseFloat(String(amountField.value || "").trim()) : NaN;
 
-    if (!normalizedSender) {
+    if (!normalizedSender || !normalizedSenderLocal) {
       hasErrors = true;
       setFieldError(senderField, "Choose a valid sender number.");
+      firstInvalidField = firstInvalidField || senderField;
+    }
+    if (normalizedSender && (!senderDetails.client_code || senderDetails.client_code === "-" || !senderDetails.mobile_operator || senderDetails.mobile_operator === "-" || !senderDetails.request_path || senderDetails.request_path === "-")) {
+      hasErrors = true;
+      setFieldError(senderField, "Selected sender must include client code, mobile operator, and transfer path.");
       firstInvalidField = firstInvalidField || senderField;
     }
     if (!normalizedReceiver) {
       hasErrors = true;
       setFieldError(receiverField, "Enter a valid receiver number.");
       firstInvalidField = firstInvalidField || receiverField;
-    }
-    if (!Number.isFinite(amount) || amount <= 0) {
+    } else if (!receiverOperator) {
       hasErrors = true;
-      setFieldError(amountField, "Enter an amount greater than zero.");
+      setFieldError(receiverField, "Receiver operator could not be detected from this number.");
+      firstInvalidField = firstInvalidField || receiverField;
+    } else if (senderDetails.mobile_operator && senderDetails.mobile_operator !== "-" && receiverOperator.toLowerCase() !== senderDetails.mobile_operator.toLowerCase()) {
+      hasErrors = true;
+      setFieldError(receiverField, "Cross-operator transfer is not allowed. Receiver is " + receiverOperator + ", but sender is " + senderDetails.mobile_operator + ".");
+      firstInvalidField = firstInvalidField || receiverField;
+    }
+    if (receiverField && normalizedReceiver && receiverField.value !== normalizedReceiver) {
+      receiverField.value = normalizedReceiver;
+      syncFloatingField(receiverField);
+    }
+    if (!Number.isFinite(amount) || amount < 1000) {
+      hasErrors = true;
+      setFieldError(amountField, "Enter an amount of at least 1,000.");
       firstInvalidField = firstInvalidField || amountField;
     }
 
@@ -1312,7 +1884,11 @@
 
     return {
       sender_mobile_number: normalizedSender,
+      sender_local_number: normalizedSenderLocal,
+      client_code: senderDetails.client_code,
+      mobile_operator: senderDetails.mobile_operator,
       receiver_phone_number: normalizedReceiver,
+      receiver_mobile_operator: receiverOperator,
       amount: Number(amount.toFixed(2)),
     };
   }
@@ -1334,6 +1910,7 @@
           "Content-Type": "application/json",
           Accept: "application/json",
           "X-Requested-With": "XMLHttpRequest",
+          "X-CSRF-Token": getCsrfToken(),
         },
         body: JSON.stringify(payload),
       });
@@ -1359,10 +1936,8 @@
       renderTransferReceipt(form, receipt);
       addRecentTransfer(receipt);
       renderRecentTransfers();
+      startApprovalPolling(form, result.approval);
       resetTransferConfirmation(form);
-      form.reset();
-      initFloatingFields(form);
-      [form.querySelector('[name="sender_mobile_number"]'), form.querySelector('[name="receiver_phone_number"]'), form.querySelector('[name="amount"]')].forEach(clearFieldError);
     } catch (error) {
       setFormFeedback(form, error.message || "Transfer request failed.", "error");
       showToast(error.message || "Transfer request failed.", "error");
@@ -1598,6 +2173,8 @@
     var confirmEditBtn = event.target.closest("[data-confirm-edit='true']");
     var reuseTransferBtn = event.target.closest("[data-reuse-transfer]");
     var rangePresetBtn = event.target.closest("[data-range-days]");
+    var approvalDecisionBtn = event.target.closest("[data-approval-decision]");
+    var approvalCloseBtn = event.target.closest("[data-approval-close='true']");
 
     if (themeToggleBtn) {
       event.preventDefault();
@@ -1642,6 +2219,18 @@
     if (rangePresetBtn) {
       event.preventDefault();
       applyMessagesDateRange(rangePresetBtn);
+      return;
+    }
+
+    if (approvalCloseBtn) {
+      event.preventDefault();
+      hideApprovalModal();
+      return;
+    }
+
+    if (approvalDecisionBtn) {
+      event.preventDefault();
+      submitApprovalDecision(approvalDecisionBtn.getAttribute("data-approval-decision"));
       return;
     }
 
@@ -1698,16 +2287,15 @@
       var recentItems = getRecentTransfers();
       var recentItem = recentItems[recentIndex];
       var sendMoneyForm = document.getElementById("send-money-form");
-      if (!recentItem || !sendMoneyForm) {
+      if (!recentItem) {
         return;
       }
-      sendMoneyForm.querySelector('[name="sender_mobile_number"]').value = recentItem.sender_mobile_number || "";
-      sendMoneyForm.querySelector('[name="receiver_phone_number"]').value = recentItem.receiver_phone_number || "";
-      sendMoneyForm.querySelector('[name="amount"]').value = recentItem.amount_value || recentItem.amount || "";
-      initFloatingFields(sendMoneyForm);
-      resetTransferConfirmation(sendMoneyForm);
-      setFormFeedback(sendMoneyForm, "Recent transfer loaded. Review and submit when ready.", "info");
-      announceStatus("Recent transfer loaded.");
+      if (sendMoneyForm) {
+        fillSendMoneyFormFromRecent(sendMoneyForm, recentItem);
+        return;
+      }
+      savePendingRecentTransfer(recentItem);
+      window.location.assign("/send-money");
       return;
     }
 
@@ -1799,6 +2387,12 @@
     var sendForm = field.closest("#send-money-form");
     if (sendForm && field.matches("input, select")) {
       clearFieldError(field);
+      if (field.matches('[name="sender_mobile_number"]')) {
+        syncSenderDetails(sendForm);
+      }
+      if (field.matches('[name="receiver_phone_number"]')) {
+        syncReceiverDetails(sendForm);
+      }
       resetTransferConfirmation(sendForm);
       return;
     }
@@ -1808,33 +2402,74 @@
       return;
     }
     if (field.matches("input[type='date'], select")) {
-      if (autoSubmitTimers.has(autoForm)) {
-        window.clearTimeout(autoSubmitTimers.get(autoForm));
-      }
-      autoSubmitTimers.set(autoForm, window.setTimeout(function () {
-        autoSubmitTimers.delete(autoForm);
-        autoForm.requestSubmit();
-      }, 250));
+      scheduleAutoSubmit(autoForm, 250);
     }
+  });
+
+  document.addEventListener("input", function (event) {
+    var field = event.target;
+    var form;
+    var hadAppliedQuery;
+    if (!(field instanceof HTMLElement)) {
+      return;
+    }
+    if (!field.matches("form[data-ajax-form='true'] input[name='q']")) {
+      return;
+    }
+
+    form = field.closest("form[data-ajax-form='true']");
+    if (!form) {
+      return;
+    }
+
+    if (String(field.value || "").trim()) {
+      clearScheduledAutoSubmit(form);
+      return;
+    }
+
+    hadAppliedQuery = !!String(field.defaultValue || "").trim();
+    if (!hadAppliedQuery) {
+      return;
+    }
+
+    scheduleAutoSubmit(form, 250);
   });
 
   window.addEventListener("ux:content-updated", function (event) {
     closeDetailDrawer(false);
     initThemeControls();
+    initInstallPrompt();
     initCommandPalette();
     initFloatingFields(document);
     initPreferenceToggles(document);
+    initSenderStatusToggles(document);
+    renderRecentTransfers();
+    applyPendingRecentTransfer();
     if (event.detail && event.detail.target === "#settings-page-root") {
       initSettingsTabs(document);
     }
   });
 
   document.addEventListener("pointerdown", function (event) {
-    var target = event.target.closest(".ghost-btn, .filter-btn, .send-submit, .settings-tab, .page-btn, .nav-item, .toggle-switch, .menu-toggle, .message-action-btn, .quick-sender-chip, .switch-btn, .range-chip, .collapse-btn, .topbar-utility, .panel-close-btn, .command-item, .row-action-btn");
+    var target = event.target.closest(".ghost-btn, .filter-btn, .send-submit, .settings-tab, .page-btn, .nav-item, .toggle-switch, .menu-toggle, .message-action-btn, .quick-sender-chip, .switch-btn, .range-chip, .collapse-btn, .topbar-utility, .panel-close-btn, .command-item, .row-action-btn, .install-confirm-btn, .install-dismiss-btn, .sender-status-toggle, .approval-approve-btn, .approval-reject-btn");
     if (!target) {
       return;
     }
     createRipple(target, event);
+  });
+
+  window.addEventListener("beforeinstallprompt", function (event) {
+    event.preventDefault();
+    deferredInstallPrompt = event;
+    if (shouldShowInstallPrompt()) {
+      setInstallPromptVisible(true, false);
+    }
+  });
+
+  window.addEventListener("appinstalled", function () {
+    deferredInstallPrompt = null;
+    setInstallPromptVisible(false, false);
+    showToast("TransferFlow installed.", "success");
   });
 
   document.addEventListener("keydown", function (event) {
@@ -1921,11 +2556,16 @@
   });
 
   initThemeControls();
+  initInstallPrompt();
   initCommandPalette();
   initSidebarToggle();
   initSettingsTabs(document);
   initPreferenceToggles(document);
+  initSenderStatusToggles(document);
   initFloatingFields(document);
+  syncSenderDetails(document.getElementById("send-money-form"));
+  syncReceiverDetails(document.getElementById("send-money-form"));
   renderRecentTransfers();
+  applyPendingRecentTransfer();
   syncCurrentHistoryState();
 })();

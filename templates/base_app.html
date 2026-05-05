@@ -4,6 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="api-base-url" content="{{ api_base_url }}">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <meta name="theme-color" content="#0f1829">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="TransferFlow">
   <title>{% block document_title %}TransferFlow{% endblock %}</title>
   <script>
     (function () {
@@ -21,6 +27,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
+  <link rel="icon" href="{{ url_for('static', filename='icons/transferflow-icon.svg') }}" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/transferflow-icon-192.png') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
   {% block page_styles %}{% endblock %}
   <script>window.API_BASE_URL = "{{ api_base_url }}";</script>
@@ -34,7 +43,7 @@
       {% if show_topbar|default(true) %}
       <header class="topbar topbar-minimal">
         <div class="topbar-group">
-          <button class="menu-toggle" type="button" data-drawer-toggle="true" aria-controls="app-sidebar" aria-expanded="false" aria-label="Open navigation">
+          <button class="nav-toggle-btn menu-toggle" type="button" data-drawer-toggle="true" aria-controls="app-sidebar" aria-expanded="false" aria-label="Open navigation">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M4 7h16"></path>
               <path d="M4 12h16"></path>
@@ -48,6 +57,10 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg>
             <span class="sr-only" data-theme-label>Dark mode</span>
           </button>
+          <button class="topbar-utility topbar-utility-compact install-app-btn" type="button" data-install-app="true" aria-label="Install TransferFlow" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path></svg>
+            <span class="sr-only">Install app</span>
+          </button>
           <div class="profile" aria-label="Admin console">{{ profile_initial|default("L") }}</div>
         </div>
       </header>
@@ -57,6 +70,18 @@
     </main>
   </div>
   <div class="app-drawer-scrim" data-drawer-overlay="true" hidden></div>
+  <section class="install-app-card" data-install-card="true" role="dialog" aria-live="polite" aria-label="Install TransferFlow" hidden>
+    <div>
+      <strong>Install TransferFlow</strong>
+      <p data-install-help>Open it from your phone home screen with a faster app-like experience.</p>
+    </div>
+    <div class="install-app-actions">
+      <button class="install-dismiss-btn" type="button" data-install-dismiss="true" aria-label="Dismiss install prompt">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+      </button>
+      <button class="install-confirm-btn" type="button" data-install-confirm="true">Install</button>
+    </div>
+  </section>
   <div class="surface-overlay" data-command-overlay="true" hidden></div>
   <section class="command-palette" id="command-palette" data-command-palette="true" role="dialog" aria-modal="true" aria-labelledby="command-palette-title" hidden>
     <div class="command-palette-panel">

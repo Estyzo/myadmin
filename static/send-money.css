@@ -46,6 +46,11 @@
   justify-items: end;
 }
 
+.send-secondary-link {
+  width: max-content;
+  margin-top: 14px;
+}
+
 .metric-pill {
   display: inline-flex;
   align-items: center;
@@ -201,6 +206,23 @@ body.theme-dark .amount-wrap strong {
 
 .send-input-wrap .floating-label {
   left: 16px;
+  top: 9px;
+  transform: translateY(0) scale(0.82);
+  color: var(--teal);
+  max-width: calc(100% - 32px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 1;
+  transition: opacity 0.16s ease, visibility 0.16s ease;
+}
+
+.send-field.has-value .send-input-wrap .floating-label,
+.send-field input:not(:placeholder-shown) + .floating-label,
+.send-field .field-icon + input:not(:placeholder-shown) + .floating-label,
+.send-field select:valid + .floating-label {
+  opacity: 0;
+  visibility: hidden;
 }
 
 .send-input-wrap.select-wrap .floating-label {
@@ -209,6 +231,7 @@ body.theme-dark .amount-wrap strong {
 
 .send-input-wrap .field-icon + .send-input + .floating-label {
   left: 50px;
+  max-width: calc(100% - 68px);
 }
 
 .amount-wrap strong {
@@ -229,6 +252,62 @@ body.theme-dark .amount-wrap strong {
 
 .amount-wrap .floating-label {
   left: 62px;
+  max-width: calc(100% - 80px);
+}
+
+.sender-detail-strip,
+.receiver-detail-strip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: -6px;
+}
+
+.receiver-detail-strip {
+  grid-template-columns: 1fr;
+}
+
+.sender-detail-strip[hidden],
+.receiver-detail-strip[hidden] {
+  display: none;
+}
+
+.sender-detail-strip span,
+.receiver-detail-strip span {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(15, 24, 41, 0.04);
+  border: 1px solid rgba(15, 24, 41, 0.08);
+  display: grid;
+  gap: 4px;
+}
+
+.sender-detail-strip small,
+.receiver-detail-strip small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.sender-detail-strip strong,
+.receiver-detail-strip strong {
+  color: var(--navy);
+  font-size: 14px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+body.theme-dark .sender-detail-strip span,
+body.theme-dark .receiver-detail-strip span {
+  background: rgba(156, 174, 199, 0.08);
+  border-color: rgba(156, 174, 199, 0.14);
+}
+
+body.theme-dark .sender-detail-strip strong,
+body.theme-dark .receiver-detail-strip strong {
+  color: var(--text);
 }
 
 .send-form-note {
@@ -350,6 +429,107 @@ body.theme-dark .recent-transfer-side strong {
 
 .confirm-submit-btn {
   flex: 1 1 240px;
+}
+
+.transfer-approval-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1500;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(15, 24, 41, 0.48);
+  backdrop-filter: blur(4px);
+}
+
+.transfer-approval-modal[hidden] {
+  display: none;
+}
+
+.transfer-approval-panel {
+  width: min(560px, 100%);
+  padding: 22px;
+  border-radius: 22px;
+  background: var(--surface-strong);
+  border: 1px solid rgba(15, 24, 41, 0.1);
+  box-shadow: 0 28px 70px rgba(15, 24, 41, 0.24);
+}
+
+.transfer-approval-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.transfer-approval-head h4 {
+  margin: 0;
+  font-size: 24px;
+  letter-spacing: -0.03em;
+}
+
+.transfer-approval-message {
+  margin: 18px 0;
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(6, 182, 212, 0.08);
+  color: var(--navy);
+  font-weight: 700;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.approval-note-field {
+  display: grid;
+  gap: 8px;
+}
+
+.approval-note-field span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.approval-note-field textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 92px;
+  border: 1px solid rgba(15, 24, 41, 0.12);
+  border-radius: 14px;
+  padding: 12px 14px;
+  color: var(--navy);
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.transfer-approval-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.approval-approve-btn,
+.approval-reject-btn {
+  min-width: 128px;
+}
+
+body.theme-dark .transfer-approval-panel {
+  border-color: rgba(156, 174, 199, 0.16);
+  background: var(--surface-strong);
+}
+
+body.theme-dark .transfer-approval-message {
+  color: var(--text);
+  background: rgba(6, 182, 212, 0.12);
+}
+
+body.theme-dark .approval-note-field textarea {
+  border-color: rgba(156, 174, 199, 0.16);
+  background: rgba(20, 32, 51, 0.94);
+  color: var(--text);
 }
 
 .send-side-panel {
@@ -483,9 +663,17 @@ body.theme-dark .recent-transfer-item {
   .transfer-receipt-grid {
     grid-template-columns: 1fr;
   }
+
+  .sender-detail-strip {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 560px) {
+  .send-secondary-link {
+    width: 100%;
+  }
+
   .send-hero-chips {
     width: 100%;
     justify-items: stretch;

@@ -96,15 +96,15 @@
           {% set message_detail = {
             'eyebrow': 'Message details',
             'title': message.sender,
-            'summary': message.message,
+            'summary': message.message|mask_message_preview,
             'tone': 'info',
             'tone_label': message_datetime,
             'fields': [
               {'label': 'Date', 'value': message_datetime},
               {'label': 'Sender', 'value': message.sender},
-              {'label': 'Phone info', 'value': message.phone_info},
-              {'label': 'Device ID', 'value': message.device_id},
-              {'label': 'Message', 'value': message.message}
+              {'label': 'Phone info', 'value': message.phone_info|mask_sensitive_numbers},
+              {'label': 'Device ID', 'value': message.device_id|mask_identifier},
+              {'label': 'Message', 'value': message.message|mask_message_preview}
             ]
           } %}
           <tr class="message-row">
@@ -121,12 +121,12 @@
               </span>
             </td>
             <td class="messages-phone-cell" data-label="Phone info">
-              <strong>{{ message.phone_info }}</strong>
-              <span>ID: {{ message.device_id }}</span>
+              <strong>{{ message.phone_info|mask_sensitive_numbers }}</strong>
+              <span>ID: {{ message.device_id|mask_identifier }}</span>
             </td>
             <td class="messages-body-cell" data-label="Message">
               <div class="message-body-copy">
-                <p class="message-body-text" data-message-text>{{ message.message }}</p>
+                <p class="message-body-text" data-message-text>{{ message.message|mask_message_preview }}</p>
                 <div class="message-row-actions">
                   <button class="message-action-btn" type="button" data-detail-trigger="true" data-detail-payload='{{ message_detail|tojson|forceescape }}'>Details</button>
                   <button class="message-action-btn secondary" type="button" data-copy-message="true">Copy</button>

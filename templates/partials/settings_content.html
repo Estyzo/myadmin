@@ -59,20 +59,22 @@
               <tr>
                 <th scope="col">Sender number</th>
                 <th scope="col">Client code</th>
+                <th scope="col">Mobile operator</th>
                 <th scope="col">TIL number</th>
                 <th scope="col">TIL name</th>
                 <th scope="col">Path</th>
                 <th scope="col">Status</th>
+                <th scope="col">Control</th>
               </tr>
             </thead>
             <tbody>
               {% if sender_configs %}
                 {% for config in sender_configs %}
-                <tr>
+                <tr data-sender-config-row="{{ config.sender_number }}">
                   <td data-label="Sender number">
                     <span class="cell-with-icon">
                       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.1A19.5 19.5 0 0 1 5.2 12.8 19.8 19.8 0 0 1 2.1 4.4 2 2 0 0 1 4.1 2.2h3a2 2 0 0 1 2 1.7 12.8 12.8 0 0 0 .7 2.8 2 2 0 0 1-.45 2.1L8.1 10a16 16 0 0 0 5.9 5.9l1.2-1.2a2 2 0 0 1 2.1-.45 12.8 12.8 0 0 0 2.8.7 2 2 0 0 1 1.7 2z"></path></svg>
-                      <strong>{{ config.sender_number }}</strong>
+                      <strong>{{ config.sender_number|mask_digits }}</strong>
                     </span>
                   </td>
                   <td data-label="Client code">
@@ -81,19 +83,32 @@
                       {{ config.client_code }}
                     </span>
                   </td>
-                  <td data-label="TIL number">{{ config.til_number }}</td>
-                  <td data-label="TIL name">{{ config.til_name or "-" }}</td>
-                  <td class="path-cell" data-label="Path">{{ config.path }}</td>
+                  <td data-label="Mobile operator">{{ config.mobile_operator }}</td>
+                  <td data-label="TIL number">{{ config.til_number|mask_identifier }}</td>
+                  <td data-label="TIL name">{{ config.til_name|mask_name }}</td>
+                  <td class="path-cell" data-label="Path">{{ config.path|mask_sensitive_numbers }}</td>
                   <td data-label="Status">
-                    <span class="status-pill {{ 'active' if config.is_active else 'inactive' }}">
+                    <span class="status-pill {{ 'active' if config.is_active else 'inactive' }}" data-sender-status-pill>
                       {{ "Active" if config.is_active else "Inactive" }}
                     </span>
+                  </td>
+                  <td data-label="Control">
+                    <button
+                      class="toggle-switch {{ 'on' if config.is_active else 'off' }} sender-status-toggle"
+                      type="button"
+                      data-sender-status-toggle="true"
+                      data-sender-number="{{ config.sender_number }}"
+                      aria-pressed="{{ 'true' if config.is_active else 'false' }}"
+                      aria-label="{{ 'Deactivate' if config.is_active else 'Activate' }} {{ config.sender_number }}"
+                    >
+                      <span></span>
+                    </button>
                   </td>
                 </tr>
                 {% endfor %}
               {% else %}
                 <tr>
-                  <td colspan="6" class="empty-table">No sender configurations yet.</td>
+                  <td colspan="8" class="empty-table">No sender configurations yet.</td>
                 </tr>
               {% endif %}
             </tbody>

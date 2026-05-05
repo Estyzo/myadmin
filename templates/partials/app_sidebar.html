@@ -1,6 +1,14 @@
 {% set current_page = active_page|default('') %}
 <aside class="sidebar" id="app-sidebar" aria-label="Primary navigation">
   <div class="brand-panel">
+    <button class="nav-toggle-btn collapse-btn" type="button" data-sidebar-toggle="true" aria-controls="app-sidebar" aria-expanded="true" aria-label="Collapse sidebar">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 7h16"></path>
+        <path d="M4 12h16"></path>
+        <path d="M4 17h16"></path>
+      </svg>
+      <span class="sr-only">Collapse sidebar</span>
+    </button>
     <div class="brand">
       <div class="logo-wrap">
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -28,6 +36,10 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4z"></path></svg>
       <span>Send Money</span>
     </a>
+    <a href="{{ url_for('recent_transfers') }}" class="nav-item{% if current_page == 'recent-transfers' %} active{% endif %}"{% if current_page == 'recent-transfers' %} aria-current="page"{% endif %}>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v6h6"></path><path d="M21 21v-6h-6"></path><path d="M21 9A9 9 0 0 0 6 5.3L3 9"></path><path d="M3 15a9 9 0 0 0 15 3.7l3-3.7"></path></svg>
+      <span>Recent</span>
+    </a>
     <a href="{{ url_for('messages') }}" class="nav-item{% if current_page == 'messages' %} active{% endif %}"{% if current_page == 'messages' %} aria-current="page"{% endif %}>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
       <span>Messages</span>
@@ -38,8 +50,4 @@
     </a>
   </nav>
 
-  <button class="collapse-btn" type="button" data-sidebar-toggle="true" aria-controls="app-sidebar" aria-expanded="true" aria-label="Collapse sidebar">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
-    <span>Collapse</span>
-  </button>
 </aside>
