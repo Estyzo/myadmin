@@ -1,0 +1,746 @@
+/* ========================================
+   UI/UX ENHANCEMENT PATCH
+   Improved error handling, loading states, 
+   table interactions, and accessibility
+   ======================================== */
+
+/* 1. ENHANCED FOCUS RINGS & ACCESSIBILITY */
+:focus-visible {
+  outline: 3px solid var(--teal);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px rgba(6, 182, 212, 0.15);
+}
+
+/* Better contrast for muted text */
+.muted {
+  color: #5f6f86;
+}
+
+body.theme-dark .muted {
+  color: #9caec7;
+}
+
+/* ========================================
+   2. ENHANCED FORM ERROR DISPLAY
+   ======================================== */
+.send-input-wrap.invalid input,
+.send-input-wrap.invalid select,
+input[aria-invalid="true"],
+select[aria-invalid="true"] {
+  border: 2px solid var(--danger);
+  background: rgba(239, 68, 68, 0.04);
+  box-shadow: inset 0 0 0 1px var(--danger);
+}
+
+body.theme-dark .send-input-wrap.invalid input,
+body.theme-dark .send-input-wrap.invalid select,
+body.theme-dark input[aria-invalid="true"],
+body.theme-dark select[aria-invalid="true"] {
+  border-color: #fca5a5;
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.field-error {
+  display: block;
+  color: var(--danger);
+  font-weight: 700;
+  font-size: 13px;
+  margin-top: 8px;
+  animation: slideInError 0.2s ease;
+  padding: 0 4px;
+}
+
+body.theme-dark .field-error {
+  color: #fca5a5;
+}
+
+@keyframes slideInError {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Form success state */
+.form-feedback {
+  display: block;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 16px;
+  animation: fadeIn 0.2s ease;
+}
+
+.form-feedback.success {
+  background: rgba(20, 184, 111, 0.12);
+  color: #0e8c57;
+  border: 1px solid rgba(20, 184, 111, 0.3);
+  border-left: 4px solid #14b86f;
+}
+
+.form-feedback.error {
+  background: rgba(239, 68, 68, 0.12);
+  color: #c62828;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-left: 4px solid #ef4444;
+}
+
+.form-feedback.info {
+  background: rgba(6, 182, 212, 0.12);
+  color: #0b7e9a;
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  border-left: 4px solid var(--teal);
+}
+
+body.theme-dark .form-feedback {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* ========================================
+   3. ENHANCED BUTTON STATES
+   ======================================== */
+
+/* Disabled state */
+button:disabled,
+button[aria-disabled="true"],
+a[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+  background-color: var(--surface-muted) !important;
+  color: var(--muted) !important;
+}
+
+/* Loading state with spinner */
+button.is-loading {
+  position: relative;
+  color: transparent !important;
+  pointer-events: none;
+}
+
+button.is-loading::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  border-top-color: transparent;
+  border-right-color: transparent;
+  animation: spin 0.7s linear infinite;
+  opacity: 0.8;
+}
+
+.ghost-btn:disabled,
+.filter-btn:disabled,
+.page-btn:disabled,
+.send-submit:disabled {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+  color: var(--muted) !important;
+}
+
+/* ========================================
+   4. ENHANCED LOADING INDICATORS
+   ======================================== */
+.async-loading-overlay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+  background: rgba(28, 220, 139, 0.06);
+  border-radius: 12px;
+  border: 1px solid rgba(28, 220, 139, 0.2);
+}
+
+.async-loading-overlay span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--teal);
+  animation: bounce 1.4s infinite;
+}
+
+.async-loading-overlay span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.async-loading-overlay span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes bounce {
+  0%, 80%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Skeleton loader for perceived performance */
+.skeleton-card,
+.skeleton-item {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: var(--surface-strong);
+  border-radius: 16px;
+  border: 1px solid var(--border);
+}
+
+.skeleton-line {
+  height: 12px;
+  background: linear-gradient(
+    90deg,
+    var(--border) 0%,
+    var(--border-strong) 50%,
+    var(--border) 100%
+  );
+  background-size: 200% 100%;
+  border-radius: 6px;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeleton-line.skeleton-title {
+  height: 16px;
+  width: 60%;
+}
+
+.skeleton-line.skeleton-text {
+  height: 12px;
+}
+
+.skeleton-line.skeleton-text.short {
+  width: 40%;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* ========================================
+   5. ENHANCED TABLE INTERACTIONS
+   ======================================== */
+.table tbody tr {
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  cursor: pointer;
+  position: relative;
+}
+
+.table tbody tr:hover {
+  background: rgba(28, 220, 139, 0.08);
+}
+
+.table tbody tr.is-selected {
+  background: rgba(28, 220, 139, 0.12);
+  border-left: 4px solid var(--emerald);
+  padding-left: 8px;
+}
+
+body.theme-dark .table tbody tr:hover {
+  background: rgba(28, 220, 139, 0.06);
+}
+
+body.theme-dark .table tbody tr.is-selected {
+  background: rgba(28, 220, 139, 0.1);
+}
+
+/* Mobile-friendly table display */
+@media (max-width: 768px) {
+  .table {
+    display: block;
+    border: none;
+  }
+
+  .table thead {
+    display: none;
+  }
+
+  .table tbody {
+    display: block;
+  }
+
+  .table tr {
+    display: block;
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    background: var(--surface-strong);
+  }
+
+  .table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border: none;
+  }
+
+  .table td::before {
+    content: attr(data-label);
+    font-weight: 700;
+    color: var(--muted);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    width: 40%;
+  }
+}
+
+/* ========================================
+   6. ENHANCED MODAL & DRAWER STYLING
+   ======================================== */
+.command-palette,
+.detail-drawer,
+[data-transfer-confirmation-modal] {
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(1px);
+}
+
+.surface-overlay {
+  background: rgba(15, 24, 41, 0.5);
+  backdrop-filter: blur(4px);
+  transition: opacity 0.2s ease;
+}
+
+body.theme-dark .surface-overlay {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+/* Bigger close button hit area */
+.panel-close-btn {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  min-height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  transition: background 0.2s ease;
+}
+
+.panel-close-btn:hover {
+  background: var(--surface-muted);
+}
+
+/* ========================================
+   7. ENHANCED TOAST NOTIFICATIONS
+   ======================================== */
+.toast-stack {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  left: auto;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 400px;
+}
+
+@media (max-width: 768px) {
+  .toast-stack {
+    left: 12px;
+    right: 12px;
+    bottom: 80px;
+  }
+}
+
+.ux-toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--surface-strong);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-hover);
+  font-weight: 600;
+  font-size: 13px;
+  animation: slideInRight 0.3s ease both;
+  position: relative;
+  overflow: hidden;
+  word-break: break-word;
+}
+
+.ux-toast::before {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: var(--teal);
+  animation: slideOut 4.2s linear forwards;
+}
+
+.ux-toast.success {
+  border-color: rgba(20, 184, 111, 0.3);
+  border-left: 4px solid #14b86f;
+}
+
+.ux-toast.success::before {
+  background: #14b86f;
+}
+
+.ux-toast.error {
+  border-color: rgba(239, 68, 68, 0.3);
+  border-left: 4px solid #ef4444;
+}
+
+.ux-toast.error::before {
+  background: #ef4444;
+}
+
+.ux-toast.info {
+  border-color: rgba(6, 182, 212, 0.3);
+  border-left: 4px solid var(--teal);
+}
+
+body.theme-dark .ux-toast {
+  background: rgba(20, 32, 51, 0.95);
+  border-color: rgba(156, 174, 199, 0.16);
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(120%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOut {
+  to {
+    width: 0;
+  }
+}
+
+/* ========================================
+   8. ENHANCED EMPTY STATES
+   ======================================== */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.empty-state-icon {
+  width: 96px;
+  height: 96px;
+  border-radius: 24px;
+  background: rgba(28, 220, 139, 0.08);
+  display: grid;
+  place-items: center;
+  color: var(--teal);
+  font-size: 48px;
+}
+
+body.theme-dark .empty-state-icon {
+  background: rgba(28, 220, 139, 0.06);
+}
+
+.empty-state h3,
+.empty-state h5 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+
+.empty-state p {
+  max-width: 400px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.empty-state a,
+.empty-state .action-primary,
+.empty-state .ghost-btn {
+  margin-top: 8px;
+}
+
+.compact-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px 16px;
+  text-align: center;
+}
+
+/* ========================================
+   9. ENHANCED OPERATOR BADGES
+   ======================================== */
+.operator-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.operator-badge::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.operator-badge-vodacom {
+  background: rgba(59, 130, 246, 0.12);
+  color: #1e40af;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.operator-badge-airtel {
+  background: rgba(239, 68, 68, 0.12);
+  color: #991b1b;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.operator-badge-halotel {
+  background: rgba(251, 146, 60, 0.12);
+  color: #92400e;
+  border: 1px solid rgba(251, 146, 60, 0.2);
+}
+
+.operator-badge-yas {
+  background: rgba(250, 204, 21, 0.12);
+  color: #713f12;
+  border: 1px solid rgba(250, 204, 21, 0.2);
+}
+
+/* ========================================
+   10. ENHANCED MOBILE RESPONSIVENESS
+   ======================================== */
+@media (max-width: 768px) {
+  .page-wrap {
+    padding: 16px 12px 24px;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    min-height: 48px;
+  }
+
+  .topbar {
+    padding: 12px 16px;
+    gap: 12px;
+  }
+
+  .topbar h1 {
+    font-size: 18px;
+  }
+
+  .mobile-bottom-nav {
+    display: flex !important;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    gap: 0;
+    padding: 0;
+    background: var(--surface-strong);
+    border-top: 1px solid var(--border);
+    z-index: 30;
+    height: 64px;
+  }
+
+  .mobile-bottom-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    text-decoration: none;
+    color: var(--muted);
+    transition: color 0.2s ease, background 0.2s ease;
+    border-radius: 0;
+  }
+
+  .mobile-bottom-nav-item:hover,
+  .mobile-bottom-nav-item.active {
+    color: var(--teal);
+    background: rgba(6, 182, 212, 0.08);
+  }
+
+  .mobile-bottom-nav-item svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* ========================================
+   11. ANIMATION IMPROVEMENTS
+   ======================================== */
+@keyframes fadeFast {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ========================================
+   12. ACCESSIBILITY IMPROVEMENTS
+   ======================================== */
+
+/* Higher contrast for alerts and statuses */
+.async-error-panel {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-left: 4px solid #ef4444;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  animation: slideInUp 0.3s ease;
+}
+
+.async-error-panel strong {
+  color: #c62828;
+  font-weight: 700;
+}
+
+.async-error-panel p {
+  color: #991b1b;
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* Better status badge contrast */
+.status-badge-success {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid rgba(20, 184, 111, 0.3);
+}
+
+.status-badge-danger {
+  background: #fee2e2;
+  color: #7f1d1d;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.status-badge-loading {
+  background: #cffafe;
+  color: #0c4a6e;
+  border: 1px solid rgba(6, 182, 212, 0.3);
+}
+
+body.theme-dark .status-badge-success {
+  background: rgba(20, 184, 111, 0.15);
+  color: #86efac;
+  border-color: rgba(20, 184, 111, 0.4);
+}
+
+body.theme-dark .status-badge-danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+body.theme-dark .status-badge-loading {
+  background: rgba(6, 182, 212, 0.15);
+  color: #67e8f9;
+  border-color: rgba(6, 182, 212, 0.4);
+}
+
+/* Improved user select for better copy behavior */
+.detail-value,
+[data-message-text],
+.monospace {
+  user-select: text;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
