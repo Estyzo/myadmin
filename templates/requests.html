@@ -1,0 +1,17 @@
+{% extends "base_app.html" %}
+{% set active_page = "requests" %}
+{% set page_title = "Requests" %}
+
+{% block document_title %}TransferFlow Requests{% endblock %}
+
+{% block page_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='requests.css') }}">
+{% endblock %}
+
+{% block page_content %}
+  {% include "partials/requests_content.html" %}
+{% endblock %}
+
+{% block page_scripts %}
+  <script src="{{ url_for('static', filename='requests-page.js') }}"></script>
+{% endblock %}

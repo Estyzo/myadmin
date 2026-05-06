@@ -60,6 +60,9 @@
     if (pathname === "/recent-transfers") {
       return "#recent-transfers-page-root";
     }
+    if (pathname === "/requests") {
+      return "#requests-page-root";
+    }
     return "";
   }
 
@@ -579,6 +582,14 @@
         subtitle: "Reuse saved transfer details.",
         keywords: "recent transfers repeat recipients reuse",
         url: "/recent-transfers",
+      },
+      {
+        icon: "Q",
+        group: "Navigate",
+        title: "Open requests",
+        subtitle: "Monitor live request queue.",
+        keywords: "requests queue approvals pending getrequests",
+        url: "/requests",
       },
       {
         icon: "M",
@@ -1595,7 +1606,6 @@
     initFloatingFields(sendMoneyForm);
     syncSenderDetails(sendMoneyForm);
     syncReceiverDetails(sendMoneyForm);
-    resetTransferConfirmation(sendMoneyForm);
     setFormFeedback(sendMoneyForm, "Recent transfer loaded. Review and submit when ready.", "info");
     announceStatus("Recent transfer loaded.");
     return true;
@@ -1671,43 +1681,6 @@
       reference: receipt.reference || "-",
       status: receipt.status || ("HTTP " + String(result && result.upstream_status ? result.upstream_status : 200)),
     };
-  }
-
-  function toggleTransferSubmitButtons(form, isConfirming) {
-    var primaryBtn = form.querySelector('[type="submit"]');
-    var confirmation = form.querySelector("#transfer-confirmation");
-    if (primaryBtn) {
-      primaryBtn.hidden = !!isConfirming;
-    }
-    if (confirmation) {
-      confirmation.hidden = !isConfirming;
-    }
-  }
-
-  function resetTransferConfirmation(form) {
-    if (!form) {
-      return;
-    }
-    form._pendingTransferPayload = null;
-    toggleTransferSubmitButtons(form, false);
-  }
-
-  function showTransferConfirmation(form, payload) {
-    var confirmation = form.querySelector("#transfer-confirmation");
-    if (!confirmation) {
-      return false;
-    }
-
-    form._pendingTransferPayload = payload;
-    confirmation.querySelector("[data-confirm-sender]").textContent = payload.sender_mobile_number;
-    confirmation.querySelector("[data-confirm-client-code]").textContent = payload.client_code || "-";
-    confirmation.querySelector("[data-confirm-mobile-operator]").textContent = payload.mobile_operator || "-";
-    confirmation.querySelector("[data-confirm-receiver]").textContent = payload.receiver_phone_number;
-    confirmation.querySelector("[data-confirm-amount]").textContent = formatCurrencyAmount(payload.amount);
-    toggleTransferSubmitButtons(form, true);
-    setFormFeedback(form, "Review the transfer details and confirm to continue.", "info");
-    announceStatus("Review the transfer details and confirm to continue.");
-    return true;
   }
 
   function renderTransferReceipt(form, receipt) {
@@ -1862,7 +1835,7 @@
         setFormFeedback(form, error.message || "Approval polling failed.", "error");
         stopApprovalPolling();
       });
-    }, 3000);
+    }, 30000);
   }
 
   async function submitApprovalDecision(decision) {
@@ -2161,12 +2134,10 @@
   async function submitTransferPayload(form, payload) {
     var invalidField;
     var submitBtn = form.querySelector('[type="submit"]');
-    var confirmBtn = form.querySelector('[data-confirm-submit="true"]');
     setElementLoadingState(form, true);
     setElementLoadingState(submitBtn, true);
-    setElementLoadingState(confirmBtn, true);
-    setFormFeedback(form, "Submitting transfer...", "info");
-    announceStatus("Submitting transfer.");
+    setFormFeedback(form, "Sending request and waiting for server reply...", "info");
+    announceStatus("Sending request and waiting for server reply.");
 
     try {
       var response = await fetch(form.getAttribute("data-ajax-post") || "/api/send-money", {
@@ -2202,7 +2173,6 @@
       addRecentTransfer(receipt);
       renderRecentTransfers();
       startApprovalPolling(form, result.approval);
-      resetTransferConfirmation(form);
     } catch (error) {
       setFormFeedback(form, error.message || "Transfer request failed.", "error");
       showToast(error.message || "Transfer request failed.", "error");
@@ -2210,17 +2180,12 @@
     } finally {
       setElementLoadingState(form, false);
       setElementLoadingState(submitBtn, false);
-      setElementLoadingState(confirmBtn, false);
     }
   }
 
   async function handleSendMoneySubmit(form) {
     var payload = validateSendMoneyForm(form);
     if (!payload) {
-      return;
-    }
-
-    if (showTransferConfirmation(form, payload)) {
       return;
     }
 
@@ -2434,8 +2399,6 @@
     var detailOverlay = event.target.closest("[data-detail-overlay='true']");
     var messageToggle = event.target.closest("[data-message-toggle='true']");
     var copyMessageBtn = event.target.closest("[data-copy-message='true']");
-    var confirmSubmitBtn = event.target.closest("[data-confirm-submit='true']");
-    var confirmEditBtn = event.target.closest("[data-confirm-edit='true']");
     var reuseTransferBtn = event.target.closest("[data-reuse-transfer]");
     var removeTransferBtn = event.target.closest("[data-remove-transfer]");
     var rangePresetBtn = event.target.closest("[data-range-days]");
@@ -2568,24 +2531,6 @@
       return;
     }
 
-    if (confirmEditBtn) {
-      var editForm = confirmEditBtn.closest("#send-money-form");
-      resetTransferConfirmation(editForm);
-      setFormFeedback(editForm, "Update the transfer details and submit again.", "info");
-      return;
-    }
-
-    if (confirmSubmitBtn) {
-      var confirmForm = confirmSubmitBtn.closest("#send-money-form");
-      event.preventDefault();
-      if (!confirmForm || !confirmForm._pendingTransferPayload) {
-        handleSendMoneySubmit(confirmForm);
-        return;
-      }
-      submitTransferPayload(confirmForm, confirmForm._pendingTransferPayload);
-      return;
-    }
-
     if (removeTransferBtn) {
       var removeIndex = Number(removeTransferBtn.getAttribute("data-remove-transfer"));
       event.preventDefault();
@@ -2708,7 +2653,6 @@
       if (field.matches('[name="receiver_phone_number"]')) {
         syncReceiverDetails(sendForm);
       }
-      resetTransferConfirmation(sendForm);
       return;
     }
 
@@ -2825,13 +2769,6 @@
         return;
       }
       if (closeOpenDetails()) {
-        event.preventDefault();
-        return;
-      }
-      var sendForm = document.getElementById("send-money-form");
-      if (sendForm && sendForm._pendingTransferPayload) {
-        resetTransferConfirmation(sendForm);
-        setFormFeedback(sendForm, "Confirmation closed.", "info");
         event.preventDefault();
         return;
       }

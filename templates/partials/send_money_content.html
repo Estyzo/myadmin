@@ -70,54 +70,11 @@
             </div>
           </label>
 
-          <p class="send-form-note">Validation runs before the request is sent. Use <kbd>Esc</kbd> to dismiss the confirmation panel.</p>
-
-          <section class="transfer-confirmation" id="transfer-confirmation" hidden aria-live="polite">
-            <div class="transfer-confirmation-head">
-              <div>
-                <p class="card-kicker">Review step</p>
-                <h4>Confirm transfer</h4>
-                <p>Double-check the transfer details before sending.</p>
-              </div>
-              <span class="status-badge status-badge-loading">
-                <span class="status-badge-icon" aria-hidden="true"></span>
-                <span>Awaiting approval</span>
-              </span>
-            </div>
-            <dl class="transfer-confirmation-grid">
-              <div>
-                <dt>Sender details</dt>
-                <dd data-confirm-sender>-</dd>
-              </div>
-              <div>
-                <dt>Client code</dt>
-                <dd data-confirm-client-code>-</dd>
-              </div>
-              <div>
-                <dt>Mobile operator</dt>
-                <dd data-confirm-mobile-operator>-</dd>
-              </div>
-              <div>
-                <dt>Receiver</dt>
-                <dd data-confirm-receiver>-</dd>
-              </div>
-              <div>
-                <dt>Amount</dt>
-                <dd data-confirm-amount>-</dd>
-              </div>
-            </dl>
-            <div class="transfer-confirmation-actions">
-              <button class="filter-btn" type="button" data-confirm-edit="true">Edit transfer</button>
-              <button class="send-submit confirm-submit-btn" type="button" data-confirm-submit="true">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4z"></path></svg>
-                Confirm &amp; send
-              </button>
-            </div>
-          </section>
+          <p class="send-form-note">Validation runs before the request is sent. The server response will open the approval prompt.</p>
 
           <button class="send-submit" type="submit">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4z"></path></svg>
-            Prepare transfer
+            Send request
           </button>
           <p id="send-money-feedback" class="form-feedback" aria-live="polite"></p>
 

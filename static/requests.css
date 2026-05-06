@@ -1,0 +1,340 @@
+.requests-page {
+  display: grid;
+  gap: 22px;
+}
+
+.requests-panel,
+.requests-list-panel {
+  padding: 22px;
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 249, 253, 0.92)) padding-box,
+    linear-gradient(135deg, rgba(28, 220, 139, 0.28), rgba(6, 182, 212, 0.14)) border-box;
+  border: 1px solid transparent;
+  box-shadow: var(--shadow-soft);
+}
+
+.requests-panel-head,
+.requests-list-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.requests-panel-head {
+  margin-bottom: 16px;
+}
+
+.requests-panel-head p,
+.requests-list-head p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.requests-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.requests-summary-card {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(15, 24, 41, 0.04);
+  border: 1px solid rgba(15, 24, 41, 0.08);
+}
+
+.requests-summary-card span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.requests-summary-card strong {
+  color: var(--navy);
+  font-size: 32px;
+  line-height: 1;
+}
+
+.requests-summary-card.danger strong {
+  color: #b91c1c;
+}
+
+.requests-filter-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.requests-search-field,
+.requests-field-wrap {
+  min-width: 0;
+}
+
+.requests-search-field .floating-label {
+  max-width: calc(100% - 68px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: transform 0.2s ease, color 0.2s ease, top 0.2s ease, opacity 0.16s ease, visibility 0.16s ease;
+}
+
+.requests-search-field.has-value .floating-label,
+.requests-search-field input:not(:placeholder-shown) ~ .floating-label {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.requests-field-wrap {
+  position: relative;
+}
+
+.requests-field-wrap input {
+  padding-top: 28px;
+  padding-right: 44px;
+}
+
+.requests-field-wrap .floating-label {
+  left: 16px;
+  right: 44px;
+  top: 17px;
+  transform: translateY(0) scale(0.82);
+}
+
+.requests-list-head {
+  margin-bottom: 16px;
+}
+
+.requests-list-head h3 {
+  margin: 0;
+  font-size: 28px;
+  letter-spacing: -0.04em;
+}
+
+.requests-list-head h3 span {
+  color: var(--muted);
+  font-size: 18px;
+}
+
+.requests-list {
+  display: grid;
+  gap: 12px;
+}
+
+.requests-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.requests-pagination[hidden] {
+  display: none;
+}
+
+.requests-pagination p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.requests-pagination-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.request-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(15, 24, 41, 0.08);
+}
+
+.request-card-main {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.request-card-title {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.request-card-title strong {
+  color: var(--navy);
+  font-size: 16px;
+  word-break: break-word;
+}
+
+.request-status-pill,
+.request-approval-pill {
+  width: max-content;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: rgba(15, 24, 41, 0.06);
+  color: var(--navy);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.request-approval-pill {
+  background: rgba(6, 182, 212, 0.1);
+  color: #0e7490;
+}
+
+.request-status-pill.approved,
+.request-status-pill.success,
+.request-status-pill.completed,
+.request-approval-pill.approved,
+.request-approval-pill.success,
+.request-approval-pill.completed {
+  background: rgba(28, 220, 139, 0.14);
+  color: #047857;
+}
+
+.request-status-pill.rejected,
+.request-status-pill.failed,
+.request-status-pill.error,
+.request-approval-pill.rejected,
+.request-approval-pill.failed,
+.request-approval-pill.error {
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+}
+
+.request-status-pill.pending,
+.request-status-pill.waiting,
+.request-approval-pill.pending,
+.request-approval-pill.waiting {
+  background: rgba(6, 182, 212, 0.12);
+  color: #0e7490;
+}
+
+.request-card-message {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.request-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.request-chip {
+  padding: 7px 9px;
+  border-radius: 10px;
+  background: rgba(15, 24, 41, 0.04);
+  color: var(--navy);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.request-card-side {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+  text-align: right;
+}
+
+.request-card-side strong {
+  color: var(--navy);
+  font-size: 15px;
+}
+
+.request-card-side span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.requests-empty-state {
+  display: grid;
+  gap: 8px;
+  padding: 20px;
+  border-radius: 18px;
+  background: rgba(15, 24, 41, 0.03);
+  border: 1px dashed rgba(15, 24, 41, 0.14);
+}
+
+.requests-empty-state strong {
+  color: var(--navy);
+}
+
+.requests-empty-state p {
+  margin: 0;
+  color: var(--muted);
+}
+
+body.theme-dark .requests-panel,
+body.theme-dark .requests-list-panel {
+  background:
+    var(--gradient-panel) padding-box,
+    linear-gradient(135deg, rgba(28, 220, 139, 0.28), rgba(6, 182, 212, 0.14)) border-box;
+}
+
+body.theme-dark .request-card {
+  background: rgba(20, 32, 51, 0.9);
+  border-color: rgba(156, 174, 199, 0.14);
+}
+
+body.theme-dark .request-card-title strong,
+body.theme-dark .request-chip,
+body.theme-dark .request-card-side strong,
+body.theme-dark .requests-summary-card strong,
+body.theme-dark .requests-empty-state strong {
+  color: var(--text);
+}
+
+body.theme-dark .request-chip,
+body.theme-dark .requests-summary-card,
+body.theme-dark .requests-empty-state {
+  background: rgba(156, 174, 199, 0.08);
+}
+
+@media (max-width: 760px) {
+  .requests-panel,
+  .requests-list-panel {
+    padding: 16px;
+    border-radius: 18px;
+  }
+
+  .requests-summary-grid,
+  .requests-filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .request-card {
+    grid-template-columns: 1fr;
+  }
+
+  .request-card-side {
+    justify-items: start;
+    text-align: left;
+  }
+
+  .requests-pagination-actions,
+  .requests-pagination-actions .page-btn {
+    width: 100%;
+  }
+}

@@ -1,0 +1,96 @@
+<section id="requests-page-root" class="page-wrap requests-page container-fluid px-3 px-md-4" tabindex="-1" data-requests-page="true" data-requests-api-url="{{ url_for('api_getrequests') }}">
+  <div class="page-header requests-header">
+    <div class="page-copy">
+      <p class="page-eyebrow">Requests</p>
+      <h2>Live request feed</h2>
+      <p>Monitor transfer requests from the upstream request queue.</p>
+    </div>
+    <div class="header-actions">
+      <button class="ghost-btn strong" type="button" data-requests-refresh="true">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15.5-6.4L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15.5 6.4L3 16"></path></svg>
+        Refresh
+      </button>
+    </div>
+  </div>
+
+  <section class="requests-panel">
+    <div class="requests-panel-head">
+      <span class="status-badge status-badge-loading" data-requests-status-badge>
+        <span class="status-badge-icon" aria-hidden="true"></span>
+        <span data-requests-status-title>Polling</span>
+      </span>
+      <p data-requests-status-copy>Waiting for the first request sync.</p>
+    </div>
+
+    <div class="requests-summary-grid" aria-label="Request summary">
+      <article class="requests-summary-card">
+        <span>Total requests</span>
+        <strong data-requests-summary-total>0</strong>
+      </article>
+      <article class="requests-summary-card">
+        <span>Total approved</span>
+        <strong data-requests-summary-approved>0</strong>
+      </article>
+      <article class="requests-summary-card danger">
+        <span>Total rejected</span>
+        <strong data-requests-summary-rejected>0</strong>
+      </article>
+    </div>
+
+    <div class="requests-filter-grid">
+      <label class="floating-field floating-field-search requests-search-field">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+        <input type="search" placeholder=" " autocomplete="off" data-requests-search="true" aria-controls="requests-list">
+        <span class="floating-label">Search request id, number, status, or message</span>
+      </label>
+      <label class="floating-field floating-field-select">
+        <select data-requests-operator-filter="true" aria-label="Filter by operator">
+          <option value=""></option>
+        </select>
+        <span class="floating-label">Operator</span>
+      </label>
+      <label class="floating-field floating-field-select">
+        <select data-requests-client-filter="true" aria-label="Filter by client">
+          <option value=""></option>
+        </select>
+        <span class="floating-label">Client</span>
+      </label>
+      <label class="floating-field">
+        <div class="requests-field-wrap">
+          <input type="date" data-requests-from-date="true" placeholder=" " aria-label="Start date">
+          <span class="floating-label">From date</span>
+        </div>
+      </label>
+      <label class="floating-field">
+        <div class="requests-field-wrap">
+          <input type="date" data-requests-to-date="true" placeholder=" " aria-label="End date">
+          <span class="floating-label">To date</span>
+        </div>
+      </label>
+    </div>
+  </section>
+
+  <section class="requests-list-panel">
+    <div class="requests-list-head">
+      <div>
+        <p class="card-kicker">Request list</p>
+        <h3>Current requests <span data-requests-count>(0)</span></h3>
+      </div>
+      <p>Auto-refreshes every 30 seconds.</p>
+    </div>
+    <div class="requests-list" id="requests-list" data-requests-list>
+      <div class="requests-empty-state">
+        <strong>No requests loaded yet.</strong>
+        <p>The app is waiting for `/api/getrequests` to respond.</p>
+      </div>
+    </div>
+    <div class="requests-pagination" data-requests-pagination hidden>
+      <p data-requests-pagination-info>Showing 0 requests</p>
+      <div class="requests-pagination-actions">
+        <button class="page-btn" type="button" data-requests-page-prev="true">Previous</button>
+        <span class="page-current" data-requests-page-current>Page 1 of 1</span>
+        <button class="page-btn" type="button" data-requests-page-next="true">Next</button>
+      </div>
+    </div>
+  </section>
+</section>

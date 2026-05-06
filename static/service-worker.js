@@ -1,4 +1,4 @@
-const CACHE_NAME = "transferflow-shell-v18";
+const CACHE_NAME = "transferflow-shell-v25";
 const APP_SHELL = [
   "/dashboard",
   "/static/manifest.webmanifest",
@@ -9,9 +9,11 @@ const APP_SHELL = [
   "/static/dashboard.css",
   "/static/send-money.css",
   "/static/messages.css",
+  "/static/requests.css",
   "/static/settings.css",
   "/static/ux-enhancements.js",
-  "/static/dashboard-page.js"
+  "/static/dashboard-page.js",
+  "/static/requests-page.js"
 ];
 
 self.addEventListener("install", (event) => {

@@ -1055,7 +1055,7 @@ body.theme-dark .floating-field-select::after {
   font-weight: 600;
   pointer-events: none;
   transform-origin: left center;
-  transition: transform 0.2s ease, color 0.2s ease, top 0.2s ease;
+  transition: transform 0.2s ease, color 0.2s ease, top 0.2s ease, opacity 0.16s ease, visibility 0.16s ease;
 }
 
 body.theme-dark .floating-label {
@@ -1063,14 +1063,18 @@ body.theme-dark .floating-label {
 }
 
 .floating-field input:focus ~ .floating-label,
-.floating-field input:not(:placeholder-shown) ~ .floating-label,
 .floating-field select:focus ~ .floating-label,
-.floating-field.has-value .floating-label,
-.messages-field-wrap input:focus ~ .floating-label,
-.messages-field-wrap input:not(:placeholder-shown) ~ .floating-label {
+.messages-field-wrap input:focus ~ .floating-label {
   top: 17px;
   transform: translateY(0) scale(0.82);
   color: var(--teal);
+}
+
+.floating-field.has-value .floating-label,
+.floating-field input:not(:placeholder-shown) ~ .floating-label,
+.messages-field-wrap input:not(:placeholder-shown) ~ .floating-label {
+  opacity: 0;
+  visibility: hidden;
 }
 
 .field-error {
@@ -1769,7 +1773,7 @@ body.theme-dark .detail-chip:not([data-tone]) {
     bottom: calc(10px + env(safe-area-inset-bottom, 0px));
     z-index: 900;
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 4px;
     padding: 8px;
     border-radius: 22px;
@@ -1794,7 +1798,7 @@ body.theme-dark .detail-chip:not([data-tone]) {
     gap: 3px;
     color: var(--muted);
     text-decoration: none;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 800;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
