@@ -7,7 +7,7 @@
           <h2>Prepare a transfer</h2>
           <p>Enter the transfer details and confirm the server approval prompt.</p>
         </div>
-        <a class="filter-btn send-secondary-link" href="{{ url_for('recent_transfers') }}">
+        <a class="filter-btn send-secondary-link action-secondary" href="{{ url_for('recent_transfers') }}">
           Recent transfers
         </a>
       </div>
@@ -70,9 +70,9 @@
             </div>
           </label>
 
-          <p class="send-form-note">Validation runs before the request is sent. The server response will open the approval prompt.</p>
+          <p class="send-form-note">Validation runs first, then a review popup appears before the request is sent.</p>
 
-          <button class="send-submit" type="submit">
+          <button class="send-submit action-primary" type="submit">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4z"></path></svg>
             Send request
           </button>
@@ -126,6 +126,49 @@
           </section>
         </form>
       </article>
+      <section class="transfer-confirmation-modal" id="transfer-confirmation-modal" data-transfer-confirmation-modal hidden role="dialog" aria-modal="true" aria-labelledby="transfer-confirmation-title" aria-describedby="transfer-confirmation-summary">
+        <div class="transfer-confirmation-panel">
+          <div class="transfer-approval-head">
+            <div>
+              <p class="card-kicker">Review transfer</p>
+              <h4 id="transfer-confirmation-title">Confirm before sending</h4>
+            </div>
+            <button class="panel-close-btn" type="button" data-confirmation-close="true" aria-label="Close transfer review">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+            </button>
+          </div>
+          <p class="transfer-confirmation-intro">Check the details below before the request is sent to the server approval flow.</p>
+          <dl class="transfer-confirmation-summary" id="transfer-confirmation-summary">
+            <div>
+              <dt>From</dt>
+              <dd data-confirmation-sender>-</dd>
+            </div>
+            <div>
+              <dt>Client</dt>
+              <dd data-confirmation-client>-</dd>
+            </div>
+            <div>
+              <dt>To</dt>
+              <dd data-confirmation-receiver>-</dd>
+            </div>
+            <div>
+              <dt>Operator</dt>
+              <dd data-confirmation-operator>-</dd>
+            </div>
+            <div class="transfer-confirmation-amount">
+              <dt>Amount</dt>
+              <dd data-confirmation-amount>-</dd>
+            </div>
+          </dl>
+          <div class="transfer-confirmation-actions">
+            <button class="filter-btn action-secondary" type="button" data-confirmation-close="true">Cancel</button>
+            <button class="send-submit confirmation-send-btn action-primary" type="button" data-confirmation-submit="true">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4z"></path></svg>
+              Confirm send
+            </button>
+          </div>
+        </div>
+      </section>
       <section class="transfer-approval-modal" id="transfer-approval-modal" data-transfer-approval-modal hidden role="dialog" aria-modal="true" aria-labelledby="transfer-approval-title">
         <div class="transfer-approval-panel">
           <div class="transfer-approval-head">

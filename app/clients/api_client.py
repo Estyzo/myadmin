@@ -132,6 +132,11 @@ class TransferFlowApiClient:
         runtime_config = self._runtime_config(config)
         return self._request_json("GET", runtime_config["REQUESTS_API_URL"], config=runtime_config)
 
+    def get_balance(self, config=None):
+        runtime_config = self._runtime_config(config)
+        endpoint = f"{runtime_config['API_BASE_URL'].rstrip('/')}/getbalance"
+        return self._request_json("GET", endpoint, config=runtime_config)
+
     def get_sender_configurations(self, config=None):
         runtime_config = self._runtime_config(config)
         return self._request_json("GET", runtime_config["SENDER_CONFIG_API_URL"], config=runtime_config)

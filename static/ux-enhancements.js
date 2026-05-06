@@ -17,6 +17,8 @@
   var deferredInstallPrompt = null;
   var approvalPollTimer = null;
   var activeApprovalContext = null;
+  var pendingTransferConfirmationPayload = null;
+  var transferConfirmationOpener = null;
   var pendingFragmentRequests = new Map();
   var commandPaletteState = {
     commands: [],
@@ -62,6 +64,9 @@
     }
     if (pathname === "/requests") {
       return "#requests-page-root";
+    }
+    if (pathname === "/balance") {
+      return "#balance-page-root";
     }
     return "";
   }
@@ -178,6 +183,60 @@
     }
     pendingFragmentRequests.delete(targetSelector);
     return true;
+  }
+
+  function removeAsyncErrorPanel(target) {
+    if (!target) {
+      return;
+    }
+    Array.prototype.slice.call(target.children).forEach(function (panel) {
+      if (!panel.classList || !panel.classList.contains("async-error-panel")) {
+        return;
+      }
+      panel.remove();
+    });
+  }
+
+  function setFragmentLoadingState(target, isLoading) {
+    var overlay;
+    if (!target) {
+      return;
+    }
+    overlay = Array.prototype.slice.call(target.children).find(function (child) {
+      return child.classList && child.classList.contains("async-loading-overlay");
+    });
+    target.classList.toggle("has-async-loading", !!isLoading);
+    if (!isLoading) {
+      if (overlay) {
+        overlay.remove();
+      }
+      return;
+    }
+    removeAsyncErrorPanel(target);
+    if (overlay) {
+      return;
+    }
+    overlay = document.createElement("div");
+    overlay.className = "async-loading-overlay";
+    overlay.setAttribute("aria-hidden", "true");
+    overlay.innerHTML = "<span></span><span></span><span></span>";
+    target.appendChild(overlay);
+  }
+
+  function showAsyncErrorPanel(target, message) {
+    var panel;
+    if (!target) {
+      return;
+    }
+    removeAsyncErrorPanel(target);
+    panel = document.createElement("div");
+    panel.className = "async-error-panel";
+    panel.setAttribute("role", "alert");
+    panel.innerHTML =
+      "<div><strong>Unable to refresh this view</strong><p></p></div>" +
+      '<button type="button" data-async-error-dismiss="true">Dismiss</button>';
+    panel.querySelector("p").textContent = message || "Check the connection and try again.";
+    target.prepend(panel);
   }
 
   function replaceTargetFromHtml(targetSelector, html) {
@@ -547,6 +606,7 @@
       title: document.querySelector("[data-detail-title]"),
       summary: document.querySelector("[data-detail-summary]"),
       fields: document.querySelector("[data-detail-fields]"),
+      copyAllButton: document.querySelector("[data-detail-copy-all='true']"),
       closeButton: document.querySelector("[data-detail-close='true']"),
     };
   }
@@ -590,6 +650,14 @@
         subtitle: "Monitor live request queue.",
         keywords: "requests queue approvals pending getrequests",
         url: "/requests",
+      },
+      {
+        icon: "B",
+        group: "Navigate",
+        title: "Open balance",
+        subtitle: "Review the latest balance per operator.",
+        keywords: "balance operator balances latest wallet float",
+        url: "/balance",
       },
       {
         icon: "M",
@@ -859,6 +927,9 @@
         elements.chip.removeAttribute("data-tone");
       }
     }
+    if (elements.copyAllButton) {
+      elements.copyAllButton.hidden = fields.length === 0;
+    }
 
     elements.fields.innerHTML = fields
       .map(function (field) {
@@ -867,11 +938,28 @@
         return (
           '<div class="detail-field">' +
             "<dt>" + escapeHtml(label) + "</dt>" +
-            "<dd>" + escapeHtml(value) + "</dd>" +
+            "<dd><span class=\"detail-value\">" + escapeHtml(value) + "</span><button class=\"detail-copy-btn\" type=\"button\" data-detail-copy-field=\"true\">Copy</button></dd>" +
           "</div>"
         );
       })
       .join("");
+  }
+
+  function buildDetailCopyText() {
+    var payload = detailDrawerState.payload || {};
+    var lines = [];
+    if (payload.title) {
+      lines.push(payload.title);
+    }
+    if (payload.summary) {
+      lines.push(payload.summary);
+    }
+    (Array.isArray(payload.fields) ? payload.fields : []).forEach(function (field) {
+      var label = field && field.label != null ? field.label : "";
+      var value = field && field.value != null && String(field.value) !== "" ? field.value : "-";
+      lines.push(label + ": " + value);
+    });
+    return lines.filter(Boolean).join("\n");
   }
 
   function openDetailDrawer(trigger) {
@@ -886,6 +974,7 @@
     closeDetailDrawer(false);
     detailDrawerState.opener = trigger || document.activeElement;
     detailDrawerState.row = trigger ? trigger.closest("tr") : null;
+    detailDrawerState.payload = payload;
     if (detailDrawerState.row) {
       detailDrawerState.row.classList.add("is-selected");
     }
@@ -912,6 +1001,7 @@
     }
     detailDrawerState.row = null;
     detailDrawerState.opener = null;
+    detailDrawerState.payload = null;
     if (elements.root) {
       elements.root.hidden = true;
     }
@@ -1168,6 +1258,7 @@
     var nextTarget;
 
     setBusyState(currentTarget, true);
+    setFragmentLoadingState(currentTarget, true);
 
     try {
       response = await fetch(requestUrl, {
@@ -1194,6 +1285,7 @@
       nextTarget = document.querySelector(targetSelector);
       if (clearPendingRequest(targetSelector, controller)) {
         setBusyState(nextTarget, false);
+        setFragmentLoadingState(nextTarget, false);
       }
       if (settings.restoreFocus !== false) {
         focusUpdatedContent(targetSelector);
@@ -1206,6 +1298,7 @@
     } catch (error) {
       if (clearPendingRequest(targetSelector, controller)) {
         setBusyState(currentTarget, false);
+        setFragmentLoadingState(currentTarget, false);
       }
       if (error && error.name === "AbortError") {
         return false;
@@ -1214,6 +1307,7 @@
       if (!settings.suppressToast) {
         showToast(error && error.message ? error.message : "Request failed.", "error");
       }
+      showAsyncErrorPanel(currentTarget, error && error.message ? error.message : "Request failed.");
       throw error;
     }
   }
@@ -1228,6 +1322,7 @@
     var html;
 
     setBusyState(currentMain, true);
+    setFragmentLoadingState(currentMain, true);
 
     try {
       response = await fetch(requestUrl, {
@@ -1253,6 +1348,7 @@
       }
       if (clearPendingRequest("#main-content", controller)) {
         setBusyState(document.querySelector("#main-content"), false);
+        setFragmentLoadingState(document.querySelector("#main-content"), false);
       }
       if (settings.restoreFocus !== false) {
         focusUpdatedContent(targetSelector || "#main-content");
@@ -1265,6 +1361,7 @@
     } catch (error) {
       if (clearPendingRequest("#main-content", controller)) {
         setBusyState(currentMain, false);
+        setFragmentLoadingState(currentMain, false);
       }
       if (error && error.name === "AbortError") {
         return false;
@@ -1273,6 +1370,7 @@
       if (!settings.suppressToast) {
         showToast(error && error.message ? error.message : "Request failed.", "error");
       }
+      showAsyncErrorPanel(currentMain, error && error.message ? error.message : "Request failed.");
       throw error;
     }
   }
@@ -1665,6 +1763,75 @@
       mobileOperator.textContent = receiverOperator || "-";
     }
     return receiverOperator;
+  }
+
+  function getTransferConfirmationElements() {
+    var modal = document.querySelector("[data-transfer-confirmation-modal]");
+    return {
+      modal: modal,
+      sender: modal ? modal.querySelector("[data-confirmation-sender]") : null,
+      client: modal ? modal.querySelector("[data-confirmation-client]") : null,
+      receiver: modal ? modal.querySelector("[data-confirmation-receiver]") : null,
+      operator: modal ? modal.querySelector("[data-confirmation-operator]") : null,
+      amount: modal ? modal.querySelector("[data-confirmation-amount]") : null,
+      confirmButton: modal ? modal.querySelector("[data-confirmation-submit='true']") : null,
+    };
+  }
+
+  function closeTransferConfirmationModal(shouldRestoreFocus) {
+    var elements = getTransferConfirmationElements();
+    if (elements.modal) {
+      elements.modal.hidden = true;
+    }
+    pendingTransferConfirmationPayload = null;
+    document.body.classList.remove("transfer-confirmation-open");
+    if (shouldRestoreFocus !== false && transferConfirmationOpener && typeof transferConfirmationOpener.focus === "function") {
+      transferConfirmationOpener.focus();
+    }
+    transferConfirmationOpener = null;
+  }
+
+  function showTransferConfirmationModal(form, payload) {
+    var elements = getTransferConfirmationElements();
+    if (!elements.modal) {
+      return submitTransferPayload(form, payload);
+    }
+    pendingTransferConfirmationPayload = payload;
+    transferConfirmationOpener = form ? form.querySelector('[type="submit"]') : document.activeElement;
+    if (elements.sender) {
+      elements.sender.textContent = payload.sender_local_number || payload.sender_mobile_number || "-";
+    }
+    if (elements.client) {
+      elements.client.textContent = payload.client_code || "-";
+    }
+    if (elements.receiver) {
+      elements.receiver.textContent = payload.receiver_phone_number || "-";
+    }
+    if (elements.operator) {
+      elements.operator.textContent = payload.receiver_mobile_operator || payload.mobile_operator || "-";
+    }
+    if (elements.amount) {
+      elements.amount.textContent = formatCurrencyAmount(payload.amount);
+    }
+    elements.modal.hidden = false;
+    document.body.classList.add("transfer-confirmation-open");
+    setFormFeedback(form, "Review the transfer summary before sending.", "info");
+    announceStatus("Review transfer details before sending.");
+    if (elements.confirmButton) {
+      elements.confirmButton.focus();
+    }
+    return undefined;
+  }
+
+  function confirmTransferSubmission() {
+    var form = document.getElementById("send-money-form");
+    var payload = pendingTransferConfirmationPayload;
+    if (!form || !payload) {
+      closeTransferConfirmationModal(false);
+      return;
+    }
+    closeTransferConfirmationModal(false);
+    submitTransferPayload(form, payload);
   }
 
   function buildTransferReceipt(result, payload) {
@@ -2189,7 +2356,7 @@
       return;
     }
 
-    return submitTransferPayload(form, payload);
+    return showTransferConfirmationModal(form, payload);
   }
 
   function updateSidebarState(button, isCollapsed) {
@@ -2404,6 +2571,11 @@
     var rangePresetBtn = event.target.closest("[data-range-days]");
     var approvalDecisionBtn = event.target.closest("[data-approval-decision]");
     var approvalCloseBtn = event.target.closest("[data-approval-close='true']");
+    var confirmationCloseBtn = event.target.closest("[data-confirmation-close='true']");
+    var confirmationSubmitBtn = event.target.closest("[data-confirmation-submit='true']");
+    var asyncErrorDismissBtn = event.target.closest("[data-async-error-dismiss='true']");
+    var detailCopyAllBtn = event.target.closest("[data-detail-copy-all='true']");
+    var detailCopyFieldBtn = event.target.closest("[data-detail-copy-field='true']");
     var mobileNavLink = event.target.closest(".mobile-bottom-nav-item[href]");
 
     if (themeToggleBtn) {
@@ -2459,6 +2631,15 @@
       return;
     }
 
+    if (asyncErrorDismissBtn) {
+      event.preventDefault();
+      var asyncErrorPanel = asyncErrorDismissBtn.closest(".async-error-panel");
+      if (asyncErrorPanel) {
+        asyncErrorPanel.remove();
+      }
+      return;
+    }
+
     if (commandPaletteClose || commandOverlay) {
       event.preventDefault();
       closeCommandPalette();
@@ -2483,6 +2664,34 @@
       return;
     }
 
+    if (detailCopyAllBtn) {
+      event.preventDefault();
+      copyTextToClipboard(buildDetailCopyText())
+        .then(function () {
+          showToast("Details copied.", "success");
+          announceStatus("Details copied.");
+        })
+        .catch(function () {
+          showToast("Unable to copy details.", "error");
+        });
+      return;
+    }
+
+    if (detailCopyFieldBtn) {
+      event.preventDefault();
+      var detailField = detailCopyFieldBtn.closest(".detail-field");
+      var detailValue = detailField ? detailField.querySelector(".detail-value") : null;
+      copyTextToClipboard(detailValue ? detailValue.textContent || "" : "")
+        .then(function () {
+          showToast("Field copied.", "success");
+          announceStatus("Field copied.");
+        })
+        .catch(function () {
+          showToast("Unable to copy field.", "error");
+        });
+      return;
+    }
+
     if (rangePresetBtn) {
       event.preventDefault();
       applyMessagesDateRange(rangePresetBtn);
@@ -2492,6 +2701,18 @@
     if (approvalCloseBtn) {
       event.preventDefault();
       hideApprovalModal();
+      return;
+    }
+
+    if (confirmationCloseBtn) {
+      event.preventDefault();
+      closeTransferConfirmationModal(true);
+      return;
+    }
+
+    if (confirmationSubmitBtn) {
+      event.preventDefault();
+      confirmTransferSubmission();
       return;
     }
 
@@ -2753,6 +2974,11 @@
     }
 
     if (event.key === "Escape") {
+      if (document.body.classList.contains("transfer-confirmation-open")) {
+        closeTransferConfirmationModal(true);
+        event.preventDefault();
+        return;
+      }
       if (document.body.classList.contains("command-palette-open")) {
         closeCommandPalette();
         event.preventDefault();

@@ -7,7 +7,7 @@
       <p>Search recent messages and inspect sender details.</p>
     </div>
     <div class="header-actions">
-      <a class="ghost-btn strong" data-ajax-link="true" data-ajax-target="#messages-page-root" href="{{ url_for('messages', page=pagination.page, q=filters.q, from_date=filters.from_date, to_date=filters.to_date, sender=filters.sender, refresh=1) }}">
+      <a class="ghost-btn strong action-primary" data-ajax-link="true" data-ajax-target="#messages-page-root" href="{{ url_for('messages', page=pagination.page, q=filters.q, from_date=filters.from_date, to_date=filters.to_date, sender=filters.sender, refresh=1) }}">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15.5-6.4L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15.5 6.4L3 16"></path></svg>
         Refresh feed
       </a>

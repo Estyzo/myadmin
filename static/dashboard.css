@@ -330,11 +330,112 @@
   color: #1d5fd2;
 }
 
+.transaction-list-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.transaction-list-head h3 {
+  margin: 0;
+  font-size: 24px;
+  letter-spacing: -0.04em;
+}
+
+.transaction-count-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(6, 182, 212, 0.1);
+  color: #0b7e9a;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.dashboard-quick-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0 0 16px;
+}
+
+.quick-filter-chip {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(15, 24, 41, 0.05);
+  border: 1px solid rgba(15, 24, 41, 0.08);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.quick-filter-chip.active {
+  background: rgba(6, 182, 212, 0.12);
+  border-color: rgba(6, 182, 212, 0.22);
+  color: #0b7e9a;
+}
+
+.dashboard-filter-disclosure {
+  display: grid;
+  gap: 12px;
+}
+
+.dashboard-filter-summary {
+  display: none;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(15, 24, 41, 0.08);
+  background: var(--surface-strong);
+  color: var(--navy);
+  cursor: pointer;
+  list-style: none;
+}
+
+.dashboard-filter-summary::-webkit-details-marker {
+  display: none;
+}
+
+.dashboard-filter-summary span {
+  font-weight: 900;
+}
+
+.dashboard-filter-summary small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .list-controls {
+  position: sticky;
+  top: 76px;
+  z-index: 7;
   display: grid;
   grid-template-columns: minmax(260px, 1.2fr) minmax(0, 1fr);
   gap: 14px;
   align-items: end;
+  padding: 10px;
+  margin: -10px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(16px);
 }
 
 .filters {
@@ -428,6 +529,10 @@
 
 .dashboard-table-wrap {
   margin-top: 18px;
+  border: 1px solid rgba(15, 24, 41, 0.08);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.72);
+  overflow: auto;
 }
 
 .transaction-table {
@@ -438,6 +543,9 @@
 }
 
 .transaction-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   padding: 14px 12px;
   border-bottom: 1px solid rgba(15, 24, 41, 0.08);
   color: rgba(15, 24, 41, 0.56);
@@ -455,6 +563,10 @@
   font-size: 14px;
   font-weight: 600;
   vertical-align: middle;
+}
+
+.transaction-table tbody tr:last-child td {
+  border-bottom: 0;
 }
 
 .transaction-row:hover td {
@@ -492,6 +604,20 @@
   box-shadow: var(--shadow-soft);
 }
 
+.cell-kicker {
+  display: none;
+}
+
+.cell-value {
+  display: block;
+  min-width: 0;
+}
+
+.receiver-value {
+  color: var(--navy);
+  font-weight: 800;
+}
+
 .receiver-cell {
   max-width: 300px;
   white-space: nowrap;
@@ -502,6 +628,42 @@
 .transaction-amount {
   white-space: nowrap;
   font-weight: 800;
+}
+
+.amount-value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  color: #0b7e9a;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.operation-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(15, 24, 41, 0.06);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.operation-pill[data-operation*="received"] {
+  background: rgba(20, 184, 111, 0.13);
+  color: #0e8c57;
+}
+
+.operation-pill[data-operation*="transfer"],
+.operation-pill[data-operation*="sent"] {
+  background: rgba(6, 182, 212, 0.12);
+  color: #0b7e9a;
 }
 
 .transaction-date {
@@ -584,6 +746,8 @@ body.compact-cards-mode .table-action-cell {
 body.theme-dark .switch-btn,
 body.theme-dark .auto-refresh-pill,
 body.theme-dark .filter-chip,
+body.theme-dark .list-controls,
+body.theme-dark .dashboard-table-wrap,
 body.theme-dark .column-menu-panel,
 body.theme-dark .row-action-btn,
 body.theme-dark.compact-cards-mode .transaction-row {
@@ -623,6 +787,29 @@ body.theme-dark .card-icon.navy {
 
 body.theme-dark .operator-pill {
   background: rgba(156, 174, 199, 0.08);
+  color: var(--text);
+}
+
+body.theme-dark .transaction-count-pill {
+  background: rgba(6, 182, 212, 0.14);
+  color: #65d8eb;
+}
+
+body.theme-dark .quick-filter-chip,
+body.theme-dark .dashboard-filter-summary {
+  border-color: rgba(156, 174, 199, 0.14);
+  background: rgba(20, 32, 51, 0.78);
+  color: var(--text);
+}
+
+body.theme-dark .quick-filter-chip.active {
+  border-color: rgba(6, 182, 212, 0.32);
+  background: rgba(6, 182, 212, 0.16);
+  color: #65d8eb;
+}
+
+body.theme-dark .receiver-value,
+body.theme-dark .amount-value {
   color: var(--text);
 }
 
@@ -698,6 +885,31 @@ body.compact-cards-mode .transaction-date {
     width: 100%;
   }
 
+  .transaction-list-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .list-controls {
+    position: static;
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    backdrop-filter: none;
+  }
+
+  .dashboard-filter-disclosure {
+    gap: 10px;
+  }
+
+  .dashboard-filter-summary {
+    display: flex;
+  }
+
+  .dashboard-filter-disclosure:not([open]) .list-controls {
+    display: none;
+  }
+
   .column-menu,
   .column-menu summary,
   .compact-mode-btn {
@@ -710,7 +922,115 @@ body.compact-cards-mode .transaction-date {
   }
 
   .transaction-table {
-    min-width: 960px;
+    min-width: 100%;
+    border-spacing: 0 12px;
+  }
+
+  .transaction-table thead {
+    display: none;
+  }
+
+  .transaction-table tbody {
+    display: grid;
+    gap: 12px;
+  }
+
+  .transaction-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px 14px;
+    padding: 14px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(15, 24, 41, 0.08);
+  }
+
+  .transaction-table tbody td {
+    display: grid;
+    gap: 4px;
+    padding: 0;
+    border-bottom: 0;
+    font-size: 13px;
+  }
+
+  .transaction-table tbody td::before {
+    content: attr(data-label);
+    color: rgba(15, 24, 41, 0.46);
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .transaction-table tbody td[data-col="receiver"] {
+    grid-column: 1 / 2;
+    grid-row: 1;
+  }
+
+  .transaction-table tbody td[data-col="amount"] {
+    grid-column: 2 / 3;
+    grid-row: 1;
+    justify-items: end;
+    text-align: right;
+  }
+
+  .transaction-table tbody td[data-col="sender"],
+  .transaction-table tbody td[data-col="created_by"] {
+    display: none;
+  }
+
+  .transaction-table tbody td[data-col="operator"],
+  .transaction-table tbody td[data-col="operation"],
+  .transaction-table tbody td[data-col="date"] {
+    grid-template-columns: auto;
+  }
+
+  .transaction-table tbody td[data-col="operator"]::before,
+  .transaction-table tbody td[data-col="operation"]::before {
+    display: none;
+  }
+
+  .transaction-table tbody td[data-col="operator"],
+  .transaction-table tbody td[data-col="operation"] {
+    display: inline-flex;
+    align-items: center;
+    width: max-content;
+  }
+
+  .transaction-table tbody td[data-col="date"] {
+    grid-column: 1 / 2;
+  }
+
+  .table-action-cell {
+    grid-column: 2 / 3;
+    justify-self: end;
+    align-self: end;
+  }
+
+  .table-action-cell::before {
+    display: none;
+  }
+
+  .receiver-cell,
+  .transaction-amount,
+  .transaction-date {
+    max-width: none;
+    white-space: normal;
+  }
+
+  .amount-value {
+    font-size: 16px;
+  }
+
+  .dashboard-table-wrap {
+    border: 0;
+    background: transparent;
+    overflow: visible;
+  }
+
+  body.theme-dark .transaction-table tbody tr {
+    border-color: rgba(156, 174, 199, 0.14);
+    background: rgba(20, 32, 51, 0.92);
   }
 }
 

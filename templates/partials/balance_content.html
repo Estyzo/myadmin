@@ -1,0 +1,66 @@
+{% set status_badge_variant = 'success' if data_status.level == 'success' else 'danger' %}
+<section id="balance-page-root" class="page-wrap balance-page container-fluid px-3 px-md-4" tabindex="-1">
+  <div class="page-header balance-header">
+    <div class="page-copy">
+      <p class="page-eyebrow">Balance</p>
+      <h2>Operator balances</h2>
+      <p>Latest available balance for each operator from the upstream balance feed.</p>
+    </div>
+    <div class="header-actions">
+      <span class="status-badge status-badge-{{ status_badge_variant }}">
+        <span class="status-badge-icon" aria-hidden="true"></span>
+        <span>{{ data_status.title }}</span>
+      </span>
+      <a class="ghost-btn strong action-primary" data-ajax-link="true" data-ajax-target="#balance-page-root" href="{{ url_for('balance') }}">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15.5-6.4L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15.5 6.4L3 16"></path></svg>
+        Refresh
+      </a>
+    </div>
+  </div>
+
+  <section class="balance-sync-panel">
+    <div>
+      <p class="card-kicker">Balance feed</p>
+      <h3>{{ meta.count }} operators tracked</h3>
+      <p>{{ data_status.message }} Last updated {{ data_status.last_updated }}.</p>
+    </div>
+    <span class="balance-source-pill">/api/getbalance</span>
+  </section>
+
+  {% if balances %}
+  <section class="balance-grid" aria-label="Latest operator balances">
+    {% for balance in balances %}
+    {% set detail_payload = {
+      'eyebrow': 'Balance details',
+      'title': balance.operator ~ ' balance',
+      'summary': balance.balance ~ ' · updated ' ~ balance.last_updated,
+      'tone': balance.operator_key,
+      'tone_label': balance.operator,
+      'fields': [
+        {'label': 'Operator', 'value': balance.operator},
+        {'label': 'Client code', 'value': balance.client_code},
+        {'label': 'Balance', 'value': balance.balance},
+        {'label': 'Currency', 'value': balance.currency},
+        {'label': 'Last updated', 'value': balance.last_updated}
+      ]
+    } %}
+    <article class="balance-card" data-operator="{{ balance.operator_key }}">
+      <div class="balance-card-head">
+        <span class="operator-pill" data-operator="{{ balance.operator_key }}">{{ balance.operator }}</span>
+        <button class="row-action-btn" type="button" data-detail-trigger="true" data-detail-payload='{{ detail_payload|tojson|forceescape }}'>View</button>
+      </div>
+      <p class="balance-label">Latest balance</p>
+      <h3>{{ balance.balance }}</h3>
+      <p class="balance-client">Client {{ balance.client_code }}</p>
+      <p class="balance-updated">Updated {{ balance.last_updated }}</p>
+    </article>
+    {% endfor %}
+  </section>
+  {% else %}
+  <div class="empty-state">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"></path><path d="M3 12h18"></path><path d="M3 18h18"></path></svg>
+    <h5>No balances found</h5>
+    <p>{{ data_status.message }}</p>
+  </div>
+  {% endif %}
+</section>

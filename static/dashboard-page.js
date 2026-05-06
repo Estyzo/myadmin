@@ -583,6 +583,20 @@
     });
   }
 
+  function bindSavedViewControls(root) {
+    var resetButton = root.querySelector("[data-dashboard-reset-preferences='true']");
+    if (!resetButton || resetButton.getAttribute("data-dashboard-reset-bound") === "true") {
+      return;
+    }
+    resetButton.setAttribute("data-dashboard-reset-bound", "true");
+    resetButton.addEventListener("click", function () {
+      try {
+        window.localStorage.removeItem(dashboardPreferencesStorageKey);
+      } catch (_error) {}
+      window.location.assign("/dashboard");
+    });
+  }
+
   function clearRefreshTimer() {
     if (!dashboardState.refreshTimerId) {
       return;
@@ -680,6 +694,7 @@
     bindColumnToggles(root);
     applyColumnVisibility(root);
     bindCompactModeToggle(root);
+    bindSavedViewControls(root);
     initTrendModeControls(root);
     persistDashboardPreferences(root);
     renderDashboardCharts(root);
