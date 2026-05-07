@@ -415,11 +415,25 @@ body.theme-dark .report-row:hover {
   }
 
   .report-tabs {
-    grid-template-columns: 1fr;
+    display: flex;
+    gap: 8px;
+    margin: 0 -12px;
+    padding: 6px 12px;
+    overflow-x: auto;
+    scroll-padding-inline: 12px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
   }
 
   .report-tabs a {
+    min-width: 138px;
+    min-height: 44px;
+    flex: 0 0 auto;
     justify-content: flex-start;
+  }
+
+  .report-tabs::-webkit-scrollbar {
+    display: none;
   }
 
   .report-tabs strong {
@@ -468,8 +482,9 @@ body.theme-dark .report-row:hover {
 
   .report-row {
     grid-template-columns: minmax(0, 1fr) auto;
-    gap: 6px 8px;
+    gap: 8px 10px;
     padding: 12px;
+    border-radius: 12px;
   }
 
   .report-row small {
@@ -494,6 +509,7 @@ body.theme-dark .report-row:hover {
   .report-tabs a {
     padding: 0 10px;
     gap: 8px;
+    min-width: 126px;
   }
 
   .report-tabs span {
@@ -513,6 +529,7 @@ body.theme-dark .report-row:hover {
 
   .report-row {
     grid-template-columns: 1fr;
+    gap: 6px;
   }
 
   .report-row strong,
