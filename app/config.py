@@ -62,6 +62,7 @@ def build_config():
     request_focus_api_url = normalize_upstream_url(os.getenv("REQUEST_FOCUS_API_URL", ""))
     request_approval_decision_api_url = normalize_upstream_url(os.getenv("REQUEST_APPROVAL_DECISION_API_URL", ""))
     requests_api_url = normalize_upstream_url(os.getenv("REQUESTS_API_URL", ""))
+    logs_api_url = normalize_upstream_url(os.getenv("LOGS_API_URL", ""))
     if not request_focus_api_url:
         request_focus_api_url = join_api_url(api_base_url, "requestFocus")
     elif request_focus_api_url.startswith("/"):
@@ -74,6 +75,10 @@ def build_config():
         requests_api_url = join_api_url(api_base_url, "getrequests")
     elif requests_api_url.startswith("/"):
         requests_api_url = join_api_url(api_base_url, requests_api_url)
+    if not logs_api_url:
+        logs_api_url = join_api_url(api_base_url, "logs")
+    elif logs_api_url.startswith("/"):
+        logs_api_url = join_api_url(api_base_url, logs_api_url)
 
     return {
         "API_BASE_URL": api_base_url,
@@ -83,6 +88,7 @@ def build_config():
         "REQUEST_FOCUS_API_URL": request_focus_api_url,
         "REQUEST_APPROVAL_DECISION_API_URL": request_approval_decision_api_url,
         "REQUESTS_API_URL": requests_api_url,
+        "LOGS_API_URL": logs_api_url,
         "SECRET_KEY": os.getenv("FLASK_SECRET_KEY", "transferflow-dev-key"),
         "TRANSACTION_CACHE_TTL_SECONDS": read_positive_int_env("TRANSACTION_CACHE_TTL_SECONDS", 180, minimum=20),
         "MESSAGES_CACHE_TTL_SECONDS": read_positive_int_env("MESSAGES_CACHE_TTL_SECONDS", 120, minimum=20),

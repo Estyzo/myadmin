@@ -39,19 +39,28 @@
       'fields': [
         {'label': 'Operator', 'value': balance.operator},
         {'label': 'Client code', 'value': balance.client_code},
+        {'label': 'Client status', 'value': balance.client_status_label},
+        {'label': 'Last client log', 'value': balance.client_last_seen},
         {'label': 'Balance', 'value': balance.balance},
         {'label': 'Currency', 'value': balance.currency},
         {'label': 'Last updated', 'value': balance.last_updated}
       ]
     } %}
-    <article class="balance-card" data-operator="{{ balance.operator_key }}">
+    <article class="balance-card" data-operator="{{ balance.operator_key }}" data-client-code="{{ balance.client_code }}">
       <div class="balance-card-head">
         <span class="operator-pill" data-operator="{{ balance.operator_key }}">{{ balance.operator }}</span>
         <button class="row-action-btn" type="button" data-detail-trigger="true" data-detail-payload='{{ detail_payload|tojson|forceescape }}'>View</button>
       </div>
       <p class="balance-label">Latest balance</p>
       <h3>{{ balance.balance }}</h3>
-      <p class="balance-client">Client {{ balance.client_code }}</p>
+      <div class="balance-client-row">
+        <p class="balance-client">Client {{ balance.client_code }}</p>
+        <span class="client-status-badge client-status-{{ balance.client_status }}" data-client-status-badge data-client-code="{{ balance.client_code }}">
+          <span aria-hidden="true"></span>
+          <strong data-client-status-label>{{ balance.client_status_label }}</strong>
+        </span>
+      </div>
+      <p class="balance-last-seen" data-client-last-seen>Last log {{ balance.client_last_seen }}</p>
       <p class="balance-updated">Updated {{ balance.last_updated }}</p>
     </article>
     {% endfor %}

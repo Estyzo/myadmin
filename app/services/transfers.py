@@ -1,9 +1,18 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from uuid import uuid4
 
 from app.clients.api_client import ApiClientError, api_client
+from app.services.request_feed import extract_request_records
 from app.services.settings import fetch_sender_configurations, infer_mobile_operator_name
-from app.services.shared import format_currency_amount, get_app_timezone
+from app.services.shared import format_currency_amount, get_app_timezone, parse_flexible_timestamp, pick_first_available
+
+
+TRUSTED_RECEIVER_MIN_APPROVALS = 2
+TRUSTED_RECEIVER_AMOUNT_LIMIT = 50000
+TRUSTED_RECEIVER_LOOKBACK_DAYS = 60
+TRUSTED_RECEIVER_DAILY_AMOUNT_LIMIT = 150000
+TRUSTED_RECEIVER_DAILY_COUNT_LIMIT = 5
+TRUSTED_RECEIVER_AUTO_APPROVAL_NOTE = "Auto-approved: trusted receiver under 50,000 TZS"
 
 
 def normalize_tz_phone_number(value):
@@ -28,6 +37,22 @@ def normalize_tz_receiver_number(value):
 
 def normalize_tz_local_number(value):
     return normalize_tz_receiver_number(value)
+
+
+def normalize_operator_key(value):
+    normalized = str(value or "").strip().casefold()
+    if normalized in {"yas", "tigo", "mixx by yas"}:
+        return "yas"
+    if normalized in {"vodacom", "voda", "m-pesa", "mpesa"}:
+        return "vodacom"
+    return normalized
+
+
+def parse_request_amount(value):
+    try:
+        return float(str(value or "").replace(",", "").strip())
+    except (TypeError, ValueError):
+        return 0.0
 
 
 def extract_transfer_reference(payload, depth=0):
@@ -121,6 +146,153 @@ def build_transfer_request_path(path_template, receiver_number, amount_value):
     )
 
 
+def get_trusted_receiver_policy(record, now=None):
+    if record["amount_value"] >= TRUSTED_RECEIVER_AMOUNT_LIMIT:
+        return {
+            "eligible": False,
+            "reason": "amount_limit",
+            "message": "Manual approval required for transfers of 50,000 TZS or more.",
+            "approved_count": 0,
+            "daily_auto_count": 0,
+            "daily_auto_amount": 0.0,
+        }
+
+    try:
+        payload, _status_code = api_client.get_requests(config=record["config"])
+    except ApiClientError as exc:
+        return {
+            "eligible": False,
+            "reason": "history_unavailable",
+            "message": exc.message or "Unable to verify trusted receiver history.",
+            "approved_count": 0,
+            "daily_auto_count": 0,
+            "daily_auto_amount": 0.0,
+        }
+
+    now_dt = now or datetime.now(get_app_timezone())
+    lookback_start = now_dt - timedelta(days=TRUSTED_RECEIVER_LOOKBACK_DAYS)
+    day_start = now_dt.replace(hour=0, minute=0, second=0, microsecond=0)
+    approved_count = 0
+    daily_auto_count = 0
+    daily_auto_amount = 0.0
+    target_receiver = normalize_tz_receiver_number(record["receiver_number"])
+    target_client = str(record["client_code"] or "").strip().casefold()
+    target_operator = normalize_operator_key(record["mobile_operator"])
+
+    for item in extract_request_records(payload):
+        if not isinstance(item, dict):
+            continue
+        item_receiver = normalize_tz_receiver_number(
+            pick_first_available(item, ("receiverNumber", "receiver_number", "receivernumber", "receiver"), fallback="")
+        )
+        item_client = str(pick_first_available(item, ("client", "client_code", "clientCode"), fallback="")).strip().casefold()
+        item_operator = normalize_operator_key(
+            pick_first_available(item, ("mobileCarrier", "mobile_operator", "operator", "carrier"), fallback="")
+        )
+        if item_receiver != target_receiver or item_client != target_client or item_operator != target_operator:
+            continue
+
+        created_dt = parse_flexible_timestamp(
+            pick_first_available(item, ("createdAt", "created_at", "date", "timestamp", "time"), fallback="")
+        )
+        approval_status = str(
+            pick_first_available(item, ("approvalStatus", "approval_status", "approvalState", "decision"), fallback="")
+        ).strip().upper()
+        if approval_status != "APPROVED":
+            continue
+
+        if created_dt is not None and created_dt >= lookback_start:
+            approved_count += 1
+
+        approval_note = str(pick_first_available(item, ("approvalNote", "approval_note", "note"), fallback="")).strip()
+        if created_dt is not None and created_dt >= day_start and TRUSTED_RECEIVER_AUTO_APPROVAL_NOTE.casefold() in approval_note.casefold():
+            daily_auto_count += 1
+            daily_auto_amount += parse_request_amount(
+                pick_first_available(item, ("amount", "value", "transaction_amount"), fallback="")
+            )
+
+    if approved_count < TRUSTED_RECEIVER_MIN_APPROVALS:
+        return {
+            "eligible": False,
+            "reason": "approval_history",
+            "message": f"Manual approval required until this receiver has {TRUSTED_RECEIVER_MIN_APPROVALS} approved transfers for this client/operator.",
+            "approved_count": approved_count,
+            "daily_auto_count": daily_auto_count,
+            "daily_auto_amount": daily_auto_amount,
+        }
+
+    if daily_auto_count >= TRUSTED_RECEIVER_DAILY_COUNT_LIMIT:
+        return {
+            "eligible": False,
+            "reason": "daily_count_limit",
+            "message": "Manual approval required because the trusted receiver daily auto-approval count limit was reached.",
+            "approved_count": approved_count,
+            "daily_auto_count": daily_auto_count,
+            "daily_auto_amount": daily_auto_amount,
+        }
+
+    if daily_auto_amount + record["amount_value"] > TRUSTED_RECEIVER_DAILY_AMOUNT_LIMIT:
+        return {
+            "eligible": False,
+            "reason": "daily_amount_limit",
+            "message": "Manual approval required because the trusted receiver daily auto-approval amount limit would be exceeded.",
+            "approved_count": approved_count,
+            "daily_auto_count": daily_auto_count,
+            "daily_auto_amount": daily_auto_amount,
+        }
+
+    return {
+        "eligible": True,
+        "reason": "trusted_receiver",
+        "message": "Trusted receiver matched. Transfer auto-approved.",
+        "approved_count": approved_count,
+        "daily_auto_count": daily_auto_count,
+        "daily_auto_amount": daily_auto_amount,
+    }
+
+
+def maybe_auto_approve_trusted_receiver(config, approval_context, transfer_record):
+    if not approval_context.get("request_id") or not approval_context.get("owner_token"):
+        return {
+            "applied": False,
+            "reason": "missing_approval_context",
+            "message": "Approval tracking details were missing.",
+        }
+
+    policy = get_trusted_receiver_policy({**transfer_record, "config": config})
+    if not policy["eligible"]:
+        return {
+            "applied": False,
+            **policy,
+        }
+
+    decision_payload = {
+        "request_id": approval_context["request_id"],
+        "owner_token": approval_context["owner_token"],
+        "initiated_by": approval_context.get("initiated_by"),
+        "client_request_id": approval_context.get("client_request_id"),
+        "decision": "APPROVED",
+        "note": TRUSTED_RECEIVER_AUTO_APPROVAL_NOTE,
+    }
+    decision_response, decision_status = submit_transfer_approval_decision(config, decision_payload)
+    if decision_status >= 400 or not decision_response.get("ok"):
+        return {
+            "applied": False,
+            "decision": decision_response,
+            **policy,
+            "reason": "decision_failed",
+            "message": decision_response.get("error") or "Trusted receiver matched, but auto-approval failed.",
+        }
+
+    return {
+        "applied": True,
+        "reason": "trusted_receiver",
+        "message": decision_response.get("message") or "Trusted receiver matched. Transfer auto-approved.",
+        "decision": decision_response,
+        **policy,
+    }
+
+
 def submit_send_money_request(config, payload):
     sender_raw = payload.get("sender_mobile_number")
     receiver_raw = payload.get("receiver_phone_number")
@@ -200,21 +372,34 @@ def submit_send_money_request(config, payload):
         extract_nested_value(upstream_data, ("clientRequestId", "client_request_id"))
         or upstream_payload["clientRequestId"]
     )
+    approval_context = {
+        "request_id": request_id,
+        "owner_token": owner_token,
+        "initiated_by": upstream_payload["initiatedBy"],
+        "client_request_id": client_request_id,
+        "mrequest": resolved_request_path,
+        "poll_url": "/api/send-money/approval-status",
+        "decision_url": "/api/send-money/approval-decision",
+    }
+    trusted_receiver_auto_approval = maybe_auto_approve_trusted_receiver(
+        config,
+        approval_context,
+        {
+            "client_code": client_code,
+            "mobile_operator": mobile_operator,
+            "receiver_number": receiver_number,
+            "amount_value": round(amount_value, 2),
+        },
+    )
+    auto_approval_applied = bool(trusted_receiver_auto_approval.get("applied"))
 
     return {
         "ok": True,
-        "message": "Transfer request created. Waiting for approval prompt.",
+        "message": "Transfer request auto-approved for trusted receiver." if auto_approval_applied else "Transfer request created. Waiting for approval prompt.",
         "upstream_status": upstream_status,
         "data": upstream_data,
-        "approval": {
-            "request_id": request_id,
-            "owner_token": owner_token,
-            "initiated_by": upstream_payload["initiatedBy"],
-            "client_request_id": client_request_id,
-            "mrequest": resolved_request_path,
-            "poll_url": "/api/send-money/approval-status",
-            "decision_url": "/api/send-money/approval-decision",
-        },
+        "approval": approval_context,
+        "auto_approval": trusted_receiver_auto_approval,
         "receipt": {
             "sender_mobile_number": sender_number,
             "sender_local_number": sender_local_number,
@@ -226,7 +411,7 @@ def submit_send_money_request(config, payload):
             "amount_value": round(amount_value, 2),
             "submitted_at": datetime.now(get_app_timezone()).isoformat(),
             "reference": str(request_id or extract_transfer_reference(upstream_data) or "-"),
-            "status": "Waiting for approval",
+            "status": "Approved" if auto_approval_applied else "Waiting for approval",
         },
     }, 200
 

@@ -1,11 +1,17 @@
 from flask import current_app, jsonify, render_template
 
-from app.services.balance import build_balance_payload
+from app.services.balance import build_balance_payload, build_client_status_payload
 from app.services.shared import is_fragment_request
 
 
 def api_balance_data():
     payload = build_balance_payload(current_app.config)
+    http_status = 200 if payload.get("ok", True) else 502
+    return jsonify(payload), http_status
+
+
+def api_client_status():
+    payload = build_client_status_payload(current_app.config)
     http_status = 200 if payload.get("ok", True) else 502
     return jsonify(payload), http_status
 
@@ -28,4 +34,5 @@ def balance():
 
 def register_balance_routes(app):
     app.add_url_rule("/api/balance-data", view_func=api_balance_data, endpoint="api_balance_data")
+    app.add_url_rule("/api/client-status", view_func=api_client_status, endpoint="api_client_status")
     app.add_url_rule("/balance", view_func=balance, endpoint="balance")

@@ -21,6 +21,7 @@
   var approvalPollIntervalMs = 3000;
   var approvalAutoRejectMs = 60000;
   var activeApprovalContext = null;
+  var balanceStatusPollTimer = null;
   var pendingTransferConfirmationPayload = null;
   var transferConfirmationOpener = null;
   var pendingFragmentRequests = new Map();
@@ -2415,6 +2416,14 @@
       renderTransferReceipt(form, receipt);
       addRecentTransfer(receipt);
       renderRecentTransfers();
+      if (result.auto_approval && result.auto_approval.applied) {
+        stopApprovalPolling();
+        hideApprovalModal();
+        setFormFeedback(form, result.auto_approval.message || "Transfer auto-approved for trusted receiver.", "success");
+        showToast(result.auto_approval.message || "Transfer auto-approved for trusted receiver.", "success");
+        announceStatus(result.auto_approval.message || "Transfer auto-approved for trusted receiver.");
+        return;
+      }
       startApprovalPolling(form, result.approval);
     } catch (error) {
       setFormFeedback(form, error.message || "Transfer request failed.", "error");
@@ -2629,6 +2638,75 @@
       storedTab = window.localStorage.getItem(settingsTabStorageKey) || "";
     } catch (_storageError) {}
     activateSettingsTab(root, storedTab || root.querySelector("[data-settings-tab]").getAttribute("data-settings-tab"), false);
+  }
+
+  function normalizeClientStatusKey(value) {
+    return String(value || "").trim().toLowerCase();
+  }
+
+  function updateBalanceClientStatus(statusPayload) {
+    var clients = statusPayload && statusPayload.clients ? statusPayload.clients : {};
+    var normalizedClients = {};
+
+    Object.keys(clients).forEach(function (key) {
+      normalizedClients[normalizeClientStatusKey(key)] = clients[key];
+    });
+
+    document.querySelectorAll("[data-client-status-badge]").forEach(function (badge) {
+      var clientCode = badge.getAttribute("data-client-code");
+      var status = normalizedClients[normalizeClientStatusKey(clientCode)] || {};
+      var label = status.label || "Offline";
+      var isOnline = status.status === "online" || status.is_online === true;
+      var labelEl = badge.querySelector("[data-client-status-label]");
+      var card = badge.closest(".balance-card");
+      var lastSeenEl = card ? card.querySelector("[data-client-last-seen]") : null;
+
+      badge.classList.toggle("client-status-online", isOnline);
+      badge.classList.toggle("client-status-offline", !isOnline);
+      if (labelEl) {
+        labelEl.textContent = label;
+      }
+      if (lastSeenEl) {
+        lastSeenEl.textContent = "Last log " + (status.last_seen || "No logs in the last 10 minutes");
+      }
+    });
+  }
+
+  function refreshBalanceClientStatus() {
+    if (!document.querySelector("#balance-page-root")) {
+      return Promise.resolve();
+    }
+    return fetch("/api/client-status", {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        "X-Requested-With": "XMLHttpRequest",
+      },
+    })
+      .then(function (response) {
+        return response.json().then(function (payload) {
+          if (!response.ok || payload.ok === false) {
+            throw new Error(payload.error || "Unable to refresh client status.");
+          }
+          updateBalanceClientStatus(payload);
+        });
+      })
+      .catch(function () {});
+  }
+
+  function initBalanceClientStatusPolling() {
+    if (!document.querySelector("#balance-page-root")) {
+      if (balanceStatusPollTimer) {
+        window.clearInterval(balanceStatusPollTimer);
+        balanceStatusPollTimer = null;
+      }
+      return;
+    }
+    refreshBalanceClientStatus();
+    if (balanceStatusPollTimer) {
+      return;
+    }
+    balanceStatusPollTimer = window.setInterval(refreshBalanceClientStatus, 60000);
   }
 
   document.addEventListener("click", function (event) {
@@ -3005,6 +3083,7 @@
     initSenderStatusToggles(document);
     renderRecentTransfers();
     applyPendingRecentTransfer();
+    initBalanceClientStatusPolling();
     if (event.detail && event.detail.target === "#settings-page-root") {
       initSettingsTabs(document);
     }
@@ -3142,5 +3221,6 @@
   syncReceiverDetails(document.getElementById("send-money-form"));
   renderRecentTransfers();
   applyPendingRecentTransfer();
+  initBalanceClientStatusPolling();
   syncCurrentHistoryState();
 })();
