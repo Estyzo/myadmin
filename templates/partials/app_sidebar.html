@@ -1,4 +1,7 @@
 {% set current_page = active_page|default('') %}
+{% set show_main_nav = 'dashboard' in current_permissions or 'send_money' in current_permissions or 'recent_transfers' in current_permissions or 'requests' in current_permissions or 'balance' in current_permissions or 'messages' in current_permissions %}
+{% set show_operations_nav = 'operations' in current_permissions or 'reports' in current_permissions %}
+{% set show_admin_nav = 'manage_users' in current_permissions %}
 <aside class="sidebar" id="app-sidebar" aria-label="Primary navigation">
   <div class="brand-panel">
     <button class="nav-toggle-btn collapse-btn" type="button" data-sidebar-toggle="true" aria-controls="app-sidebar" aria-expanded="true" aria-label="Collapse sidebar">
@@ -26,6 +29,9 @@
   </div>
 
   <nav class="side-nav" aria-label="Primary">
+    {% if show_main_nav %}
+    <p class="nav-section-label">Main</p>
+    {% endif %}
     {% if 'dashboard' in current_permissions %}
     <a href="{{ url_for('dashboard') }}" class="nav-item{% if current_page == 'dashboard' %} active{% endif %}"{% if current_page == 'dashboard' %} aria-current="page"{% endif %}>
       <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -64,6 +70,10 @@
       <span>Messages</span>
     </a>
     {% endif %}
+
+    {% if show_operations_nav %}
+    <p class="nav-section-label">Operations</p>
+    {% endif %}
     {% if 'operations' in current_permissions %}
     <a href="{{ url_for('operations') }}" class="nav-item{% if current_page == 'operations' %} active{% endif %}"{% if current_page == 'operations' %} aria-current="page"{% endif %}>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18"></path><path d="M6 21V7l6-4 6 4v14"></path><path d="M9 21v-6h6v6"></path></svg>
@@ -75,6 +85,10 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5"></path><path d="M4 19h16"></path><path d="M8 15v-5"></path><path d="M12 15V7"></path><path d="M16 15v-3"></path></svg>
       <span>Reports</span>
     </a>
+    {% endif %}
+
+    {% if show_admin_nav %}
+    <p class="nav-section-label">Admin</p>
     {% endif %}
     {% if 'manage_users' in current_permissions %}
     <a href="{{ url_for('users') }}" class="nav-item{% if current_page == 'users' %} active{% endif %}"{% if current_page == 'users' %} aria-current="page"{% endif %}>
