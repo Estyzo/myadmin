@@ -5,7 +5,7 @@
 {% block document_title %}WakalaAdmin Reports{% endblock %}
 
 {% block page_styles %}
-  <link rel="stylesheet" href="{{ url_for('static', filename='reports.css', v='50') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='reports.css', v='51') }}">
 {% endblock %}
 
 {% macro money(value) -%}
@@ -122,10 +122,10 @@
             <td>{{ item.receiver_number|mask_sensitive_numbers }}</td>
             <td class="numeric">{{ item.amount }}</td>
             <td>{{ item.created_by }}</td>
-            <td><button class="row-action-btn" type="button" data-detail-trigger="true" data-detail-payload='{{ transaction_detail|tojson|forceescape }}'>View</button></td>
+            <td><button class="row-action-btn" type="button" data-detail-trigger="true" data-detail-payload='{{ transaction_detail|tojson|forceescape }}'>View details</button></td>
           </tr>
           {% else %}
-          <tr><td colspan="8">No transactions available.</td></tr>
+          <tr><td colspan="8"><div class="report-empty report-table-empty"><strong>No transactions available</strong><span>Try a different date range or clear your filters.</span></div></td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -163,10 +163,10 @@
           <div><strong>{{ item.source_name }}</strong><span>{{ item.source_type|title }} · {{ item.commission_date }}</span></div>
           <b>{{ money(item.amount) }}</b>
           <small>{{ item.reference or item.note or "-" }}</small>
-          <button class="row-action-btn" type="button" data-detail-trigger="true" data-detail-payload='{{ commission_detail|tojson|forceescape }}'>View</button>
+          <button class="row-action-btn" type="button" data-detail-trigger="true" data-detail-payload='{{ commission_detail|tojson|forceescape }}'>View details</button>
         </div>
         {% else %}
-        <div class="report-empty">No commissions recorded.</div>
+        <div class="report-empty"><strong>No commissions recorded</strong><span>Commission records will appear here once they are added.</span></div>
         {% endfor %}
       </div>
   </section>
@@ -204,10 +204,10 @@
           <div><strong>{{ item.asset_name }}</strong><span>{{ item.asset_tag or item.location or "-" }}</span></div>
           <b>{{ money(item.purchase_value) }}</b>
           <small>{{ item.status|title }} · {{ item.purchase_date or "No date" }}</small>
-          <button class="row-action-btn" type="button" data-detail-trigger="true" data-detail-payload='{{ asset_detail|tojson|forceescape }}'>View</button>
+          <button class="row-action-btn" type="button" data-detail-trigger="true" data-detail-payload='{{ asset_detail|tojson|forceescape }}'>View details</button>
         </div>
         {% else %}
-        <div class="report-empty">No assets registered.</div>
+        <div class="report-empty"><strong>No assets registered</strong><span>Asset records will appear here once they are added.</span></div>
         {% endfor %}
       </div>
   </section>
@@ -245,10 +245,10 @@
           <div><strong>{{ item.borrower_name }}</strong><span>{{ item.status|title }}{% if item.due_date %} · Due {{ item.due_date }}{% endif %}</span></div>
           <b>{{ money(item.amount) }}</b>
           <small>{{ item.reference or item.note or "-" }}</small>
-          <button class="row-action-btn" type="button" data-detail-trigger="true" data-detail-payload='{{ loan_detail|tojson|forceescape }}'>View</button>
+          <button class="row-action-btn" type="button" data-detail-trigger="true" data-detail-payload='{{ loan_detail|tojson|forceescape }}'>View details</button>
         </div>
         {% else %}
-        <div class="report-empty">No loans registered.</div>
+        <div class="report-empty"><strong>No loans registered</strong><span>Loan records will appear here once they are added.</span></div>
         {% endfor %}
       </div>
   </section>

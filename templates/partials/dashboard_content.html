@@ -283,7 +283,7 @@
             <td data-col="created_by" data-label="Created By" class="monospace created-by-cell">{{ transaction.created_by }}</td>
             <td data-col="date" data-label="Date" class="transaction-date">{{ transaction.created_at }}</td>
             <td data-label="Details" class="table-action-cell">
-              <button class="row-action-btn" type="button" data-detail-trigger="true" data-detail-payload='{{ transaction_detail|tojson|forceescape }}'>View</button>
+              <button class="row-action-btn" type="button" data-detail-trigger="true" data-detail-payload='{{ transaction_detail|tojson|forceescape }}'>View details</button>
             </td>
           </tr>
           {% endfor %}
@@ -309,7 +309,7 @@
       </div>
     </div>
     {% else %}
-    <div class="empty-state">
+    <div class="empty-state ledger-empty-state">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.1A19.5 19.5 0 0 1 5.2 12.8 19.8 19.8 0 0 1 2.1 4.4 2 2 0 0 1 4.1 2.2h3a2 2 0 0 1 2 1.7 12.8 12.8 0 0 0 .7 2.8 2 2 0 0 1-.45 2.1L8.1 10a16 16 0 0 0 5.9 5.9l1.2-1.2a2 2 0 0 1 2.1-.45 12.8 12.8 0 0 0 2.8.7 2 2 0 0 1 1.7 2z"></path></svg>
       <h5>No transactions found</h5>
       <p>Transactions will appear here once the filtered dataset is available from the API.</p>
