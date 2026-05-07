@@ -578,7 +578,10 @@
 
   function syncModalShellState() {
     var shell = document.querySelector(".app-shell");
-    var hasModalOpen = document.body.classList.contains("command-palette-open") || document.body.classList.contains("detail-drawer-open");
+    var hasModalOpen =
+      document.body.classList.contains("command-palette-open") ||
+      document.body.classList.contains("detail-drawer-open") ||
+      document.body.classList.contains("transfer-approval-open");
     if (!shell) {
       return;
     }
@@ -1890,7 +1893,20 @@
   }
 
   function getApprovalModalElements() {
-    var modal = document.querySelector("[data-transfer-approval-modal]");
+    var modals = document.querySelectorAll("[data-transfer-approval-modal]");
+    var modal = modals.length ? modals[modals.length - 1] : null;
+    var staleModals;
+    if (modal && document.body && modal.parentElement !== document.body) {
+      document.body.appendChild(modal);
+    }
+    staleModals = Array.prototype.slice.call(modals).filter(function (candidate) {
+      return candidate !== modal;
+    });
+    staleModals.forEach(function (candidate) {
+      if (candidate.parentNode) {
+        candidate.parentNode.removeChild(candidate);
+      }
+    });
     return {
       modal: modal,
       message: modal ? modal.querySelector("[data-approval-message]") : null,
@@ -1911,6 +1927,7 @@
     }
     elements.modal.hidden = false;
     document.body.classList.add("transfer-approval-open");
+    syncModalShellState();
     if (elements.approveButton) {
       elements.approveButton.focus();
     }
@@ -1937,6 +1954,7 @@
       elements.modal.hidden = true;
     }
     document.body.classList.remove("transfer-approval-open");
+    syncModalShellState();
   }
 
   function buildApprovalRequestPayload() {

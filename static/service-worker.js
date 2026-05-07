@@ -1,4 +1,4 @@
-const CACHE_NAME = "transferflow-shell-v30";
+const CACHE_NAME = "transferflow-shell-v31";
 const APP_SHELL = [
   "/dashboard",
   "/balance",

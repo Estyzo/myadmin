@@ -402,11 +402,16 @@ body.theme-dark .recent-transfer-side strong {
 .transfer-confirmation-modal,
 .transfer-approval-modal {
   position: fixed;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   width: 100vw;
+  height: 100vh;
+  height: 100dvh;
   min-height: 100vh;
   min-height: 100dvh;
-  z-index: 1500;
+  z-index: 2147483000;
   display: grid;
   place-items: center;
   padding: 18px;
@@ -419,6 +424,13 @@ body.theme-dark .recent-transfer-side strong {
 .transfer-confirmation-modal[hidden],
 .transfer-approval-modal[hidden] {
   display: none;
+}
+
+body.transfer-approval-open .transfer-approval-modal {
+  display: grid;
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .transfer-confirmation-panel,
