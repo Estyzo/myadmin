@@ -1005,6 +1005,18 @@ body.theme-dark .profile-meta strong {
   position: relative;
 }
 
+.floating-field-search > svg {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  z-index: 1;
+  width: 18px;
+  height: 18px;
+  color: var(--muted);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
 .floating-field > .send-input-wrap,
 .floating-field > .messages-field-wrap {
   position: relative;
@@ -1022,6 +1034,10 @@ body.theme-dark .profile-meta strong {
   color: var(--navy);
   font-size: 16px;
   transition: all 0.2s ease;
+}
+
+.floating-field-search input {
+  padding-left: 44px;
 }
 
 body.theme-dark .floating-field input,
@@ -1057,6 +1073,11 @@ body.theme-dark .messages-field-wrap input:focus {
   text-transform: uppercase;
   pointer-events: none;
   transition: all 0.2s ease;
+}
+
+.floating-field-search > .floating-label {
+  left: 44px;
+  max-width: calc(100% - 60px);
 }
 
 .floating-field input:focus ~ .floating-label,
@@ -1336,6 +1357,19 @@ body.theme-dark .messages-field-wrap input:focus {
   .floating-field select,
   .messages-field-wrap input {
     padding: 16px 12px 6px;
+  }
+
+  .floating-field-search input {
+    padding-left: 42px;
+  }
+
+  .floating-field-search > svg {
+    left: 14px;
+  }
+
+  .floating-field-search > .floating-label {
+    left: 42px;
+    max-width: calc(100% - 56px);
   }
 
   .mobile-more-grid {

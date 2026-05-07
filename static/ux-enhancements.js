@@ -1246,10 +1246,15 @@
 
   function setMobileMoreState(isOpen) {
     var toggle = document.getElementById("mobile-more-toggle");
+    var nextState = !!isOpen;
     document.body.classList.toggle("mobile-more-open", !!isOpen);
     if (toggle) {
-      toggle.checked = !!isOpen;
+      toggle.checked = nextState;
     }
+    document.querySelectorAll(".mobile-more-button").forEach(function (button) {
+      button.setAttribute("aria-expanded", nextState ? "true" : "false");
+      button.setAttribute("aria-label", nextState ? "Close more navigation" : "Open more navigation");
+    });
   }
 
   function focusUpdatedContent(targetSelector) {
@@ -2750,13 +2755,13 @@
     }
 
     if (mobileMoreToggle) {
-      setTimeout(function () {
-        setMobileMoreState(document.getElementById("mobile-more-toggle") && document.getElementById("mobile-more-toggle").checked);
-      }, 0);
+      event.preventDefault();
+      setMobileMoreState(!document.body.classList.contains("mobile-more-open"));
       return;
     }
 
     if (mobileMoreClose) {
+      event.preventDefault();
       setMobileMoreState(false);
       return;
     }
