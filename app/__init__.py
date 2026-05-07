@@ -24,6 +24,7 @@ from app.services.auth import (
     role_home_endpoint,
     user_permissions,
 )
+from app.services.operations import init_operations_storage
 
 
 ENDPOINT_PERMISSIONS = {
@@ -45,6 +46,14 @@ ENDPOINT_PERMISSIONS = {
     "settings": "settings",
     "api_sender_configurations": "settings",
     "api_sender_configuration_status": "settings",
+    "operations": "operations",
+    "reports": "reports",
+    "create_expense_record": "operations",
+    "create_commission_record": "operations",
+    "create_asset_record": "operations",
+    "update_asset_record_status": "operations",
+    "create_loan_record": "operations",
+    "mark_loan_record_paid": "operations",
     "users": "manage_users",
     "create_user_invite": "manage_users",
     "update_user": "manage_users",
@@ -75,6 +84,7 @@ def create_app():
     app.extensions["celery"] = create_celery_app(app)
     init_service_config(app)
     init_auth_storage(app)
+    init_operations_storage(app)
 
     @app.context_processor
     def inject_api_base_url():

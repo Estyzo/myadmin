@@ -110,6 +110,11 @@
           <span><i class="trend-dot received"></i>Received</span>
         </div>
       </div>
+      <div class="trend-insights" data-trend-insights aria-live="polite">
+        <span><strong data-trend-total="sent">TZS 0</strong><small>Sent</small></span>
+        <span><strong data-trend-total="received">TZS 0</strong><small>Received</small></span>
+        <span><strong data-trend-total="net">TZS 0</strong><small>Net</small></span>
+      </div>
       <canvas id="dashboard-volume-chart" class="dashboard-chart" width="640" height="240" role="img" aria-label="Sparkline chart of sent and received transfer amounts"></canvas>
       <script type="application/json" id="dashboard-trend-data">{{ trend_data|tojson }}</script>
     </article>

@@ -2,6 +2,8 @@ from app.routes.auth import register_auth_routes
 from app.routes.balance import register_balance_routes
 from app.routes.dashboard import register_dashboard_routes
 from app.routes.messages import register_messages_routes
+from app.routes.operations import register_operations_routes
+from app.routes.reports import register_reports_routes
 from app.routes.requests import register_requests_routes
 from app.routes.send_money import register_send_money_routes
 from app.routes.settings import register_settings_routes
@@ -12,6 +14,8 @@ def register_routes(app):
     register_dashboard_routes(app)
     register_balance_routes(app)
     register_messages_routes(app)
+    register_operations_routes(app)
+    register_reports_routes(app)
     register_requests_routes(app)
     register_send_money_routes(app)
     register_settings_routes(app)

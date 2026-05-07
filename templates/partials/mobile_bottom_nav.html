@@ -30,6 +30,18 @@
     <span>Bal</span>
   </a>
   {% endif %}
+  {% if 'operations' in current_permissions %}
+  <a href="{{ url_for('operations') }}" class="mobile-bottom-nav-item{% if current_page == 'operations' %} active{% endif %}"{% if current_page == 'operations' %} aria-current="page"{% endif %}>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18"></path><path d="M6 21V7l6-4 6 4v14"></path><path d="M9 21v-6h6v6"></path></svg>
+    <span>Ops</span>
+  </a>
+  {% endif %}
+  {% if 'reports' in current_permissions %}
+  <a href="{{ url_for('reports') }}" class="mobile-bottom-nav-item{% if current_page == 'reports' %} active{% endif %}"{% if current_page == 'reports' %} aria-current="page"{% endif %}>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5"></path><path d="M4 19h16"></path><path d="M8 15v-5"></path><path d="M12 15V7"></path><path d="M16 15v-3"></path></svg>
+    <span>Rpt</span>
+  </a>
+  {% endif %}
   {% if 'messages' in current_permissions %}
   <a href="{{ url_for('messages') }}" class="mobile-bottom-nav-item{% if current_page == 'messages' %} active{% endif %}"{% if current_page == 'messages' %} aria-current="page"{% endif %}>
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>

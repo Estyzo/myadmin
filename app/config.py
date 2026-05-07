@@ -118,6 +118,7 @@ def build_config():
         "AUTH_DATABASE_PATH": os.getenv("AUTH_DATABASE_PATH", "").strip(),
         "AUTH_BOOTSTRAP_EMAIL": os.getenv("AUTH_BOOTSTRAP_EMAIL", "admin@transferflow.local").strip(),
         "AUTH_BOOTSTRAP_PASSWORD": os.getenv("AUTH_BOOTSTRAP_PASSWORD", "ChangeMe123!").strip(),
+        "OPERATIONS_DATABASE_PATH": os.getenv("OPERATIONS_DATABASE_PATH", "").strip(),
         "APP_PUBLIC_URL": os.getenv("APP_PUBLIC_URL", "").strip().rstrip("/"),
         "MAIL_SERVER": os.getenv("MAIL_SERVER", "").strip(),
         "MAIL_PORT": read_positive_int_env("MAIL_PORT", 587, minimum=1),

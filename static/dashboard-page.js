@@ -88,6 +88,22 @@
     return Number.isFinite(numeric) ? numeric : 0;
   }
 
+  function formatTrendValue(value) {
+    var amount = Number(value || 0);
+    var absolute = Math.abs(amount);
+    var sign = amount < 0 ? "-" : "";
+    if (absolute >= 1000000000) {
+      return sign + "TZS " + (absolute / 1000000000).toFixed(1).replace(/\.0$/, "") + "B";
+    }
+    if (absolute >= 1000000) {
+      return sign + "TZS " + (absolute / 1000000).toFixed(1).replace(/\.0$/, "") + "M";
+    }
+    if (absolute >= 1000) {
+      return sign + "TZS " + (absolute / 1000).toFixed(1).replace(/\.0$/, "") + "K";
+    }
+    return sign + "TZS " + Math.round(absolute).toLocaleString();
+  }
+
   function getCanvasContext(canvas) {
     var rect;
     var context;
@@ -176,7 +192,73 @@
     };
   }
 
-  function drawTrendLine(context, points, color, shadowColor) {
+  function drawSmoothPath(context, points) {
+    if (points.length === 1) {
+      context.moveTo(points[0].x, points[0].y);
+      return;
+    }
+    context.moveTo(points[0].x, points[0].y);
+    points.forEach(function (point, index) {
+      var nextPoint;
+      var midX;
+      var midY;
+      if (index === 0) {
+        return;
+      }
+      nextPoint = points[index - 1];
+      midX = (nextPoint.x + point.x) / 2;
+      midY = (nextPoint.y + point.y) / 2;
+      context.quadraticCurveTo(nextPoint.x, nextPoint.y, midX, midY);
+      if (index === points.length - 1) {
+        context.quadraticCurveTo(point.x, point.y, point.x, point.y);
+      }
+    });
+  }
+
+  function shouldLabelTrendPoint(points, index) {
+    var point = points[index];
+    var previous = points[index - 1];
+    var next = points[index + 1];
+    if (!point || point.value <= 0) {
+      return false;
+    }
+    if (points.length <= 7) {
+      return true;
+    }
+    if (index === points.length - 1) {
+      return true;
+    }
+    if (previous && next && ((point.value >= previous.value && point.value >= next.value) || (point.value <= previous.value && point.value <= next.value))) {
+      return true;
+    }
+    return false;
+  }
+
+  function drawTrendValueLabel(context, point, label, color, chartWidth, chartHeight, yOffset) {
+    var textWidth;
+    var labelX = Math.max(34, Math.min(chartWidth - 34, point.x));
+    var labelY = Math.max(16, Math.min(chartHeight - 38, point.y + yOffset));
+    context.save();
+    context.font = "800 10px Plus Jakarta Sans, sans-serif";
+    textWidth = context.measureText(label).width + 12;
+    context.fillStyle = "rgba(255, 255, 255, 0.92)";
+    context.strokeStyle = "rgba(15, 24, 41, 0.08)";
+    context.lineWidth = 1;
+    if (typeof context.roundRect === "function") {
+      context.beginPath();
+      context.roundRect(labelX - textWidth / 2, labelY - 10, textWidth, 16, 8);
+      context.fill();
+      context.stroke();
+    } else {
+      context.fillRect(labelX - textWidth / 2, labelY - 10, textWidth, 16);
+    }
+    context.fillStyle = color;
+    context.textAlign = "center";
+    context.fillText(label, labelX, labelY + 2);
+    context.restore();
+  }
+
+  function drawTrendLine(context, points, color, shadowColor, chartWidth, chartHeight, labelOffset) {
     if (!points.length) {
       return;
     }
@@ -188,17 +270,11 @@
     context.shadowColor = shadowColor;
     context.shadowBlur = 10;
     context.beginPath();
-    points.forEach(function (point, index) {
-      if (index === 0) {
-        context.moveTo(point.x, point.y);
-      } else {
-        context.lineTo(point.x, point.y);
-      }
-    });
+    drawSmoothPath(context, points);
     context.stroke();
     context.restore();
 
-    points.forEach(function (point) {
+    points.forEach(function (point, index) {
       context.beginPath();
       context.arc(point.x, point.y, 3.5, 0, Math.PI * 2);
       context.fillStyle = color;
@@ -206,7 +282,43 @@
       context.lineWidth = 2;
       context.strokeStyle = "#ffffff";
       context.stroke();
+      if (shouldLabelTrendPoint(points, index)) {
+        drawTrendValueLabel(context, point, formatTrendValue(point.value), color, chartWidth, chartHeight, labelOffset);
+      }
     });
+  }
+
+  function sumTrendValues(values) {
+    return (values || []).reduce(function (total, value) {
+      return total + Number(value || 0);
+    }, 0);
+  }
+
+  function updateTrendInsights(root, trendSeries) {
+    var sentTotal;
+    var receivedTotal;
+    var netTotal;
+    var sentNode;
+    var receivedNode;
+    var netNode;
+    if (!root) {
+      return;
+    }
+    sentTotal = sumTrendValues((trendSeries && trendSeries.sent) || []);
+    receivedTotal = sumTrendValues((trendSeries && trendSeries.received) || []);
+    netTotal = receivedTotal - sentTotal;
+    sentNode = root.querySelector('[data-trend-total="sent"]');
+    receivedNode = root.querySelector('[data-trend-total="received"]');
+    netNode = root.querySelector('[data-trend-total="net"]');
+    if (sentNode) {
+      sentNode.textContent = formatTrendValue(sentTotal);
+    }
+    if (receivedNode) {
+      receivedNode.textContent = formatTrendValue(receivedTotal);
+    }
+    if (netNode) {
+      netNode.textContent = formatTrendValue(netTotal);
+    }
   }
 
   function drawTrendChart(canvas, trendSeries) {
@@ -240,7 +352,7 @@
     }
 
     context = chart.context;
-    padding = { top: 18, right: 18, bottom: 34, left: 18 };
+    padding = { top: 26, right: 22, bottom: 34, left: 58 };
     innerWidth = chart.width - padding.left - padding.right;
     innerHeight = chart.height - padding.top - padding.bottom;
     maxValue = Math.max.apply(null, allValues);
@@ -250,10 +362,15 @@
     context.lineWidth = 1;
     [0, 0.33, 0.66, 1].forEach(function (step) {
       var y = padding.top + innerHeight * step;
+      var value = range - range * step;
       context.beginPath();
       context.moveTo(padding.left, y);
       context.lineTo(chart.width - padding.right, y);
       context.stroke();
+      context.fillStyle = "rgba(15, 24, 41, 0.48)";
+      context.font = "800 10px Plus Jakarta Sans, sans-serif";
+      context.textAlign = "right";
+      context.fillText(formatTrendValue(value).replace("TZS ", ""), padding.left - 8, y + 3);
     });
 
     function buildPoints(values) {
@@ -261,14 +378,15 @@
         return {
           x: padding.left + (innerWidth * index) / Math.max(labels.length - 1, 1),
           y: padding.top + innerHeight - (Number(value || 0) / range) * innerHeight,
+          value: Number(value || 0),
         };
       });
     }
 
     sentPoints = buildPoints(sentValues);
     receivedPoints = buildPoints(receivedValues);
-    drawTrendLine(context, sentPoints, "#06b6d4", "rgba(6, 182, 212, 0.35)");
-    drawTrendLine(context, receivedPoints, "#1cdc8b", "rgba(28, 220, 139, 0.35)");
+    drawTrendLine(context, sentPoints, "#06b6d4", "rgba(6, 182, 212, 0.35)", chart.width, chart.height, -10);
+    drawTrendLine(context, receivedPoints, "#1cdc8b", "rgba(28, 220, 139, 0.35)", chart.width, chart.height, 18);
 
     context.fillStyle = "rgba(15, 24, 41, 0.54)";
     context.font = "700 11px Plus Jakarta Sans, sans-serif";
@@ -380,6 +498,7 @@
     trendData = readDashboardTrendData(root);
     trendMode = readTrendMode();
     syncTrendModeControls(root, trendMode);
+    updateTrendInsights(root, trendData[trendMode] || trendData.daily || {});
     drawTrendChart(root.querySelector("#dashboard-volume-chart"), trendData[trendMode] || trendData.daily || {});
     drawOperatorChart(root.querySelector("#dashboard-operator-chart"), chartData.operatorLabels, chartData.operatorValues);
   }

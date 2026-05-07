@@ -1,0 +1,112 @@
+{% extends "base_app.html" %}
+{% set active_page = "reports" %}
+{% set page_title = "Reports" %}
+
+{% block document_title %}TransferFlow Reports{% endblock %}
+
+{% block page_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='reports.css') }}">
+{% endblock %}
+
+{% macro money(value) -%}
+  TZS {{ "{:,.2f}".format(value or 0) }}
+{%- endmacro %}
+
+{% block page_content %}
+<section class="page-wrap reports-page container-fluid px-3 px-md-4">
+  <div class="page-header">
+    <div class="page-copy">
+      <p class="page-eyebrow">Reports</p>
+      <h2>Business activity report</h2>
+      <p>Review transactions, commission income, and office assets in one place.</p>
+    </div>
+  </div>
+
+  <section class="report-summary-grid">
+    <article><span>Transactions</span><strong>{{ money(summary.transaction_total) }}</strong><small>{{ summary.transaction_count }} records</small></article>
+    <article><span>Commissions</span><strong>{{ money(summary.commission_total) }}</strong><small>{{ summary.commission_count }} records</small></article>
+    <article><span>Assets</span><strong>{{ money(summary.asset_total) }}</strong><small>{{ summary.active_asset_count }} active · {{ summary.asset_count }} total</small></article>
+  </section>
+
+  {% if data_status.message %}
+  <div class="report-status {{ data_status.level|default('info') }}">
+    <strong>{{ data_status.title }}</strong>
+    <span>{{ data_status.message }}</span>
+  </div>
+  {% endif %}
+
+  <section class="report-section">
+    <div class="report-section-head">
+      <div>
+        <p class="card-kicker">Transactions</p>
+        <h3>Latest transaction activity</h3>
+      </div>
+      <span>{{ summary.transaction_count }} total</span>
+    </div>
+    <div class="report-table-wrap">
+      <table class="report-table">
+        <thead><tr><th>Date</th><th>Operator</th><th>Operation</th><th>Sender</th><th>Receiver</th><th>Amount</th><th>Client</th></tr></thead>
+        <tbody>
+          {% for item in transactions %}
+          <tr>
+            <td>{{ item.created_at }}</td>
+            <td>{{ item.operator }}</td>
+            <td>{{ item.operation }}</td>
+            <td>{{ item.sender_number|mask_digits }}</td>
+            <td>{{ item.receiver_number|mask_sensitive_numbers }}</td>
+            <td class="numeric">{{ item.amount }}</td>
+            <td>{{ item.created_by }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7">No transactions available.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="report-two-col">
+    <article class="report-section">
+      <div class="report-section-head">
+        <div>
+          <p class="card-kicker">Commissions</p>
+          <h3>Commission income</h3>
+        </div>
+        <span>{{ summary.commission_count }} total</span>
+      </div>
+      <div class="report-list">
+        {% for item in commissions %}
+        <div class="report-row">
+          <div><strong>{{ item.source_name }}</strong><span>{{ item.source_type|title }} · {{ item.commission_date }}</span></div>
+          <b>{{ money(item.amount) }}</b>
+          <small>{{ item.reference or item.note or "-" }}</small>
+        </div>
+        {% else %}
+        <div class="report-empty">No commissions recorded.</div>
+        {% endfor %}
+      </div>
+    </article>
+
+    <article class="report-section">
+      <div class="report-section-head">
+        <div>
+          <p class="card-kicker">Office Assets</p>
+          <h3>Asset register</h3>
+        </div>
+        <span>{{ summary.asset_count }} total</span>
+      </div>
+      <div class="report-list">
+        {% for item in assets %}
+        <div class="report-row">
+          <div><strong>{{ item.asset_name }}</strong><span>{{ item.asset_tag or item.location or "-" }}</span></div>
+          <b>{{ money(item.purchase_value) }}</b>
+          <small>{{ item.status|title }} · {{ item.purchase_date or "No date" }}</small>
+        </div>
+        {% else %}
+        <div class="report-empty">No assets registered.</div>
+        {% endfor %}
+      </div>
+    </article>
+  </section>
+</section>
+{% endblock %}
