@@ -153,12 +153,23 @@ def init_auth_storage(app):
                 expires_at TEXT NOT NULL,
                 accepted_at TEXT,
                 revoked_at TEXT,
-                accepted_user_id INTEGER
+                accepted_user_id INTEGER,
+                sent_at TEXT,
+                send_error TEXT NOT NULL DEFAULT ''
             )
             """
         )
+        ensure_invitation_delivery_columns(connection)
         connection.commit()
     bootstrap_admin(app)
+
+
+def ensure_invitation_delivery_columns(connection):
+    columns = {row["name"] for row in connection.execute("PRAGMA table_info(invitations)").fetchall()}
+    if "sent_at" not in columns:
+        connection.execute("ALTER TABLE invitations ADD COLUMN sent_at TEXT")
+    if "send_error" not in columns:
+        connection.execute("ALTER TABLE invitations ADD COLUMN send_error TEXT NOT NULL DEFAULT ''")
 
 
 def user_count(config=None):
@@ -322,6 +333,15 @@ def get_invitation_by_token(token, config=None):
         return row_to_invitation(row)
 
 
+def mark_invitation_delivery(token, sent=False, error="", config=None):
+    with get_auth_connection(config) as connection:
+        connection.execute(
+            "UPDATE invitations SET sent_at = ?, send_error = ? WHERE token_hash = ?",
+            (iso_now() if sent else None, str(error or "")[:500], token_hash(token)),
+        )
+        connection.commit()
+
+
 def invitation_is_usable(invitation):
     if not invitation or invitation.get("accepted_at") or invitation.get("revoked_at"):
         return False
@@ -373,6 +393,9 @@ def role_home_endpoint(user=None):
 
 
 def build_invite_url(token):
+    public_url = str(current_app.config.get("APP_PUBLIC_URL") or "").strip().rstrip("/")
+    if public_url:
+        return f"{public_url}{url_for('accept_invite', token=token)}"
     return url_for("accept_invite", token=token, _external=True)
 
 

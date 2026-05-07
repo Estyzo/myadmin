@@ -25,9 +25,12 @@
       {% if invite_error %}
       <div class="auth-alert">{{ invite_error }}</div>
       {% endif %}
+      {% if invite_notice %}
+      <div class="users-notice">{{ invite_notice }}</div>
+      {% endif %}
       {% if invite_link %}
       <div class="invite-link-panel">
-        <strong>Invitation link</strong>
+        <strong>Enrollment link</strong>
         <p>{{ invite_link }}</p>
       </div>
       {% endif %}
@@ -53,7 +56,7 @@
           <span>Operator scope</span>
           <input type="text" name="operator_scope" placeholder="Vodacom, Airtel">
         </label>
-        <button type="submit">Create invitation</button>
+        <button type="submit">Send invitation</button>
       </form>
     </article>
 
@@ -68,7 +71,15 @@
             <span>{{ user.name or '-' }}</span>
           </div>
           <span class="role-pill">{{ user.role }}</span>
-          <small>{{ user.client_codes|join(', ') if user.client_codes else 'All clients' }}</small>
+          <small>
+            {% if user.client_codes %}
+              {{ user.client_codes|join(', ') }}
+            {% elif user.role in ['admin', 'manager'] %}
+              All clients
+            {% else %}
+              No client assigned
+            {% endif %}
+          </small>
         </div>
         {% endfor %}
       </div>
@@ -82,10 +93,22 @@
       <div class="users-row">
         <div>
           <strong>{{ invite.email }}</strong>
-          <span>{{ invite.accepted_at or invite.revoked_at or 'Pending' }}</span>
+          <span>
+            {% if invite.accepted_at %}
+              Accepted {{ invite.accepted_at }}
+            {% elif invite.revoked_at %}
+              Revoked {{ invite.revoked_at }}
+            {% elif invite.sent_at %}
+              Email sent {{ invite.sent_at }}
+            {% elif invite.send_error %}
+              Email failed
+            {% else %}
+              Pending delivery
+            {% endif %}
+          </span>
         </div>
         <span class="role-pill">{{ invite.role }}</span>
-        <small>Expires {{ invite.expires_at }}</small>
+        <small>{{ invite.send_error or ('Expires ' ~ invite.expires_at) }}</small>
       </div>
       {% endfor %}
     </div>

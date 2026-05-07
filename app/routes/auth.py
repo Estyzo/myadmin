@@ -1,4 +1,4 @@
-from flask import current_app, flash, jsonify, redirect, render_template, request, url_for
+from flask import current_app, jsonify, redirect, render_template, request, url_for
 
 from app.services.auth import (
     accept_invitation,
@@ -6,13 +6,16 @@ from app.services.auth import (
     build_invite_url,
     create_invitation,
     current_user,
+    get_invitation_by_token,
     has_permission,
     list_invitations,
     list_users,
     login_user,
     logout_user,
+    mark_invitation_delivery,
     role_home_endpoint,
 )
+from app.services.email import EmailDeliveryError, send_invitation_email
 
 
 def login():
@@ -65,6 +68,7 @@ def users_page():
         invitations=list_invitations(current_app.config),
         invite_link="",
         invite_error="",
+        invite_notice="",
     )
 
 
@@ -83,6 +87,7 @@ def create_user_invite():
             invitations=list_invitations(current_app.config),
             invite_link="",
             invite_error="Enter a valid email address.",
+            invite_notice="",
         ), 400
 
     token = create_invitation(
@@ -94,14 +99,26 @@ def create_user_invite():
         config=current_app.config,
     )
     invite_link = build_invite_url(token)
-    # Email delivery can be added later; for now the generated link is shown for secure manual sharing.
-    flash("Invitation created. Share the generated enrollment link with the user.")
+    invitation = get_invitation_by_token(token, config=current_app.config)
+    invited_by = (current_user() or {}).get("email", "")
+    invite_notice = ""
+    invite_error = ""
+    try:
+        if invitation:
+            send_invitation_email(invitation, invite_link, invited_by=invited_by, config=current_app.config)
+        mark_invitation_delivery(token, sent=True, config=current_app.config)
+        invite_notice = "Invitation email sent. The user can enroll from their inbox."
+    except EmailDeliveryError as exc:
+        mark_invitation_delivery(token, sent=False, error=str(exc), config=current_app.config)
+        invite_error = f"Invitation was created, but email delivery failed: {exc}"
+        invite_notice = "Use the enrollment link below while mail settings are corrected."
     return render_template(
         "users.html",
         users=list_users(current_app.config),
         invitations=list_invitations(current_app.config),
         invite_link=invite_link,
-        invite_error="",
+        invite_error=invite_error,
+        invite_notice=invite_notice,
     )
 
 

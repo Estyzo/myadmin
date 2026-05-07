@@ -112,6 +112,15 @@
   font-size: 13px;
 }
 
+.users-notice {
+  margin: 0 0 14px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(28, 220, 139, 0.12);
+  color: #0f6b4d;
+  font-weight: 800;
+}
+
 @media (max-width: 900px) {
   .users-grid {
     grid-template-columns: 1fr;

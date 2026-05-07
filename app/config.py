@@ -26,6 +26,13 @@ def read_positive_int_env(name, default, minimum=1):
     return max(minimum, parsed_value)
 
 
+def read_bool_env(name, default=False):
+    raw_value = os.getenv(name, "")
+    if not str(raw_value).strip():
+        return bool(default)
+    return str(raw_value).strip().lower() in {"1", "true", "yes", "on"}
+
+
 def normalize_upstream_url(url):
     normalized = (url or "").strip()
     if normalized.startswith("http://southerntechnologies.tech"):
@@ -111,4 +118,13 @@ def build_config():
         "AUTH_DATABASE_PATH": os.getenv("AUTH_DATABASE_PATH", "").strip(),
         "AUTH_BOOTSTRAP_EMAIL": os.getenv("AUTH_BOOTSTRAP_EMAIL", "admin@transferflow.local").strip(),
         "AUTH_BOOTSTRAP_PASSWORD": os.getenv("AUTH_BOOTSTRAP_PASSWORD", "ChangeMe123!").strip(),
+        "APP_PUBLIC_URL": os.getenv("APP_PUBLIC_URL", "").strip().rstrip("/"),
+        "MAIL_SERVER": os.getenv("MAIL_SERVER", "").strip(),
+        "MAIL_PORT": read_positive_int_env("MAIL_PORT", 587, minimum=1),
+        "MAIL_USERNAME": os.getenv("MAIL_USERNAME", "").strip(),
+        "MAIL_PASSWORD": os.getenv("MAIL_PASSWORD", "").strip(),
+        "MAIL_USE_TLS": read_bool_env("MAIL_USE_TLS", True),
+        "MAIL_USE_SSL": read_bool_env("MAIL_USE_SSL", False),
+        "MAIL_DEFAULT_SENDER": os.getenv("MAIL_DEFAULT_SENDER", "").strip(),
+        "MAIL_FROM_NAME": os.getenv("MAIL_FROM_NAME", "TransferFlow").strip(),
     }
