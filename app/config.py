@@ -129,5 +129,5 @@ def build_config():
         "MAIL_USE_TLS": read_bool_env("MAIL_USE_TLS", True),
         "MAIL_USE_SSL": read_bool_env("MAIL_USE_SSL", False),
         "MAIL_DEFAULT_SENDER": os.getenv("MAIL_DEFAULT_SENDER", "").strip(),
-        "MAIL_FROM_NAME": os.getenv("MAIL_FROM_NAME", "TransferFlow").strip(),
+        "MAIL_FROM_NAME": os.getenv("MAIL_FROM_NAME", "WakalaAdmin").strip(),
     }

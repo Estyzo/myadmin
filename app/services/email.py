@@ -55,14 +55,14 @@ def send_invitation_email(invitation, invite_link, invited_by="", config=None):
     safe_role = escape(role)
     safe_client_codes = escape(client_codes)
     safe_invite_link = escape(invite_link, quote=True)
-    subject = "Your TransferFlow invitation"
+    subject = "Your WakalaAdmin invitation"
     text_body = "\n".join(
         [
-            "You have been invited to TransferFlow.",
+            "You have been invited to WakalaAdmin.",
             "",
             f"Role: {role}",
             f"Client scope: {client_codes}",
-            f"Invited by: {invited_by or 'TransferFlow administrator'}",
+            f"Invited by: {invited_by or 'WakalaAdmin administrator'}",
             "",
             "Open this secure link to create your password:",
             invite_link,
@@ -72,8 +72,8 @@ def send_invitation_email(invitation, invite_link, invited_by="", config=None):
     )
     html_body = f"""
     <div style="font-family:Arial,sans-serif;line-height:1.5;color:#172033">
-      <h2 style="margin:0 0 12px">TransferFlow invitation</h2>
-      <p>You have been invited to TransferFlow.</p>
+      <h2 style="margin:0 0 12px">WakalaAdmin invitation</h2>
+      <p>You have been invited to WakalaAdmin.</p>
       <p><strong>Role:</strong> {safe_role}<br><strong>Client scope:</strong> {safe_client_codes}</p>
       <p>
         <a href="{safe_invite_link}" style="display:inline-block;background:#0f766e;color:#fff;padding:12px 16px;border-radius:8px;text-decoration:none;font-weight:700">

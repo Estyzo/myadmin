@@ -450,7 +450,7 @@
     deferredInstallPrompt.prompt();
     deferredInstallPrompt.userChoice.then(function (choice) {
       if (choice && choice.outcome === "accepted") {
-        showToast("TransferFlow is installing.", "success");
+        showToast("WakalaAdmin is installing.", "success");
       }
       deferredInstallPrompt = null;
       setInstallPromptVisible(false, false);
@@ -3135,7 +3135,7 @@
   window.addEventListener("appinstalled", function () {
     deferredInstallPrompt = null;
     setInstallPromptVisible(false, false);
-    showToast("TransferFlow installed.", "success");
+    showToast("WakalaAdmin installed.", "success");
   });
 
   document.addEventListener("keydown", function (event) {

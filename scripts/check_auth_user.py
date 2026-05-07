@@ -11,7 +11,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Inspect a TransferFlow auth user without printing password hashes.")
+    parser = argparse.ArgumentParser(description="Inspect a WakalaAdmin auth user without printing password hashes.")
     parser.add_argument("--auth-url", required=True, help="Auth database URL, for example mysql://user:password@host:3306/db")
     parser.add_argument("--email", required=True)
     parser.add_argument("--password", help="Optional password check. The password is not printed.")

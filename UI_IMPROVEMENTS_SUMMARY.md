@@ -1,7 +1,7 @@
 # UI/UX Improvements Summary - Estyzo/myadmin
 
 **Date:** May 7, 2026  
-**Project:** TransferFlow Admin Dashboard  
+**Project:** WakalaAdmin Admin Dashboard  
 **Language Composition:** Python (34.2%), JavaScript (25%), CSS (22%), HTML (18.8%)
 
 ---

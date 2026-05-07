@@ -155,7 +155,7 @@ def source_for_table(table, auth_path, operations_path):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Safely copy TransferFlow SQLite auth/operations data into MySQL.")
+    parser = argparse.ArgumentParser(description="Safely copy WakalaAdmin SQLite auth/operations data into MySQL.")
     parser.add_argument("--mysql-url", required=True, help="Example: mysql://user:password@127.0.0.1:3306/transferflow")
     parser.add_argument("--auth-sqlite", default="instance/auth.db")
     parser.add_argument("--operations-sqlite", default="instance/operations.db")
@@ -181,7 +181,7 @@ def main():
     auth_path = Path(args.auth_sqlite)
     operations_path = Path(args.operations_sqlite)
 
-    print("TransferFlow SQLite -> MySQL migration")
+    print("WakalaAdmin SQLite -> MySQL migration")
     print(f"Auth SQLite: {auth_path}")
     print(f"Operations SQLite: {operations_path}")
     print(f"Mode: {'APPLY' if args.apply else 'DRY RUN'}")
