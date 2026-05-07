@@ -350,6 +350,11 @@ body.theme-dark .nav-item:hover {
   display: none;
 }
 
+.mobile-more-scrim,
+.mobile-more-sheet {
+  display: none;
+}
+
 .nav-item-disabled {
   opacity: 0.56;
   cursor: not-allowed;
@@ -1992,6 +1997,7 @@ body.theme-dark .detail-chip:not([data-tone]) {
   }
 
   .mobile-more-scrim {
+    display: block;
     position: fixed;
     inset: 0;
     z-index: 910;
