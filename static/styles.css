@@ -70,7 +70,8 @@ body.nav-drawer-open {
 
 body.command-palette-open,
 body.detail-drawer-open,
-body.transfer-confirmation-open {
+body.transfer-confirmation-open,
+body.transfer-approval-open {
   overflow: hidden;
 }
 

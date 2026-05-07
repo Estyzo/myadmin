@@ -1902,10 +1902,14 @@
       elements.message.textContent = message || "Approval required.";
     }
     elements.modal.hidden = false;
-    document.body.classList.add("detail-drawer-open");
+    document.body.classList.add("transfer-approval-open");
     if (elements.approveButton) {
       elements.approveButton.focus();
     }
+  }
+
+  function hasApprovalTrackingContext(approvalContext) {
+    return Boolean(approvalContext && approvalContext.request_id && approvalContext.owner_token);
   }
 
   function setApprovalDecisionControlsEnabled(isEnabled) {
@@ -1924,7 +1928,7 @@
     if (elements.modal) {
       elements.modal.hidden = true;
     }
-    document.body.classList.remove("detail-drawer-open");
+    document.body.classList.remove("transfer-approval-open");
   }
 
   function buildApprovalRequestPayload() {
@@ -1990,11 +1994,21 @@
   function startApprovalPolling(form, approvalContext) {
     stopApprovalPolling();
     activeApprovalContext = approvalContext || null;
-    if (!activeApprovalContext || !activeApprovalContext.request_id || !activeApprovalContext.owner_token) {
-      return;
-    }
     showApprovalModal("Waiting for the device to execute the transfer and send the approval prompt.");
     setApprovalDecisionControlsEnabled(false);
+
+    if (!hasApprovalTrackingContext(activeApprovalContext)) {
+      setFormFeedback(
+        form,
+        "Transfer request created, but approval tracking details were missing. Open Requests to review the approval prompt.",
+        "error"
+      );
+      showApprovalModal("Transfer request created, but approval tracking details were missing. Open Requests to review the approval prompt.");
+      showToast("Transfer request created, but approval tracking details were missing.", "error");
+      announceStatus("Transfer request created, but approval tracking details were missing.");
+      return;
+    }
+
     setFormFeedback(form, "Transfer request created. Polling for server reply.", "info");
     pollApprovalStatusOnce(form).catch(function () {});
     approvalPollTimer = window.setInterval(function () {
@@ -2974,6 +2988,11 @@
     }
 
     if (event.key === "Escape") {
+      if (document.body.classList.contains("transfer-approval-open")) {
+        hideApprovalModal();
+        event.preventDefault();
+        return;
+      }
       if (document.body.classList.contains("transfer-confirmation-open")) {
         closeTransferConfirmationModal(true);
         event.preventDefault();

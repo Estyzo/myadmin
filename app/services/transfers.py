@@ -75,6 +75,32 @@ def extract_transfer_request_id(payload):
         return 0
 
 
+def extract_nested_value(payload, keys, depth=0):
+    if depth > 3:
+        return ""
+
+    if isinstance(payload, dict):
+        for key in keys:
+            value = payload.get(key)
+            if value is None:
+                continue
+            text = str(value).strip()
+            if text:
+                return text
+        for value in payload.values():
+            nested = extract_nested_value(value, keys, depth + 1)
+            if nested:
+                return nested
+
+    if isinstance(payload, list):
+        for item in payload:
+            nested = extract_nested_value(item, keys, depth + 1)
+            if nested:
+                return nested
+
+    return ""
+
+
 def build_approval_focus_payload(payload):
     return {
         "ownerToken": payload.get("owner_token") or payload.get("ownerToken"),
@@ -169,8 +195,11 @@ def submit_send_money_request(config, payload):
         }, 502
 
     request_id = extract_transfer_request_id(upstream_data)
-    owner_token = str(upstream_data.get("ownerToken") or upstream_data.get("owner_token") or "").strip() if isinstance(upstream_data, dict) else ""
-    client_request_id = str(upstream_data.get("clientRequestId") or upstream_data.get("client_request_id") or upstream_payload["clientRequestId"]).strip() if isinstance(upstream_data, dict) else upstream_payload["clientRequestId"]
+    owner_token = extract_nested_value(upstream_data, ("ownerToken", "owner_token"))
+    client_request_id = (
+        extract_nested_value(upstream_data, ("clientRequestId", "client_request_id"))
+        or upstream_payload["clientRequestId"]
+    )
 
     return {
         "ok": True,
@@ -181,9 +210,9 @@ def submit_send_money_request(config, payload):
             "request_id": request_id,
             "owner_token": owner_token,
             "initiated_by": upstream_payload["initiatedBy"],
-                "client_request_id": client_request_id,
-                "mrequest": resolved_request_path,
-                "poll_url": "/api/send-money/approval-status",
+            "client_request_id": client_request_id,
+            "mrequest": resolved_request_path,
+            "poll_url": "/api/send-money/approval-status",
             "decision_url": "/api/send-money/approval-decision",
         },
         "receipt": {

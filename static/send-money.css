@@ -403,10 +403,15 @@ body.theme-dark .recent-transfer-side strong {
 .transfer-approval-modal {
   position: fixed;
   inset: 0;
+  width: 100vw;
+  min-height: 100vh;
+  min-height: 100dvh;
   z-index: 1500;
   display: grid;
   place-items: center;
   padding: 18px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background: rgba(15, 24, 41, 0.48);
   backdrop-filter: blur(4px);
 }
@@ -585,13 +590,16 @@ body.theme-dark .approval-note-field textarea {
   .transfer-confirmation-modal,
   .transfer-approval-modal {
     align-items: end;
-    padding: 12px;
+    padding: 12px max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
   }
 
   .transfer-confirmation-panel,
   .transfer-approval-panel {
     width: 100%;
     max-height: calc(100vh - 24px);
+    max-height: calc(100dvh - 24px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     padding: 18px;
     border-radius: 22px 22px 16px 16px;
   }
