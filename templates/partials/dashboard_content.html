@@ -44,6 +44,51 @@
     </div>
   </section>
 
+  <section class="quick-action-grid" aria-label="Common actions">
+    {% if 'send_money' in current_permissions %}
+    <a class="quick-action-card primary" href="{{ url_for('send_money') }}">
+      <span class="quick-action-icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4z"></path></svg>
+      </span>
+      <span>
+        <strong>Send Money</strong>
+        <small>Start a transfer request</small>
+      </span>
+    </a>
+    {% endif %}
+    {% if 'operations' in current_permissions %}
+    <a class="quick-action-card" href="{{ url_for('operations', tab='expenses') }}">
+      <span class="quick-action-icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20"></path><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6"></path></svg>
+      </span>
+      <span>
+        <strong>New Expense</strong>
+        <small>Record office spending</small>
+      </span>
+    </a>
+    <a class="quick-action-card" href="{{ url_for('operations', tab='loans') }}">
+      <span class="quick-action-icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5V4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z"></path><path d="M8 7h8"></path><path d="M8 11h6"></path></svg>
+      </span>
+      <span>
+        <strong>Register Loan</strong>
+        <small>Add a borrower record</small>
+      </span>
+    </a>
+    {% endif %}
+    {% if 'requests' in current_permissions %}
+    <a class="quick-action-card" href="{{ url_for('requests') }}">
+      <span class="quick-action-icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M3 6h.01"></path><path d="M3 12h.01"></path><path d="M3 18h.01"></path></svg>
+      </span>
+      <span>
+        <strong>View Requests</strong>
+        <small>Review pending activity</small>
+      </span>
+    </a>
+    {% endif %}
+  </section>
+
   <div class="stat-grid">
     <article class="stat-card highlighted" data-accent="emerald">
       <div>
