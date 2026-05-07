@@ -16,6 +16,7 @@ body.theme-dark .ops-alert,
 body.theme-dark .ops-summary-grid article,
 body.theme-dark .ops-panel {
   background: var(--surface-strong);
+  border-color: rgba(156, 174, 199, 0.1);
 }
 
 .ops-alert {
@@ -25,14 +26,7 @@ body.theme-dark .ops-panel {
   align-items: center;
   gap: 12px;
   animation: slideInUp 0.3s ease;
-}
-
-.ops-alert::before {
-  content: "";
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  flex-shrink: 0;
+  border-left: 4px solid currentColor;
 }
 
 .ops-alert.success {
@@ -41,18 +35,10 @@ body.theme-dark .ops-panel {
   border-color: rgba(28, 220, 139, 0.3);
 }
 
-.ops-alert.success::before {
-  background: #0f6b4d;
-}
-
 .ops-alert.error {
   color: #b42318;
   background: rgba(239, 68, 68, 0.12);
   border-color: rgba(239, 68, 68, 0.3);
-}
-
-.ops-alert.error::before {
-  background: #b42318;
 }
 
 .ops-summary-grid {
@@ -105,11 +91,17 @@ body.theme-dark .ops-tabs {
 
 .ops-tabs a:hover {
   background: rgba(15, 24, 41, 0.04);
+  color: var(--navy);
+}
+
+body.theme-dark .ops-tabs a:hover {
+  background: rgba(156, 174, 199, 0.08);
 }
 
 .ops-tabs a.active {
   background: linear-gradient(135deg, var(--emerald), var(--teal));
   color: #fff;
+  box-shadow: 0 4px 12px rgba(28, 220, 139, 0.2);
 }
 
 .ops-tabs strong {
@@ -122,6 +114,10 @@ body.theme-dark .ops-tabs {
   background: rgba(15, 24, 41, 0.08);
   color: inherit;
   font-size: 13px;
+}
+
+body.theme-dark .ops-tabs strong {
+  background: rgba(156, 174, 199, 0.08);
 }
 
 .ops-tabs a.active strong {
@@ -200,6 +196,7 @@ body.theme-dark .ops-filter-bar select {
   font-weight: 900;
   text-decoration: none;
   transition: all 0.2s ease;
+  cursor: pointer;
 }
 
 .ops-filter-actions button:hover,
