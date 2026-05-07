@@ -190,6 +190,8 @@ def main():
         backfilled = backfill_user_password_hash(connection)
         if backfilled:
             print(f"users: backfilled password_hash for {backfilled} legacy rows")
+        else:
+            print("users: no legacy password_hash backfill needed")
         connection.commit()
     except Exception:
         connection.rollback()
