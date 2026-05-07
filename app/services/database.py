@@ -40,6 +40,42 @@ def translate_mysql_sql(sql):
     translated = str(sql)
     translated = translated.replace("INTEGER PRIMARY KEY AUTOINCREMENT", "INT AUTO_INCREMENT PRIMARY KEY")
     translated = translated.replace("COLLATE NOCASE", "")
+    translated = re.sub(
+        r"\b(details)\s+TEXT\s+NOT\s+NULL\s+DEFAULT\s+'[^']*'",
+        r"\1 LONGTEXT NOT NULL",
+        translated,
+        flags=re.IGNORECASE,
+    )
+    translated = re.sub(
+        r"\b(note|user_agent)\s+TEXT\s+NOT\s+NULL\s+DEFAULT\s+''",
+        r"\1 TEXT NOT NULL",
+        translated,
+        flags=re.IGNORECASE,
+    )
+    translated = re.sub(
+        r"\b([A-Za-z_][A-Za-z0-9_]*)\s+TEXT\s+NOT\s+NULL\s+DEFAULT\s+'([^']*)'",
+        r"\1 VARCHAR(500) NOT NULL DEFAULT '\2'",
+        translated,
+        flags=re.IGNORECASE,
+    )
+    translated = re.sub(
+        r"\b(email|token_hash)\s+TEXT\s+NOT\s+NULL",
+        r"\1 VARCHAR(255) NOT NULL",
+        translated,
+        flags=re.IGNORECASE,
+    )
+    translated = re.sub(
+        r"\b(password_hash)\s+TEXT\s+NOT\s+NULL",
+        r"\1 VARCHAR(255) NOT NULL",
+        translated,
+        flags=re.IGNORECASE,
+    )
+    translated = re.sub(
+        r"\b(role|status|action|target_type|target_id|target_label|ip_address|source_type|source_name|category|asset_name|asset_tag|assigned_to|location|borrower_name|reference|payment_date|commission_date|purchase_date|issued_date|due_date|created_at|updated_at|last_login_at|expires_at|accepted_at|revoked_at|sent_at|paid_at)\s+TEXT",
+        r"\1 VARCHAR(500)",
+        translated,
+        flags=re.IGNORECASE,
+    )
     translated = translated.replace(" REAL ", " DOUBLE ")
     translated = translated.replace(" REAL\n", " DOUBLE\n")
     translated = translated.replace("CREATE INDEX IF NOT EXISTS", "CREATE INDEX")
