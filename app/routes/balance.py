@@ -19,7 +19,7 @@ def balance():
         data_status={
             "level": "success" if payload.get("ok") else "error",
             "title": "Live balances" if payload.get("ok") else "Balance sync failed",
-            "message": "Latest balance per operator." if payload.get("ok") else payload["meta"].get("error", "Unable to load balances."),
+            "message": "Latest balance per client and operator." if payload.get("ok") else payload["meta"].get("error", "Unable to load balances."),
             "last_updated": payload["meta"].get("last_updated", "-"),
         },
         meta=payload["meta"],

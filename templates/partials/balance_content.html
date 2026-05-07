@@ -4,7 +4,7 @@
     <div class="page-copy">
       <p class="page-eyebrow">Balance</p>
       <h2>Operator balances</h2>
-      <p>Latest available balance for each operator from the upstream balance feed.</p>
+      <p>Latest available balance for each client and operator from the upstream balance feed.</p>
     </div>
     <div class="header-actions">
       <span class="status-badge status-badge-{{ status_badge_variant }}">
@@ -21,14 +21,14 @@
   <section class="balance-sync-panel">
     <div>
       <p class="card-kicker">Balance feed</p>
-      <h3>{{ meta.count }} operators tracked</h3>
+      <h3>{{ meta.count }} balances tracked</h3>
       <p>{{ data_status.message }} Last updated {{ data_status.last_updated }}.</p>
     </div>
     <span class="balance-source-pill">/api/getbalance</span>
   </section>
 
   {% if balances %}
-  <section class="balance-grid" aria-label="Latest operator balances">
+  <section class="balance-grid" aria-label="Latest client operator balances">
     {% for balance in balances %}
     {% set detail_payload = {
       'eyebrow': 'Balance details',

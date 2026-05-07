@@ -19,7 +19,7 @@
   var approvalTimeoutTimer = null;
   var approvalDecisionInFlight = false;
   var approvalPollIntervalMs = 3000;
-  var approvalAutoRejectMs = 30000;
+  var approvalAutoRejectMs = 60000;
   var activeApprovalContext = null;
   var pendingTransferConfirmationPayload = null;
   var transferConfirmationOpener = null;
@@ -1475,7 +1475,7 @@
     if (prefix === "65" || prefix === "67" || prefix === "71" || prefix === "77") {
       return "Yas";
     }
-    if (prefix === "74" || prefix === "75" || prefix === "76") {
+    if (prefix === "74" || prefix === "75" || prefix === "76" || prefix === "79") {
       return "Vodacom";
     }
     return "";
@@ -2016,7 +2016,7 @@
     showApprovalModal(result.message || "Waiting for the device to execute the transfer and send the approval prompt.");
     setApprovalDecisionControlsEnabled(false);
     if (form) {
-      setFormFeedback(form, "Transfer request created. Waiting for server reply. Auto-rejects after 30 seconds with no prompt.", "info");
+      setFormFeedback(form, "Transfer request created. Waiting for server reply. Auto-rejects after 1 minute with no prompt.", "info");
     }
   }
 
@@ -2024,13 +2024,13 @@
     if (!hasApprovalTrackingContext(activeApprovalContext) || approvalDecisionInFlight) {
       return;
     }
-    showApprovalModal("No approval prompt was received within 30 seconds. Auto-rejecting this transfer now.");
+    showApprovalModal("No approval prompt was received within 1 minute. Auto-rejecting this transfer now.");
     setApprovalDecisionControlsEnabled(false);
-    setFormFeedback(form, "No approval prompt was received within 30 seconds. Auto-rejecting transfer.", "error");
+    setFormFeedback(form, "No approval prompt was received within 1 minute. Auto-rejecting transfer.", "error");
     announceStatus("No approval prompt received. Auto-rejecting transfer.");
     submitApprovalDecision("REJECTED", {
       form: form,
-      note: "Auto rejected after 30 seconds with no approval prompt.",
+      note: "Auto rejected after 1 minute with no approval prompt.",
       auto: true,
     });
   }
@@ -2039,7 +2039,7 @@
     stopApprovalPolling();
     approvalDecisionInFlight = false;
     activeApprovalContext = approvalContext || null;
-    showApprovalModal("Waiting for the device to execute the transfer and send the approval prompt. This will auto-reject after 30 seconds if no prompt arrives.");
+    showApprovalModal("Waiting for the device to execute the transfer and send the approval prompt. This will auto-reject after 1 minute if no prompt arrives.");
     setApprovalDecisionControlsEnabled(false);
 
     if (!hasApprovalTrackingContext(activeApprovalContext)) {
@@ -2054,7 +2054,7 @@
       return;
     }
 
-    setFormFeedback(form, "Transfer request created. Polling every 3 seconds. Auto-rejects after 30 seconds with no prompt.", "info");
+    setFormFeedback(form, "Transfer request created. Polling every 3 seconds. Auto-rejects after 1 minute with no prompt.", "info");
     pollApprovalStatusOnce(form).catch(function (error) {
       setFormFeedback(form, error.message || "Approval polling failed. Retrying until timeout.", "error");
     });

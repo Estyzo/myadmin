@@ -95,15 +95,17 @@ def normalize_balance_record(item):
     }
 
 
-def latest_balance_by_operator(records):
+def latest_balance_by_client_operator(records):
     latest = {}
     for item in records:
         record = normalize_balance_record(item)
         if record is None:
             continue
-        existing = latest.get(record["operator_key"])
+        client_key = str(record.get("client_code") or "-").strip().casefold()
+        record_key = (client_key, record["operator_key"])
+        existing = latest.get(record_key)
         if existing is None or record["created_sort"] >= existing["created_sort"]:
-            latest[record["operator_key"]] = record
+            latest[record_key] = record
     return sorted(latest.values(), key=lambda item: (str(item.get("client_code") or "").lower(), item["operator"]))
 
 
@@ -124,7 +126,7 @@ def build_balance_payload(config):
             },
         }
 
-    records = latest_balance_by_operator(extract_balance_records(payload))
+    records = latest_balance_by_client_operator(extract_balance_records(payload))
     return {
         "ok": True,
         "data": records,

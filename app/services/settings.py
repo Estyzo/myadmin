@@ -131,7 +131,7 @@ def infer_mobile_operator_name(phone_number):
         return "Airtel"
     if prefix in {"65", "67", "71", "77"}:
         return "Yas"
-    if prefix in {"74", "75", "76"}:
+    if prefix in {"74", "75", "76", "79"}:
         return "Vodacom"
     return ""
 
