@@ -347,6 +347,16 @@ body.theme-dark .nav-item:hover {
   box-shadow: none;
 }
 
+.side-nav-separator {
+  height: 1px;
+  margin: 8px 14px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+body.theme-dark .side-nav-separator {
+  background: rgba(156, 174, 199, 0.14);
+}
+
 .mobile-bottom-nav {
   display: none;
 }
