@@ -1,4 +1,5 @@
 import hashlib
+import json
 import secrets
 import sqlite3
 import time
@@ -159,6 +160,26 @@ def init_auth_storage(app):
             )
             """
         )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS audit_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                actor_user_id INTEGER,
+                actor_email TEXT NOT NULL DEFAULT '',
+                action TEXT NOT NULL,
+                target_type TEXT NOT NULL DEFAULT '',
+                target_id TEXT NOT NULL DEFAULT '',
+                target_label TEXT NOT NULL DEFAULT '',
+                details TEXT NOT NULL DEFAULT '{}',
+                ip_address TEXT NOT NULL DEFAULT '',
+                user_agent TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL
+            )
+            """
+        )
+        connection.execute("CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs (created_at)")
+        connection.execute("CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs (action)")
+        connection.execute("CREATE INDEX IF NOT EXISTS idx_audit_logs_target ON audit_logs (target_type, target_id)")
         ensure_invitation_delivery_columns(connection)
         connection.commit()
     bootstrap_admin(app)
@@ -233,6 +254,100 @@ def get_user_by_email(email, config=None):
     with get_auth_connection(config) as connection:
         row = connection.execute("SELECT * FROM users WHERE email = ?", (str(email or "").strip().lower(),)).fetchone()
         return row_to_user(row)
+
+
+def update_user_access(user_id, role, client_codes=None, operator_scope=None, config=None):
+    now = iso_now()
+    with get_auth_connection(config) as connection:
+        connection.execute(
+            """
+            UPDATE users
+            SET role = ?, client_codes = ?, operator_scope = ?, updated_at = ?
+            WHERE id = ?
+            """,
+            (
+                normalize_role(role),
+                join_scope(client_codes),
+                join_scope(operator_scope),
+                now,
+                int(user_id),
+            ),
+        )
+        connection.commit()
+    return get_user_by_id(user_id, config=config)
+
+
+def set_user_status(user_id, status, config=None):
+    normalized_status = "active" if str(status or "").strip().lower() == "active" else "suspended"
+    now = iso_now()
+    with get_auth_connection(config) as connection:
+        connection.execute(
+            "UPDATE users SET status = ?, updated_at = ? WHERE id = ?",
+            (normalized_status, now, int(user_id)),
+        )
+        connection.commit()
+    return get_user_by_id(user_id, config=config)
+
+
+def active_admin_count(config=None):
+    with get_auth_connection(config) as connection:
+        row = connection.execute("SELECT COUNT(*) AS count FROM users WHERE role = 'admin' AND status = 'active'").fetchone()
+        return int(row["count"] or 0)
+
+
+def serialize_audit_details(details):
+    try:
+        return json.dumps(details or {}, sort_keys=True, default=str)
+    except TypeError:
+        return json.dumps({"value": str(details)})
+
+
+def log_audit_event(action, actor=None, target_type="", target_id="", target_label="", details=None, ip_address="", user_agent="", config=None):
+    active_actor = actor or {}
+    with get_auth_connection(config) as connection:
+        connection.execute(
+            """
+            INSERT INTO audit_logs (
+                actor_user_id, actor_email, action, target_type, target_id, target_label,
+                details, ip_address, user_agent, created_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                active_actor.get("id"),
+                str(active_actor.get("email") or ""),
+                str(action or "").strip(),
+                str(target_type or "").strip(),
+                str(target_id or "").strip(),
+                str(target_label or "").strip(),
+                serialize_audit_details(details),
+                str(ip_address or "")[:120],
+                str(user_agent or "")[:500],
+                iso_now(),
+            ),
+        )
+        connection.commit()
+
+
+def list_audit_logs(limit=30, config=None):
+    try:
+        normalized_limit = max(1, min(100, int(limit)))
+    except (TypeError, ValueError):
+        normalized_limit = 30
+    with get_auth_connection(config) as connection:
+        rows = connection.execute(
+            "SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT ?",
+            (normalized_limit,),
+        ).fetchall()
+    logs = []
+    for row in rows:
+        item = dict(row)
+        try:
+            item["details"] = json.loads(item.get("details") or "{}")
+        except json.JSONDecodeError:
+            item["details"] = {}
+        logs.append(item)
+    return logs
 
 
 def authenticate_user(email, password, config=None):
@@ -333,6 +448,16 @@ def get_invitation_by_token(token, config=None):
         return row_to_invitation(row)
 
 
+def get_invitation_by_id(invitation_id, config=None):
+    try:
+        normalized_id = int(invitation_id)
+    except (TypeError, ValueError):
+        return None
+    with get_auth_connection(config) as connection:
+        row = connection.execute("SELECT * FROM invitations WHERE id = ?", (normalized_id,)).fetchone()
+        return row_to_invitation(row)
+
+
 def mark_invitation_delivery(token, sent=False, error="", config=None):
     with get_auth_connection(config) as connection:
         connection.execute(
@@ -340,6 +465,17 @@ def mark_invitation_delivery(token, sent=False, error="", config=None):
             (iso_now() if sent else None, str(error or "")[:500], token_hash(token)),
         )
         connection.commit()
+
+
+def revoke_invitation(invitation_id, config=None):
+    now = iso_now()
+    with get_auth_connection(config) as connection:
+        connection.execute(
+            "UPDATE invitations SET revoked_at = ? WHERE id = ? AND accepted_at IS NULL AND revoked_at IS NULL",
+            (now, int(invitation_id)),
+        )
+        connection.commit()
+    return get_invitation_by_id(invitation_id, config=config)
 
 
 def invitation_is_usable(invitation):

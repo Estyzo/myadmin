@@ -47,6 +47,10 @@ ENDPOINT_PERMISSIONS = {
     "api_sender_configuration_status": "settings",
     "users": "manage_users",
     "create_user_invite": "manage_users",
+    "update_user": "manage_users",
+    "toggle_user_status": "manage_users",
+    "revoke_user_invite": "manage_users",
+    "resend_user_invite": "manage_users",
 }
 
 
@@ -102,10 +106,10 @@ def create_app():
 
     @app.before_request
     def protect_state_changing_requests():
-        if request.method != "POST" or not str(request.endpoint or "").startswith("api_"):
+        if request.method != "POST" or request.endpoint in {"login", "accept_invite"}:
             return None
         expected_token = session.get("csrf_token")
-        provided_token = request.headers.get("X-CSRF-Token", "")
+        provided_token = request.headers.get("X-CSRF-Token", "") or request.form.get("csrf_token", "")
         if not expected_token or not secrets.compare_digest(expected_token, provided_token):
             abort(400, description="Invalid CSRF token.")
         return None

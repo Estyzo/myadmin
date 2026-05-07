@@ -28,6 +28,12 @@
       {% if invite_notice %}
       <div class="users-notice">{{ invite_notice }}</div>
       {% endif %}
+      {% if status_error %}
+      <div class="auth-alert">{{ status_error }}</div>
+      {% endif %}
+      {% if status_notice %}
+      <div class="users-notice">{{ status_notice }}</div>
+      {% endif %}
       {% if invite_link %}
       <div class="invite-link-panel">
         <strong>Enrollment link</strong>
@@ -65,12 +71,17 @@
       <h3>{{ users|length }} users</h3>
       <div class="users-list">
         {% for user in users %}
-        <div class="users-row">
-          <div>
-            <strong>{{ user.email }}</strong>
-            <span>{{ user.name or '-' }}</span>
+        <div class="users-row users-row-editable">
+          <div class="users-row-head">
+            <div>
+              <strong>{{ user.email }}</strong>
+              <span>{{ user.name or '-' }}</span>
+            </div>
+            <div class="user-badges">
+              <span class="role-pill">{{ user.role }}</span>
+              <span class="status-pill status-{{ user.status }}">{{ user.status }}</span>
+            </div>
           </div>
-          <span class="role-pill">{{ user.role }}</span>
           <small>
             {% if user.client_codes %}
               {{ user.client_codes|join(', ') }}
@@ -80,6 +91,45 @@
               No client assigned
             {% endif %}
           </small>
+          <small>Last login: {{ user.last_login_at or 'Never' }}</small>
+          <form class="user-access-form" method="post" action="{{ url_for('update_user') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="user_id" value="{{ user.id }}">
+            <label>
+              <span>Role</span>
+              <select name="role">
+                <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
+                <option value="manager" {% if user.role == 'manager' %}selected{% endif %}>Manager</option>
+                <option value="operator" {% if user.role == 'operator' %}selected{% endif %}>Operator</option>
+                <option value="viewer" {% if user.role == 'viewer' %}selected{% endif %}>Viewer</option>
+              </select>
+            </label>
+            <label>
+              <span>Client codes</span>
+              <input type="text" name="client_codes" value="{{ user.client_codes|join(', ') }}" placeholder="client1, client2">
+            </label>
+            <label>
+              <span>Operator scope</span>
+              <input type="text" name="operator_scope" value="{{ user.operator_scope|join(', ') }}" placeholder="Vodacom, Airtel">
+            </label>
+            <button type="submit">Save</button>
+          </form>
+          <form class="inline-action-form" method="post" action="{{ url_for('toggle_user_status') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="user_id" value="{{ user.id }}">
+            {% if user.status == 'active' %}
+            <input type="hidden" name="action" value="suspend">
+            <button class="danger-action" type="submit">Suspend user</button>
+            {% else %}
+            <input type="hidden" name="action" value="activate">
+            <button type="submit">Reactivate user</button>
+            {% endif %}
+          </form>
+        </div>
+        {% else %}
+        <div class="users-empty">
+          <strong>No users yet</strong>
+          <span>Send an invitation to create the first account.</span>
         </div>
         {% endfor %}
       </div>
@@ -90,25 +140,78 @@
     <p class="card-kicker">Recent invitations</p>
     <div class="users-list">
       {% for invite in invitations %}
-      <div class="users-row">
-        <div>
-          <strong>{{ invite.email }}</strong>
-          <span>
-            {% if invite.accepted_at %}
-              Accepted {{ invite.accepted_at }}
-            {% elif invite.revoked_at %}
-              Revoked {{ invite.revoked_at }}
-            {% elif invite.sent_at %}
-              Email sent {{ invite.sent_at }}
-            {% elif invite.send_error %}
-              Email failed
-            {% else %}
-              Pending delivery
-            {% endif %}
-          </span>
+      <div class="users-row invitation-row">
+        <div class="users-row-head">
+          <div>
+            <strong>{{ invite.email }}</strong>
+            <span>
+              {% if invite.accepted_at %}
+                Accepted {{ invite.accepted_at }}
+              {% elif invite.revoked_at %}
+                Revoked {{ invite.revoked_at }}
+              {% elif invite.sent_at %}
+                Email sent {{ invite.sent_at }}
+              {% elif invite.send_error %}
+                Email failed
+              {% else %}
+                Pending delivery
+              {% endif %}
+            </span>
+          </div>
+          <span class="role-pill">{{ invite.role }}</span>
         </div>
-        <span class="role-pill">{{ invite.role }}</span>
         <small>{{ invite.send_error or ('Expires ' ~ invite.expires_at) }}</small>
+        {% if not invite.accepted_at %}
+        <div class="invite-actions">
+          <form method="post" action="{{ url_for('resend_user_invite') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="invitation_id" value="{{ invite.id }}">
+            <button type="submit">Resend</button>
+          </form>
+          {% if not invite.revoked_at %}
+          <form method="post" action="{{ url_for('revoke_user_invite') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="invitation_id" value="{{ invite.id }}">
+            <button class="danger-action" type="submit">Revoke</button>
+          </form>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+      {% else %}
+      <div class="users-empty">
+        <strong>No invitations yet</strong>
+        <span>New invitations will appear here with delivery status.</span>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="users-panel">
+    <p class="card-kicker">Audit trail</p>
+    <h3>Recent security events</h3>
+    <div class="audit-list">
+      {% for log in audit_logs %}
+      <div class="audit-row">
+        <div>
+          <strong>{{ log.action|replace('_', ' ')|title }}</strong>
+          <span>{{ log.target_label or log.target_type or '-' }}</span>
+        </div>
+        <div>
+          <small>{{ log.actor_email or 'System' }}</small>
+          <small>{{ log.created_at }}</small>
+        </div>
+        {% if log.details %}
+        <details>
+          <summary>Details</summary>
+          <pre>{{ log.details }}</pre>
+        </details>
+        {% endif %}
+      </div>
+      {% else %}
+      <div class="users-empty">
+        <strong>No audit events yet</strong>
+        <span>Sensitive user and invitation changes will appear here.</span>
       </div>
       {% endfor %}
     </div>
