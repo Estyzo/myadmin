@@ -581,6 +581,11 @@ body.theme-dark .empty-state-icon {
     height: 64px;
   }
 
+  .mobile-more-scrim,
+  .mobile-more-sheet {
+    display: block;
+  }
+
   .mobile-bottom-nav-item {
     flex: 1;
     display: flex;

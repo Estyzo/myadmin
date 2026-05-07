@@ -25,6 +25,20 @@
   {% if error %}<div class="ops-alert error">{{ error }}</div>{% endif %}
   {% if notice %}<div class="ops-alert success">{{ notice }}</div>{% endif %}
 
+  <form class="ops-filter-bar" method="get" action="{{ url_for('operations') }}">
+    <label><span>Search</span><input type="search" name="q" value="{{ filters.q }}" placeholder="Name, note, reference"></label>
+    <label><span>From</span><input type="date" name="date_from" value="{{ filters.date_from }}"></label>
+    <label><span>To</span><input type="date" name="date_to" value="{{ filters.date_to }}"></label>
+    <label><span>Expense</span><select name="expense_category"><option value="">All expenses</option>{% for item in expense_categories %}<option value="{{ item }}" {% if filters.expense_category == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></label>
+    <label><span>Commission</span><select name="commission_type"><option value="">All commissions</option><option value="mobile" {% if filters.commission_type == 'mobile' %}selected{% endif %}>Mobile</option><option value="bank" {% if filters.commission_type == 'bank' %}selected{% endif %}>Banking</option></select></label>
+    <label><span>Asset status</span><select name="asset_status"><option value="">All assets</option>{% for item in asset_statuses %}<option value="{{ item }}" {% if filters.asset_status == item %}selected{% endif %}>{{ item|title }}</option>{% endfor %}</select></label>
+    <label><span>Loan status</span><select name="loan_status"><option value="">All loans</option>{% for item in loan_statuses %}<option value="{{ item }}" {% if filters.loan_status == item %}selected{% endif %}>{{ item|title }}</option>{% endfor %}</select></label>
+    <div class="ops-filter-actions">
+      <button type="submit">Apply</button>
+      <a href="{{ url_for('operations') }}">Reset</a>
+    </div>
+  </form>
+
   <section class="ops-summary-grid">
     <article><span>Expenses</span><strong>{{ money(summary.expenses_total) }}</strong></article>
     <article><span>Commissions</span><strong>{{ money(summary.commissions_total) }}</strong></article>
@@ -46,9 +60,28 @@
         <label class="wide"><span>Note</span><input type="text" name="note"></label>
         <button type="submit">Save expense</button>
       </form>
+      <div class="ops-export-row">
+        <a href="{{ url_for('export_operations', section='expenses', q=filters.q, date_from=filters.date_from, date_to=filters.date_to, expense_category=filters.expense_category) }}">Export expenses</a>
+      </div>
       <div class="ops-list">
         {% for item in expenses[:8] %}
-        <div class="ops-row"><div><strong>{{ item.category }}</strong><span>{{ item.paid_to or item.note or "-" }}</span></div><b>{{ money(item.amount) }}</b><small>{{ item.payment_date }}</small></div>
+        {% set expense_detail = {
+          'eyebrow': 'Expense details',
+          'title': item.category,
+          'summary': money(item.amount) ~ ' · ' ~ item.payment_date,
+          'tone': 'expense',
+          'tone_label': 'Expense',
+          'fields': [
+            {'label': 'Category', 'value': item.category},
+            {'label': 'Amount', 'value': money(item.amount)},
+            {'label': 'Paid to', 'value': item.paid_to or '-'},
+            {'label': 'Date', 'value': item.payment_date},
+            {'label': 'Reference', 'value': item.reference or '-'},
+            {'label': 'Note', 'value': item.note or '-'},
+            {'label': 'Created at', 'value': item.created_at}
+          ]
+        } %}
+        <div class="ops-row"><div><strong>{{ item.category }}</strong><span>{{ item.paid_to or item.note or "-" }}</span></div><b>{{ money(item.amount) }}</b><small>{{ item.payment_date }}</small><button class="row-action-btn" type="button" data-detail-trigger="true" data-detail-payload='{{ expense_detail|tojson|forceescape }}'>View</button></div>
         {% else %}<div class="ops-empty">No expenses recorded yet.</div>{% endfor %}
       </div>
     </article>
@@ -66,9 +99,28 @@
         <label class="wide"><span>Note</span><input type="text" name="note"></label>
         <button type="submit">Save commission</button>
       </form>
+      <div class="ops-export-row">
+        <a href="{{ url_for('export_operations', section='commissions', q=filters.q, date_from=filters.date_from, date_to=filters.date_to, commission_type=filters.commission_type, commission_source=filters.commission_source) }}">Export commissions</a>
+      </div>
       <div class="ops-list">
         {% for item in commissions[:8] %}
-        <div class="ops-row"><div><strong>{{ item.source_name }}</strong><span>{{ item.source_type|title }}</span></div><b>{{ money(item.amount) }}</b><small>{{ item.commission_date }}</small></div>
+        {% set commission_detail = {
+          'eyebrow': 'Commission details',
+          'title': item.source_name ~ ' commission',
+          'summary': money(item.amount) ~ ' · ' ~ item.commission_date,
+          'tone': 'commission',
+          'tone_label': item.source_type|title,
+          'fields': [
+            {'label': 'Source type', 'value': item.source_type|title},
+            {'label': 'Source', 'value': item.source_name},
+            {'label': 'Amount', 'value': money(item.amount)},
+            {'label': 'Date', 'value': item.commission_date},
+            {'label': 'Reference', 'value': item.reference or '-'},
+            {'label': 'Note', 'value': item.note or '-'},
+            {'label': 'Created at', 'value': item.created_at}
+          ]
+        } %}
+        <div class="ops-row"><div><strong>{{ item.source_name }}</strong><span>{{ item.source_type|title }}</span></div><b>{{ money(item.amount) }}</b><small>{{ item.commission_date }}</small><button class="row-action-btn" type="button" data-detail-trigger="true" data-detail-payload='{{ commission_detail|tojson|forceescape }}'>View</button></div>
         {% else %}<div class="ops-empty">No commissions recorded yet.</div>{% endfor %}
       </div>
     </article>
@@ -89,11 +141,33 @@
         <label class="wide"><span>Note</span><input type="text" name="note"></label>
         <button type="submit">Register asset</button>
       </form>
+      <div class="ops-export-row">
+        <a href="{{ url_for('export_operations', section='assets', q=filters.q, date_from=filters.date_from, date_to=filters.date_to, asset_status=filters.asset_status) }}">Export assets</a>
+      </div>
       <div class="ops-list">
         {% for item in assets[:8] %}
+        {% set asset_detail = {
+          'eyebrow': 'Asset details',
+          'title': item.asset_name,
+          'summary': (item.asset_tag or item.location or '-') ~ ' · ' ~ item.status|title,
+          'tone': 'asset',
+          'tone_label': item.status|title,
+          'fields': [
+            {'label': 'Asset name', 'value': item.asset_name},
+            {'label': 'Tag', 'value': item.asset_tag or '-'},
+            {'label': 'Category', 'value': item.category or '-'},
+            {'label': 'Register date', 'value': item.purchase_date or '-'},
+            {'label': 'Value', 'value': money(item.purchase_value)},
+            {'label': 'Assigned to', 'value': item.assigned_to or '-'},
+            {'label': 'Location', 'value': item.location or '-'},
+            {'label': 'Status', 'value': item.status|title},
+            {'label': 'Note', 'value': item.note or '-'}
+          ]
+        } %}
         <div class="ops-row asset-row">
           <div><strong>{{ item.asset_name }}</strong><span>{{ item.asset_tag or item.location or "-" }}</span></div>
           <b>{{ item.status|title }}</b>
+          <button class="row-action-btn" type="button" data-detail-trigger="true" data-detail-payload='{{ asset_detail|tojson|forceescape }}'>View</button>
           <form method="post" action="{{ url_for('update_asset_record_status') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <input type="hidden" name="asset_id" value="{{ item.id }}">
@@ -118,11 +192,32 @@
         <label class="wide"><span>Note</span><input type="text" name="note"></label>
         <button type="submit">Register loan</button>
       </form>
+      <div class="ops-export-row">
+        <a href="{{ url_for('export_operations', section='loans', q=filters.q, date_from=filters.date_from, date_to=filters.date_to, loan_status=filters.loan_status) }}">Export loans</a>
+      </div>
       <div class="ops-list">
         {% for item in loans[:8] %}
+        {% set loan_detail = {
+          'eyebrow': 'Loan details',
+          'title': item.borrower_name,
+          'summary': money(item.amount) ~ ' · ' ~ item.status|title,
+          'tone': 'loan',
+          'tone_label': item.status|title,
+          'fields': [
+            {'label': 'Borrower', 'value': item.borrower_name},
+            {'label': 'Amount', 'value': money(item.amount)},
+            {'label': 'Issued date', 'value': item.issued_date},
+            {'label': 'Due date', 'value': item.due_date or '-'},
+            {'label': 'Status', 'value': item.status|title},
+            {'label': 'Paid at', 'value': item.paid_at or '-'},
+            {'label': 'Reference', 'value': item.reference or '-'},
+            {'label': 'Note', 'value': item.note or '-'}
+          ]
+        } %}
         <div class="ops-row loan-row">
           <div><strong>{{ item.borrower_name }}</strong><span>{{ item.status|title }}{% if item.due_date %} · Due {{ item.due_date }}{% endif %}</span></div>
           <b>{{ money(item.amount) }}</b>
+          <button class="row-action-btn" type="button" data-detail-trigger="true" data-detail-payload='{{ loan_detail|tojson|forceescape }}'>View</button>
           {% if item.status != 'paid' %}
           <form method="post" action="{{ url_for('mark_loan_record_paid') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">

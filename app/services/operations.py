@@ -147,6 +147,70 @@ def row_to_dict(row):
     return dict(row) if row is not None else None
 
 
+def clean_filters(args=None):
+    args = args or {}
+    return {
+        "q": str(args.get("q", "") or "").strip(),
+        "date_from": str(args.get("date_from", "") or "").strip(),
+        "date_to": str(args.get("date_to", "") or "").strip(),
+        "expense_category": str(args.get("expense_category", "") or "").strip(),
+        "commission_type": str(args.get("commission_type", "") or "").strip(),
+        "commission_source": str(args.get("commission_source", "") or "").strip(),
+        "asset_status": str(args.get("asset_status", "") or "").strip(),
+        "loan_status": str(args.get("loan_status", "") or "").strip(),
+    }
+
+
+def in_date_range(value, filters):
+    text = str(value or "").strip()[:10]
+    if not text:
+        return True
+    if filters.get("date_from") and text < filters["date_from"]:
+        return False
+    if filters.get("date_to") and text > filters["date_to"]:
+        return False
+    return True
+
+
+def row_matches_search(row, query):
+    if not query:
+        return True
+    haystack = " ".join(str(value or "") for value in row.values()).casefold()
+    return query.casefold() in haystack
+
+
+def apply_operations_filters(expenses, commissions, assets, loans, filters=None):
+    active_filters = clean_filters(filters)
+    query = active_filters["q"]
+
+    filtered_expenses = [
+        row for row in expenses
+        if row_matches_search(row, query)
+        and in_date_range(row.get("payment_date"), active_filters)
+        and (not active_filters["expense_category"] or row.get("category") == active_filters["expense_category"])
+    ]
+    filtered_commissions = [
+        row for row in commissions
+        if row_matches_search(row, query)
+        and in_date_range(row.get("commission_date"), active_filters)
+        and (not active_filters["commission_type"] or row.get("source_type") == active_filters["commission_type"])
+        and (not active_filters["commission_source"] or row.get("source_name") == active_filters["commission_source"])
+    ]
+    filtered_assets = [
+        row for row in assets
+        if row_matches_search(row, query)
+        and in_date_range(row.get("purchase_date"), active_filters)
+        and (not active_filters["asset_status"] or row.get("status") == active_filters["asset_status"])
+    ]
+    filtered_loans = [
+        row for row in loans
+        if row_matches_search(row, query)
+        and in_date_range(row.get("issued_date"), active_filters)
+        and (not active_filters["loan_status"] or row.get("status") == active_filters["loan_status"])
+    ]
+    return filtered_expenses, filtered_commissions, filtered_assets, filtered_loans
+
+
 def list_rows(table, config=None, limit=100):
     with get_operations_connection(config) as connection:
         rows = connection.execute(f"SELECT * FROM {table} ORDER BY created_at DESC LIMIT ?", (int(limit),)).fetchall()
@@ -279,11 +343,13 @@ def sum_amount(rows):
     return sum(float(row.get("amount") or row.get("purchase_value") or 0) for row in rows or [])
 
 
-def build_operations_view_model(config=None):
+def build_operations_view_model(config=None, filters=None):
     expenses = list_rows("expenses", config=config)
     commissions = list_rows("commissions", config=config)
     assets = list_rows("office_assets", config=config)
     loans = list_rows("loans", config=config)
+    active_filters = clean_filters(filters)
+    expenses, commissions, assets, loans = apply_operations_filters(expenses, commissions, assets, loans, active_filters)
     active_loans = [loan for loan in loans if loan.get("status") == "active"]
     active_assets = [asset for asset in assets if asset.get("status") == "active"]
     return {
@@ -303,4 +369,6 @@ def build_operations_view_model(config=None):
         "mobile_sources": MOBILE_COMMISSION_SOURCES,
         "bank_sources": BANK_COMMISSION_SOURCES,
         "asset_statuses": ASSET_STATUSES,
+        "loan_statuses": LOAN_STATUSES,
+        "filters": active_filters,
     }

@@ -1244,6 +1244,14 @@
     });
   }
 
+  function setMobileMoreState(isOpen) {
+    var toggle = document.getElementById("mobile-more-toggle");
+    document.body.classList.toggle("mobile-more-open", !!isOpen);
+    if (toggle) {
+      toggle.checked = !!isOpen;
+    }
+  }
+
   function focusUpdatedContent(targetSelector) {
     var target = document.querySelector(targetSelector);
     if (!target || typeof target.focus !== "function") {
@@ -2730,12 +2738,31 @@
     var asyncErrorDismissBtn = event.target.closest("[data-async-error-dismiss='true']");
     var detailCopyAllBtn = event.target.closest("[data-detail-copy-all='true']");
     var detailCopyFieldBtn = event.target.closest("[data-detail-copy-field='true']");
+    var mobileMoreToggle = event.target.closest(".mobile-more-button");
+    var mobileMoreClose = event.target.closest(".mobile-more-head label, .mobile-more-scrim");
+    var mobileMoreLink = event.target.closest(".mobile-more-item[href]");
     var mobileNavLink = event.target.closest(".mobile-bottom-nav-item[href]");
 
     if (themeToggleBtn) {
       event.preventDefault();
       toggleTheme();
       return;
+    }
+
+    if (mobileMoreToggle) {
+      setTimeout(function () {
+        setMobileMoreState(document.getElementById("mobile-more-toggle") && document.getElementById("mobile-more-toggle").checked);
+      }, 0);
+      return;
+    }
+
+    if (mobileMoreClose) {
+      setMobileMoreState(false);
+      return;
+    }
+
+    if (mobileMoreLink) {
+      setMobileMoreState(false);
     }
 
     if (mobileNavLink) {
@@ -3128,6 +3155,12 @@
       return;
     }
 
+    if (activeElement && activeElement.classList && activeElement.classList.contains("mobile-more-button") && (event.key === "Enter" || event.key === " ")) {
+      event.preventDefault();
+      setMobileMoreState(!document.body.classList.contains("mobile-more-open"));
+      return;
+    }
+
     if (event.key === "Escape") {
       if (document.body.classList.contains("transfer-approval-open")) {
         hideApprovalModal();
@@ -3146,6 +3179,11 @@
       }
       if (document.body.classList.contains("detail-drawer-open")) {
         closeDetailDrawer();
+        event.preventDefault();
+        return;
+      }
+      if (document.body.classList.contains("mobile-more-open")) {
+        setMobileMoreState(false);
         event.preventDefault();
         return;
       }

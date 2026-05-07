@@ -45,6 +45,68 @@
   padding: 14px 16px;
 }
 
+.report-filter-bar {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.4fr) repeat(5, minmax(130px, 1fr)) auto;
+  gap: 10px;
+  align-items: end;
+  padding: 16px;
+  border: 1px solid rgba(15, 24, 41, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: var(--shadow-soft);
+}
+
+.report-filter-bar label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.report-filter-bar input,
+.report-filter-bar select {
+  min-height: 40px;
+  border: 1px solid rgba(15, 24, 41, 0.12);
+  border-radius: 12px;
+  padding: 0 10px;
+  color: var(--navy);
+  background: #fff;
+}
+
+.report-filter-actions,
+.report-export-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.report-filter-actions button,
+.report-filter-actions a,
+.report-export-bar a {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 12px;
+  padding: 0 14px;
+  background: rgba(15, 118, 110, 0.12);
+  color: var(--teal);
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.report-filter-actions button,
+.report-export-bar a:first-child {
+  background: linear-gradient(135deg, var(--emerald), var(--teal));
+  color: #fff;
+}
+
 .report-status strong {
   color: var(--navy);
 }
@@ -128,8 +190,9 @@
 
 .report-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   gap: 8px 12px;
+  align-items: center;
 }
 
 .report-row strong,
@@ -140,7 +203,7 @@
 }
 
 .report-row small {
-  grid-column: 1 / -1;
+  grid-column: 1 / 2;
 }
 
 .report-empty {
@@ -150,7 +213,8 @@
 
 @media (max-width: 960px) {
   .report-summary-grid,
-  .report-two-col {
+  .report-two-col,
+  .report-filter-bar {
     grid-template-columns: 1fr;
   }
 }
@@ -167,5 +231,18 @@
   .report-table th,
   .report-table td {
     min-width: 130px;
+  }
+
+  .report-row {
+    grid-template-columns: 1fr;
+  }
+
+  .report-row small {
+    grid-column: auto;
+  }
+
+  .report-filter-actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 }

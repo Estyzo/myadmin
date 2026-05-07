@@ -33,6 +33,65 @@
   gap: 14px;
 }
 
+.ops-filter-bar {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.4fr) repeat(6, minmax(130px, 1fr)) auto;
+  gap: 10px;
+  align-items: end;
+  padding: 16px;
+  border: 1px solid rgba(15, 24, 41, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: var(--shadow-soft);
+}
+
+.ops-filter-bar label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ops-filter-bar input,
+.ops-filter-bar select {
+  min-height: 40px;
+  border: 1px solid rgba(15, 24, 41, 0.12);
+  border-radius: 12px;
+  padding: 0 10px;
+  color: var(--navy);
+  background: #fff;
+}
+
+.ops-filter-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.ops-filter-actions button,
+.ops-filter-actions a,
+.ops-export-row a {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 12px;
+  padding: 0 14px;
+  background: rgba(15, 118, 110, 0.12);
+  color: var(--teal);
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.ops-filter-actions button {
+  background: linear-gradient(135deg, var(--emerald), var(--teal));
+  color: #fff;
+}
+
 .ops-summary-grid article {
   display: grid;
   gap: 4px;
@@ -126,9 +185,14 @@
   gap: 10px;
 }
 
+.ops-export-row {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .ops-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   gap: 8px 12px;
   padding: 14px;
   border-radius: 14px;
@@ -144,7 +208,7 @@
 
 .asset-row,
 .loan-row {
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
   align-items: center;
 }
 
@@ -163,7 +227,8 @@
 
 @media (max-width: 1100px) {
   .ops-summary-grid,
-  .ops-grid {
+  .ops-grid,
+  .ops-filter-bar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -171,13 +236,20 @@
 @media (max-width: 720px) {
   .ops-summary-grid,
   .ops-grid,
+  .ops-filter-bar,
   .ops-form,
+  .ops-row,
   .asset-row,
   .loan-row {
     grid-template-columns: 1fr;
   }
 
   .asset-row form {
+    flex-direction: column;
+  }
+
+  .ops-filter-actions {
+    align-items: stretch;
     flex-direction: column;
   }
 }

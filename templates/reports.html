@@ -28,6 +28,26 @@
     <article><span>Assets</span><strong>{{ money(summary.asset_total) }}</strong><small>{{ summary.active_asset_count }} active · {{ summary.asset_count }} total</small></article>
   </section>
 
+  <form class="report-filter-bar" method="get" action="{{ url_for('reports') }}">
+    <label><span>Search</span><input type="search" name="q" value="{{ filters.q }}" placeholder="Search report"></label>
+    <label><span>From</span><input type="date" name="date_from" value="{{ filters.date_from }}"></label>
+    <label><span>To</span><input type="date" name="date_to" value="{{ filters.date_to }}"></label>
+    <label><span>Commission</span><select name="commission_type"><option value="">All commissions</option><option value="mobile" {% if filters.commission_type == 'mobile' %}selected{% endif %}>Mobile</option><option value="bank" {% if filters.commission_type == 'bank' %}selected{% endif %}>Banking</option></select></label>
+    <label><span>Source</span><select name="commission_source"><option value="">All sources</option>{% for item in mobile_sources + bank_sources %}<option value="{{ item }}" {% if filters.commission_source == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></label>
+    <label><span>Asset status</span><select name="asset_status"><option value="">All assets</option>{% for item in asset_statuses %}<option value="{{ item }}" {% if filters.asset_status == item %}selected{% endif %}>{{ item|title }}</option>{% endfor %}</select></label>
+    <div class="report-filter-actions">
+      <button type="submit">Apply</button>
+      <a href="{{ url_for('reports') }}">Reset</a>
+    </div>
+  </form>
+
+  <div class="report-export-bar">
+    <a href="{{ url_for('export_reports', section='all', q=filters.q, date_from=filters.date_from, date_to=filters.date_to, commission_type=filters.commission_type, commission_source=filters.commission_source, asset_status=filters.asset_status) }}">Export all</a>
+    <a href="{{ url_for('export_reports', section='transactions', q=filters.q, date_from=filters.date_from, date_to=filters.date_to) }}">Transactions CSV</a>
+    <a href="{{ url_for('export_reports', section='commissions', q=filters.q, date_from=filters.date_from, date_to=filters.date_to, commission_type=filters.commission_type, commission_source=filters.commission_source) }}">Commissions CSV</a>
+    <a href="{{ url_for('export_reports', section='assets', q=filters.q, date_from=filters.date_from, date_to=filters.date_to, asset_status=filters.asset_status) }}">Assets CSV</a>
+  </div>
+
   {% if data_status.message %}
   <div class="report-status {{ data_status.level|default('info') }}">
     <strong>{{ data_status.title }}</strong>
@@ -45,9 +65,26 @@
     </div>
     <div class="report-table-wrap">
       <table class="report-table">
-        <thead><tr><th>Date</th><th>Operator</th><th>Operation</th><th>Sender</th><th>Receiver</th><th>Amount</th><th>Client</th></tr></thead>
+        <thead><tr><th>Date</th><th>Operator</th><th>Operation</th><th>Sender</th><th>Receiver</th><th>Amount</th><th>Client</th><th>Details</th></tr></thead>
         <tbody>
           {% for item in transactions %}
+          {% set transaction_detail = {
+            'eyebrow': 'Report transaction',
+            'title': item.operation ~ ' transaction',
+            'summary': (item.sender_number|mask_digits) ~ ' → ' ~ (item.receiver_number|mask_sensitive_numbers),
+            'tone': item.operator|lower,
+            'tone_label': item.operator,
+            'fields': [
+              {'label': 'Date', 'value': item.created_at},
+              {'label': 'Operator', 'value': item.operator},
+              {'label': 'Operation', 'value': item.operation},
+              {'label': 'Sender', 'value': item.sender_number|mask_digits},
+              {'label': 'Receiver', 'value': item.receiver_number|mask_sensitive_numbers},
+              {'label': 'Amount', 'value': item.amount},
+              {'label': 'Client', 'value': item.created_by},
+              {'label': 'Note', 'value': item.note|mask_sensitive_numbers}
+            ]
+          } %}
           <tr>
             <td>{{ item.created_at }}</td>
             <td>{{ item.operator }}</td>
@@ -56,9 +93,10 @@
             <td>{{ item.receiver_number|mask_sensitive_numbers }}</td>
             <td class="numeric">{{ item.amount }}</td>
             <td>{{ item.created_by }}</td>
+            <td><button class="row-action-btn" type="button" data-detail-trigger="true" data-detail-payload='{{ transaction_detail|tojson|forceescape }}'>View</button></td>
           </tr>
           {% else %}
-          <tr><td colspan="7">No transactions available.</td></tr>
+          <tr><td colspan="8">No transactions available.</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -76,10 +114,27 @@
       </div>
       <div class="report-list">
         {% for item in commissions %}
+        {% set commission_detail = {
+          'eyebrow': 'Commission report',
+          'title': item.source_name,
+          'summary': money(item.amount) ~ ' · ' ~ item.commission_date,
+          'tone': 'commission',
+          'tone_label': item.source_type|title,
+          'fields': [
+            {'label': 'Source type', 'value': item.source_type|title},
+            {'label': 'Source', 'value': item.source_name},
+            {'label': 'Amount', 'value': money(item.amount)},
+            {'label': 'Date', 'value': item.commission_date},
+            {'label': 'Reference', 'value': item.reference or '-'},
+            {'label': 'Note', 'value': item.note or '-'},
+            {'label': 'Created at', 'value': item.created_at}
+          ]
+        } %}
         <div class="report-row">
           <div><strong>{{ item.source_name }}</strong><span>{{ item.source_type|title }} · {{ item.commission_date }}</span></div>
           <b>{{ money(item.amount) }}</b>
           <small>{{ item.reference or item.note or "-" }}</small>
+          <button class="row-action-btn" type="button" data-detail-trigger="true" data-detail-payload='{{ commission_detail|tojson|forceescape }}'>View</button>
         </div>
         {% else %}
         <div class="report-empty">No commissions recorded.</div>
@@ -97,10 +152,29 @@
       </div>
       <div class="report-list">
         {% for item in assets %}
+        {% set asset_detail = {
+          'eyebrow': 'Asset report',
+          'title': item.asset_name,
+          'summary': (item.asset_tag or item.location or '-') ~ ' · ' ~ item.status|title,
+          'tone': 'asset',
+          'tone_label': item.status|title,
+          'fields': [
+            {'label': 'Asset name', 'value': item.asset_name},
+            {'label': 'Tag', 'value': item.asset_tag or '-'},
+            {'label': 'Category', 'value': item.category or '-'},
+            {'label': 'Register date', 'value': item.purchase_date or '-'},
+            {'label': 'Value', 'value': money(item.purchase_value)},
+            {'label': 'Assigned to', 'value': item.assigned_to or '-'},
+            {'label': 'Location', 'value': item.location or '-'},
+            {'label': 'Status', 'value': item.status|title},
+            {'label': 'Note', 'value': item.note or '-'}
+          ]
+        } %}
         <div class="report-row">
           <div><strong>{{ item.asset_name }}</strong><span>{{ item.asset_tag or item.location or "-" }}</span></div>
           <b>{{ money(item.purchase_value) }}</b>
           <small>{{ item.status|title }} · {{ item.purchase_date or "No date" }}</small>
+          <button class="row-action-btn" type="button" data-detail-trigger="true" data-detail-payload='{{ asset_detail|tojson|forceescape }}'>View</button>
         </div>
         {% else %}
         <div class="report-empty">No assets registered.</div>
