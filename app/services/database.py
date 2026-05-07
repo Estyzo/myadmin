@@ -79,6 +79,7 @@ def translate_mysql_sql(sql):
     translated = translated.replace(" REAL ", " DOUBLE ")
     translated = translated.replace(" REAL\n", " DOUBLE\n")
     translated = translated.replace("CREATE INDEX IF NOT EXISTS", "CREATE INDEX")
+    translated = translated.replace("(target_type, target_id)", "(target_type(191), target_id(191))")
     translated = translated.replace("?", "%s")
     return translated
 
