@@ -25,14 +25,35 @@
   {% if error %}<div class="ops-alert error">{{ error }}</div>{% endif %}
   {% if notice %}<div class="ops-alert success">{{ notice }}</div>{% endif %}
 
+  <nav class="ops-tabs" aria-label="Operations ledgers">
+    <a href="{{ url_for('operations', tab='expenses', q=filters.q, date_from=filters.date_from, date_to=filters.date_to, expense_category=filters.expense_category) }}" class="{% if active_tab == 'expenses' %}active{% endif %}" {% if active_tab == 'expenses' %}aria-current="page"{% endif %}>
+      <span>Expenses</span><strong>{{ expenses|length }}</strong>
+    </a>
+    <a href="{{ url_for('operations', tab='commissions', q=filters.q, date_from=filters.date_from, date_to=filters.date_to, commission_type=filters.commission_type, commission_source=filters.commission_source) }}" class="{% if active_tab == 'commissions' %}active{% endif %}" {% if active_tab == 'commissions' %}aria-current="page"{% endif %}>
+      <span>Commissions</span><strong>{{ commissions|length }}</strong>
+    </a>
+    <a href="{{ url_for('operations', tab='assets', q=filters.q, date_from=filters.date_from, date_to=filters.date_to, asset_status=filters.asset_status) }}" class="{% if active_tab == 'assets' %}active{% endif %}" {% if active_tab == 'assets' %}aria-current="page"{% endif %}>
+      <span>Assets</span><strong>{{ assets|length }}</strong>
+    </a>
+    <a href="{{ url_for('operations', tab='loans', q=filters.q, date_from=filters.date_from, date_to=filters.date_to, loan_status=filters.loan_status) }}" class="{% if active_tab == 'loans' %}active{% endif %}" {% if active_tab == 'loans' %}aria-current="page"{% endif %}>
+      <span>Loans</span><strong>{{ loans|length }}</strong>
+    </a>
+  </nav>
+
   <form class="ops-filter-bar" method="get" action="{{ url_for('operations') }}">
+    <input type="hidden" name="tab" value="{{ active_tab }}">
     <label><span>Search</span><input type="search" name="q" value="{{ filters.q }}" placeholder="Name, note, reference"></label>
     <label><span>From</span><input type="date" name="date_from" value="{{ filters.date_from }}"></label>
     <label><span>To</span><input type="date" name="date_to" value="{{ filters.date_to }}"></label>
+    {% if active_tab == 'expenses' %}
     <label><span>Expense</span><select name="expense_category"><option value="">All expenses</option>{% for item in expense_categories %}<option value="{{ item }}" {% if filters.expense_category == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></label>
+    {% elif active_tab == 'commissions' %}
     <label><span>Commission</span><select name="commission_type"><option value="">All commissions</option><option value="mobile" {% if filters.commission_type == 'mobile' %}selected{% endif %}>Mobile</option><option value="bank" {% if filters.commission_type == 'bank' %}selected{% endif %}>Banking</option></select></label>
+    {% elif active_tab == 'assets' %}
     <label><span>Asset status</span><select name="asset_status"><option value="">All assets</option>{% for item in asset_statuses %}<option value="{{ item }}" {% if filters.asset_status == item %}selected{% endif %}>{{ item|title }}</option>{% endfor %}</select></label>
+    {% elif active_tab == 'loans' %}
     <label><span>Loan status</span><select name="loan_status"><option value="">All loans</option>{% for item in loan_statuses %}<option value="{{ item }}" {% if filters.loan_status == item %}selected{% endif %}>{{ item|title }}</option>{% endfor %}</select></label>
+    {% endif %}
     <div class="ops-filter-actions">
       <button type="submit">Apply</button>
       <a href="{{ url_for('operations') }}">Reset</a>
@@ -46,11 +67,11 @@
     <article><span>Assets</span><strong>{{ money(summary.assets_total) }}</strong><small>{{ summary.assets_count }} registered</small></article>
   </section>
 
-  <section class="ops-grid">
-    <article class="ops-panel">
+  {% if active_tab == 'expenses' %}
+  <section class="ops-panel">
       <p class="card-kicker">Expenses</p>
       <h3>Record expense</h3>
-      <form class="ops-form" method="post" action="{{ url_for('create_expense_record') }}">
+      <form class="ops-form" method="post" action="{{ url_for('create_expense_record', tab='expenses') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <label><span>Category</span><select name="category">{% for item in expense_categories %}<option value="{{ item }}">{{ item }}</option>{% endfor %}</select></label>
         <label><span>Amount</span><input type="number" name="amount" min="0" step="0.01" required></label>
@@ -84,12 +105,13 @@
         <div class="ops-row"><div><strong>{{ item.category }}</strong><span>{{ item.paid_to or item.note or "-" }}</span></div><b>{{ money(item.amount) }}</b><small>{{ item.payment_date }}</small><button class="row-action-btn" type="button" data-detail-trigger="true" data-detail-payload='{{ expense_detail|tojson|forceescape }}'>View</button></div>
         {% else %}<div class="ops-empty">No expenses recorded yet.</div>{% endfor %}
       </div>
-    </article>
+  </section>
+  {% elif active_tab == 'commissions' %}
 
-    <article class="ops-panel">
+  <section class="ops-panel">
       <p class="card-kicker">Commissions</p>
       <h3>Record commission</h3>
-      <form class="ops-form" method="post" action="{{ url_for('create_commission_record') }}">
+      <form class="ops-form" method="post" action="{{ url_for('create_commission_record', tab='commissions') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <label><span>Source type</span><select name="source_type" data-commission-source-type><option value="mobile">Mobile</option><option value="bank">Banking</option></select></label>
         <label><span>Source</span><select name="source_name" data-commission-source>{% for item in mobile_sources %}<option value="{{ item }}" data-source-type="mobile">{{ item }}</option>{% endfor %}{% for item in bank_sources %}<option value="{{ item }}" data-source-type="bank">{{ item }}</option>{% endfor %}</select></label>
@@ -123,12 +145,13 @@
         <div class="ops-row"><div><strong>{{ item.source_name }}</strong><span>{{ item.source_type|title }}</span></div><b>{{ money(item.amount) }}</b><small>{{ item.commission_date }}</small><button class="row-action-btn" type="button" data-detail-trigger="true" data-detail-payload='{{ commission_detail|tojson|forceescape }}'>View</button></div>
         {% else %}<div class="ops-empty">No commissions recorded yet.</div>{% endfor %}
       </div>
-    </article>
+  </section>
+  {% elif active_tab == 'assets' %}
 
-    <article class="ops-panel">
+  <section class="ops-panel">
       <p class="card-kicker">Office Assets</p>
       <h3>Register asset</h3>
-      <form class="ops-form" method="post" action="{{ url_for('create_asset_record') }}">
+      <form class="ops-form" method="post" action="{{ url_for('create_asset_record', tab='assets') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <label><span>Name</span><input type="text" name="asset_name" required></label>
         <label><span>Tag</span><input type="text" name="asset_tag"></label>
@@ -168,7 +191,7 @@
           <div><strong>{{ item.asset_name }}</strong><span>{{ item.asset_tag or item.location or "-" }}</span></div>
           <b>{{ item.status|title }}</b>
           <button class="row-action-btn" type="button" data-detail-trigger="true" data-detail-payload='{{ asset_detail|tojson|forceescape }}'>View</button>
-          <form method="post" action="{{ url_for('update_asset_record_status') }}">
+          <form method="post" action="{{ url_for('update_asset_record_status', tab='assets') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <input type="hidden" name="asset_id" value="{{ item.id }}">
             <select name="status">{% for status in asset_statuses %}<option value="{{ status }}" {% if item.status == status %}selected{% endif %}>{{ status|title }}</option>{% endfor %}</select>
@@ -177,12 +200,13 @@
         </div>
         {% else %}<div class="ops-empty">No assets registered yet.</div>{% endfor %}
       </div>
-    </article>
+  </section>
+  {% elif active_tab == 'loans' %}
 
-    <article class="ops-panel">
+  <section class="ops-panel">
       <p class="card-kicker">Loans</p>
       <h3>Register loan</h3>
-      <form class="ops-form" method="post" action="{{ url_for('create_loan_record') }}">
+      <form class="ops-form" method="post" action="{{ url_for('create_loan_record', tab='loans') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <label><span>Borrower</span><input type="text" name="borrower_name" required></label>
         <label><span>Amount</span><input type="number" name="amount" min="0" step="0.01" required></label>
@@ -219,7 +243,7 @@
           <b>{{ money(item.amount) }}</b>
           <button class="row-action-btn" type="button" data-detail-trigger="true" data-detail-payload='{{ loan_detail|tojson|forceescape }}'>View</button>
           {% if item.status != 'paid' %}
-          <form method="post" action="{{ url_for('mark_loan_record_paid') }}">
+          <form method="post" action="{{ url_for('mark_loan_record_paid', tab='loans') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <input type="hidden" name="loan_id" value="{{ item.id }}">
             <button type="submit">Mark paid</button>
@@ -230,8 +254,8 @@
         </div>
         {% else %}<div class="ops-empty">No loans registered yet.</div>{% endfor %}
       </div>
-    </article>
   </section>
+  {% endif %}
 </section>
 {% endblock %}
 

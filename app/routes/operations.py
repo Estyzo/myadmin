@@ -90,7 +90,7 @@ def create_asset_record():
 
 def update_asset_record_status():
     update_asset_status(request.form.get("asset_id"), request.form.get("status"), config=current_app.config)
-    return redirect(url_for("operations"))
+    return redirect(url_for("operations", tab="assets"))
 
 
 def create_loan_record():
@@ -102,7 +102,7 @@ def create_loan_record():
 
 def mark_loan_record_paid():
     mark_loan_paid(request.form.get("loan_id"), config=current_app.config)
-    return redirect(url_for("operations"))
+    return redirect(url_for("operations", tab="loans"))
 
 
 def register_operations_routes(app):

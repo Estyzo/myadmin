@@ -23,6 +23,7 @@ MOBILE_COMMISSION_SOURCES = ["Vodacom", "Yas", "Halotel", "Airtel"]
 BANK_COMMISSION_SOURCES = ["NMB", "NBC", "CRDB", "TCB", "MUCCOBA"]
 ASSET_STATUSES = ["active", "servicing", "retired", "lost"]
 LOAN_STATUSES = ["active", "paid"]
+OPERATIONS_TABS = {"expenses", "commissions", "assets", "loans"}
 
 
 def iso_now():
@@ -159,6 +160,11 @@ def clean_filters(args=None):
         "asset_status": str(args.get("asset_status", "") or "").strip(),
         "loan_status": str(args.get("loan_status", "") or "").strip(),
     }
+
+
+def clean_operations_tab(args=None):
+    tab = str((args or {}).get("tab", "expenses") or "expenses").strip().lower()
+    return tab if tab in OPERATIONS_TABS else "expenses"
 
 
 def in_date_range(value, filters):
@@ -349,6 +355,7 @@ def build_operations_view_model(config=None, filters=None):
     assets = list_rows("office_assets", config=config)
     loans = list_rows("loans", config=config)
     active_filters = clean_filters(filters)
+    active_tab = clean_operations_tab(filters)
     expenses, commissions, assets, loans = apply_operations_filters(expenses, commissions, assets, loans, active_filters)
     active_loans = [loan for loan in loans if loan.get("status") == "active"]
     active_assets = [asset for asset in assets if asset.get("status") == "active"]
@@ -371,4 +378,5 @@ def build_operations_view_model(config=None, filters=None):
         "asset_statuses": ASSET_STATUSES,
         "loan_statuses": LOAN_STATUSES,
         "filters": active_filters,
+        "active_tab": active_tab,
     }

@@ -11,6 +11,13 @@ from app.services.operations import (
     sum_amount,
 )
 
+REPORT_TABS = {"transactions", "commissions", "assets", "loans"}
+
+
+def clean_report_tab(filters=None):
+    tab = str((filters or {}).get("tab", "transactions") or "transactions").strip().lower()
+    return tab if tab in REPORT_TABS else "transactions"
+
 
 def transaction_matches_filters(row, filters):
     query = filters.get("q", "")
@@ -53,6 +60,7 @@ def apply_report_filters(transactions, commissions, assets, loans, filters):
 
 def build_reports_view_model(config=None, filters=None):
     active_filters = clean_filters(filters)
+    active_tab = clean_report_tab(filters)
     dashboard_data = build_dashboard_data(
         config=config,
         period="all",
@@ -79,6 +87,7 @@ def build_reports_view_model(config=None, filters=None):
         "commissions": commissions,
         "assets": assets,
         "loans": loans,
+        "active_tab": active_tab,
         "filters": active_filters,
         "mobile_sources": MOBILE_COMMISSION_SOURCES,
         "bank_sources": BANK_COMMISSION_SOURCES,

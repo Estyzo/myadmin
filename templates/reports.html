@@ -29,14 +29,34 @@
     <article><span>Active loans</span><strong>{{ money(summary.active_loan_total) }}</strong><small>{{ summary.active_loan_count }} active · {{ summary.loan_count }} total</small></article>
   </section>
 
+  <nav class="report-tabs" aria-label="Report categories">
+    <a href="{{ url_for('reports', tab='transactions', q=filters.q, date_from=filters.date_from, date_to=filters.date_to) }}" class="{% if active_tab == 'transactions' %}active{% endif %}" {% if active_tab == 'transactions' %}aria-current="page"{% endif %}>
+      <span>Transactions</span><strong>{{ summary.transaction_count }}</strong>
+    </a>
+    <a href="{{ url_for('reports', tab='commissions', q=filters.q, date_from=filters.date_from, date_to=filters.date_to, commission_type=filters.commission_type, commission_source=filters.commission_source) }}" class="{% if active_tab == 'commissions' %}active{% endif %}" {% if active_tab == 'commissions' %}aria-current="page"{% endif %}>
+      <span>Commissions</span><strong>{{ summary.commission_count }}</strong>
+    </a>
+    <a href="{{ url_for('reports', tab='assets', q=filters.q, date_from=filters.date_from, date_to=filters.date_to, asset_status=filters.asset_status) }}" class="{% if active_tab == 'assets' %}active{% endif %}" {% if active_tab == 'assets' %}aria-current="page"{% endif %}>
+      <span>Assets</span><strong>{{ summary.asset_count }}</strong>
+    </a>
+    <a href="{{ url_for('reports', tab='loans', q=filters.q, date_from=filters.date_from, date_to=filters.date_to, loan_status=filters.loan_status) }}" class="{% if active_tab == 'loans' %}active{% endif %}" {% if active_tab == 'loans' %}aria-current="page"{% endif %}>
+      <span>Loans</span><strong>{{ summary.loan_count }}</strong>
+    </a>
+  </nav>
+
   <form class="report-filter-bar" method="get" action="{{ url_for('reports') }}">
+    <input type="hidden" name="tab" value="{{ active_tab }}">
     <label><span>Search</span><input type="search" name="q" value="{{ filters.q }}" placeholder="Search report"></label>
     <label><span>From</span><input type="date" name="date_from" value="{{ filters.date_from }}"></label>
     <label><span>To</span><input type="date" name="date_to" value="{{ filters.date_to }}"></label>
+    {% if active_tab == 'commissions' %}
     <label><span>Commission</span><select name="commission_type"><option value="">All commissions</option><option value="mobile" {% if filters.commission_type == 'mobile' %}selected{% endif %}>Mobile</option><option value="bank" {% if filters.commission_type == 'bank' %}selected{% endif %}>Banking</option></select></label>
     <label><span>Source</span><select name="commission_source"><option value="">All sources</option>{% for item in mobile_sources + bank_sources %}<option value="{{ item }}" {% if filters.commission_source == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></label>
+    {% elif active_tab == 'assets' %}
     <label><span>Asset status</span><select name="asset_status"><option value="">All assets</option>{% for item in asset_statuses %}<option value="{{ item }}" {% if filters.asset_status == item %}selected{% endif %}>{{ item|title }}</option>{% endfor %}</select></label>
+    {% elif active_tab == 'loans' %}
     <label><span>Loan status</span><select name="loan_status"><option value="">All loans</option>{% for item in loan_statuses %}<option value="{{ item }}" {% if filters.loan_status == item %}selected{% endif %}>{{ item|title }}</option>{% endfor %}</select></label>
+    {% endif %}
     <div class="report-filter-actions">
       <button type="submit">Apply</button>
       <a href="{{ url_for('reports') }}">Reset</a>
@@ -45,10 +65,15 @@
 
   <div class="report-export-bar">
     <a href="{{ url_for('export_reports', section='all', q=filters.q, date_from=filters.date_from, date_to=filters.date_to, commission_type=filters.commission_type, commission_source=filters.commission_source, asset_status=filters.asset_status, loan_status=filters.loan_status) }}">Export all</a>
+    {% if active_tab == 'transactions' %}
     <a href="{{ url_for('export_reports', section='transactions', q=filters.q, date_from=filters.date_from, date_to=filters.date_to) }}">Transactions CSV</a>
+    {% elif active_tab == 'commissions' %}
     <a href="{{ url_for('export_reports', section='commissions', q=filters.q, date_from=filters.date_from, date_to=filters.date_to, commission_type=filters.commission_type, commission_source=filters.commission_source) }}">Commissions CSV</a>
+    {% elif active_tab == 'assets' %}
     <a href="{{ url_for('export_reports', section='assets', q=filters.q, date_from=filters.date_from, date_to=filters.date_to, asset_status=filters.asset_status) }}">Assets CSV</a>
+    {% elif active_tab == 'loans' %}
     <a href="{{ url_for('export_reports', section='loans', q=filters.q, date_from=filters.date_from, date_to=filters.date_to, loan_status=filters.loan_status) }}">Loans CSV</a>
+    {% endif %}
   </div>
 
   {% if data_status.message %}
@@ -58,6 +83,7 @@
   </div>
   {% endif %}
 
+  {% if active_tab == 'transactions' %}
   <section class="report-section">
     <div class="report-section-head">
       <div>
@@ -105,9 +131,9 @@
       </table>
     </div>
   </section>
+  {% elif active_tab == 'commissions' %}
 
-  <section class="report-two-col">
-    <article class="report-section">
+  <section class="report-section">
       <div class="report-section-head">
         <div>
           <p class="card-kicker">Commissions</p>
@@ -143,9 +169,10 @@
         <div class="report-empty">No commissions recorded.</div>
         {% endfor %}
       </div>
-    </article>
+  </section>
+  {% elif active_tab == 'assets' %}
 
-    <article class="report-section">
+  <section class="report-section">
       <div class="report-section-head">
         <div>
           <p class="card-kicker">Office Assets</p>
@@ -183,9 +210,10 @@
         <div class="report-empty">No assets registered.</div>
         {% endfor %}
       </div>
-    </article>
+  </section>
+  {% elif active_tab == 'loans' %}
 
-    <article class="report-section">
+  <section class="report-section">
       <div class="report-section-head">
         <div>
           <p class="card-kicker">Loans</p>
@@ -223,7 +251,7 @@
         <div class="report-empty">No loans registered.</div>
         {% endfor %}
       </div>
-    </article>
   </section>
+  {% endif %}
 </section>
 {% endblock %}
