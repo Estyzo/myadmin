@@ -22,6 +22,9 @@ TABLES = [
     "loans",
 ]
 
+AUTH_TABLES = ["audit_logs", "invitations", "users"]
+OPERATIONS_TABLES = ["loans", "office_assets", "commissions", "expenses"]
+
 
 def parse_mysql_url(database_url):
     parsed = urlparse(str(database_url or "").strip())
@@ -137,6 +140,16 @@ def backfill_user_password_hash(connection):
         return cursor.rowcount
 
 
+def drop_tables(connection, tables):
+    if not tables:
+        return
+    with connection.cursor() as cursor:
+        cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
+        for table in tables:
+            cursor.execute(f"DROP TABLE IF EXISTS `{table}`")
+        cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
+
+
 def source_for_table(table, auth_path, operations_path):
     return auth_path if table in {"users", "invitations", "audit_logs"} else operations_path
 
@@ -147,6 +160,21 @@ def main():
     parser.add_argument("--auth-sqlite", default="instance/auth.db")
     parser.add_argument("--operations-sqlite", default="instance/operations.db")
     parser.add_argument("--apply", action="store_true", help="Actually write rows. Without this flag, only a dry-run summary is printed.")
+    parser.add_argument(
+        "--reset-auth-schema",
+        action="store_true",
+        help="Drop and recreate only auth tables before copying users, invitations, and audit logs.",
+    )
+    parser.add_argument(
+        "--reset-operations-schema",
+        action="store_true",
+        help="Drop and recreate only operations tables before copying expenses, commissions, assets, and loans.",
+    )
+    parser.add_argument(
+        "--reset-all-schema",
+        action="store_true",
+        help="Drop and recreate all migrated tables before copying data.",
+    )
     args = parser.parse_args()
 
     mysql_url = args.mysql_url
@@ -174,6 +202,26 @@ def main():
 
     os.environ["AUTH_DATABASE_URL"] = mysql_url
     os.environ["OPERATIONS_DATABASE_URL"] = mysql_url
+    connection = pymysql.connect(cursorclass=DictCursor, **parse_mysql_url(mysql_url))
+    try:
+        reset_tables = []
+        if args.reset_all_schema:
+            reset_tables = list(TABLES)
+        else:
+            if args.reset_auth_schema:
+                reset_tables.extend(AUTH_TABLES)
+            if args.reset_operations_schema:
+                reset_tables.extend(OPERATIONS_TABLES)
+        if reset_tables:
+            drop_tables(connection, reset_tables)
+            connection.commit()
+            print(f"reset schema: dropped {', '.join(reset_tables)}")
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        connection.close()
+
     from app import app
     from app.services.auth import init_auth_storage
     from app.services.operations import init_operations_storage

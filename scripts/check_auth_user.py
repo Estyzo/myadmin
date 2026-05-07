@@ -20,7 +20,7 @@ def main():
     os.environ["AUTH_DATABASE_URL"] = args.auth_url
 
     from app import app
-    from app.services.auth import authenticate_user, get_auth_connection, get_user_by_email
+    from app.services.auth import authenticate_user, get_auth_connection, get_user_by_email, looks_like_password_hash, password_credentials
 
     config = app.config
     user = get_user_by_email(args.email, config=config)
@@ -36,6 +36,9 @@ def main():
     print(f"role: {user.get('role')}")
     print(f"has_password_hash: {bool(str(user.get('password_hash') or '').strip())}")
     print(f"has_legacy_password: {bool(str(user.get('password') or '').strip())}")
+    for source, secret in password_credentials(user):
+        storage = "hash" if looks_like_password_hash(secret) else "plain_or_unknown"
+        print(f"{source}_storage: {storage}")
     print(f"users_columns: {', '.join(columns)}")
 
     if args.password is not None:

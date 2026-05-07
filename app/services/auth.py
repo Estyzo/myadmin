@@ -1,4 +1,5 @@
 import hashlib
+import hmac
 import json
 import secrets
 import time
@@ -110,26 +111,71 @@ def row_to_user(row):
     if row is None:
         return None
     user = dict(row)
-    user["client_codes"] = split_scope(user.get("client_codes"))
-    user["operator_scope"] = split_scope(user.get("operator_scope"))
+    user["email"] = first_present_value(user, "email", "Email")
+    user["name"] = first_present_value(user, "name", "Name", "full_name", "username")
+    user["password_hash"] = first_present_value(user, "password_hash", "passwordHash")
+    user["password"] = first_present_value(user, "password", "Password")
+    user["role"] = first_present_value(user, "role", "Role")
+    user["status"] = first_present_value(user, "status", "Status")
+    user["created_at"] = first_present_value(user, "created_at", "createdat", "createdAt")
+    user["updated_at"] = first_present_value(user, "updated_at", "updatedat", "updatedAt")
+    user["last_login_at"] = first_present_value(user, "last_login_at", "lastloginat", "lastLoginAt")
+    user["client_codes"] = split_scope(first_present_value(user, "client_codes", "clientcodes", "clientCodes"))
+    user["operator_scope"] = split_scope(first_present_value(user, "operator_scope", "operatorscope", "operatorScope"))
     return user
 
 
-def stored_password_hash(user):
-    if not user:
-        return ""
-    return str(user.get("password_hash") or user.get("password") or "").strip()
+def first_present_value(mapping, *names):
+    if not mapping:
+        return None
+    for name in names:
+        if name in mapping:
+            return mapping.get(name)
+    lowered = {str(key).lower(): key for key in mapping}
+    for name in names:
+        key = lowered.get(str(name).lower())
+        if key is not None:
+            return mapping.get(key)
+    return None
 
 
-def password_matches(stored_hash, password):
+def password_credentials(user):
+    credentials = []
+    for key in ("password_hash", "password"):
+        value = str((user or {}).get(key) or "").strip()
+        if value and value not in [credential for _key, credential in credentials]:
+            credentials.append((key, value))
+    return credentials
+
+
+def looks_like_password_hash(value):
+    text = str(value or "")
+    return text.startswith(("scrypt:", "pbkdf2:", "argon2:", "bcrypt:", "$2a$", "$2b$", "$2y$"))
+
+
+def password_matches(stored_secret, password):
+    text = str(stored_secret or "")
     try:
-        return check_password_hash(str(stored_hash or ""), str(password or ""))
+        if check_password_hash(text, str(password or "")):
+            return True
     except (TypeError, ValueError):
+        pass
+    if looks_like_password_hash(text):
         return False
+    return hmac.compare_digest(text, str(password or ""))
 
 
 def table_columns(connection, table):
     return {row["name"] for row in connection.execute(f"PRAGMA table_info({table})").fetchall()}
+
+
+def resolve_column(columns, *names):
+    lowered = {str(column).lower(): column for column in columns}
+    for name in names:
+        column = lowered.get(str(name).lower())
+        if column:
+            return column
+    return None
 
 
 def row_to_invitation(row):
@@ -261,21 +307,26 @@ def create_user(email, password, name, role, client_codes=None, operator_scope=N
     password_hash = generate_password_hash(password)
     with get_auth_connection(config) as connection:
         columns = table_columns(connection, "users")
-        insert_columns = ["email", "name", "password_hash", "role", "client_codes", "operator_scope", "status", "created_at", "updated_at"]
-        values = [
-            str(email or "").strip().lower(),
-            str(name or "").strip(),
-            password_hash,
-            normalize_role(role),
-            join_scope(client_codes),
-            join_scope(operator_scope),
-            str(status or "active").strip().lower(),
-            now,
-            now,
-        ]
-        if "password" in columns:
-            insert_columns.append("password")
-            values.append(password_hash)
+        insert_columns = []
+        values = []
+
+        def add_value(value, *aliases):
+            column = resolve_column(columns, *aliases)
+            if column and column not in insert_columns:
+                insert_columns.append(column)
+                values.append(value)
+
+        add_value(str(email or "").strip().lower(), "email")
+        add_value(str(name or "").strip(), "name")
+        add_value(password_hash, "password_hash", "passwordHash")
+        add_value(normalize_role(role), "role")
+        add_value(join_scope(client_codes), "client_codes", "clientcodes", "clientCodes")
+        add_value(join_scope(operator_scope), "operator_scope", "operatorscope", "operatorScope")
+        add_value(str(status or "active").strip().lower(), "status", "Status")
+        add_value(now, "created_at", "createdat", "createdAt")
+        add_value(now, "updated_at", "updatedat", "updatedAt")
+        add_value(password_hash, "password")
+
         column_sql = ", ".join(insert_columns)
         placeholder_sql = ", ".join(["?"] * len(insert_columns))
         cursor = connection.execute(
@@ -400,19 +451,33 @@ def authenticate_user(email, password, config=None):
     user = get_user_by_email(email, config=config)
     if not user or str(user.get("status") or "").strip().lower() != "active":
         return None
-    password_hash = stored_password_hash(user)
-    if not password_hash or not password_matches(password_hash, password):
+    matched_secret = ""
+    for _source, secret in password_credentials(user):
+        if password_matches(secret, password):
+            matched_secret = secret
+            break
+    if not matched_secret:
         return None
     with get_auth_connection(config) as connection:
         columns = table_columns(connection, "users")
         now = iso_now()
-        if "password_hash" in columns and not str(user.get("password_hash") or "").strip():
-            connection.execute(
-                "UPDATE users SET password_hash = ?, last_login_at = ?, updated_at = ? WHERE id = ?",
-                (password_hash, now, now, user["id"]),
-            )
-        else:
-            connection.execute("UPDATE users SET last_login_at = ?, updated_at = ? WHERE id = ?", (now, now, user["id"]))
+        assignments = []
+        values = []
+        password_hash_column = resolve_column(columns, "password_hash", "passwordHash")
+        if password_hash_column and (not str(user.get("password_hash") or "").strip() or not looks_like_password_hash(matched_secret)):
+            assignments.append(f"{password_hash_column} = ?")
+            values.append(generate_password_hash(password))
+        last_login_column = resolve_column(columns, "last_login_at", "lastloginat", "lastLoginAt")
+        if last_login_column:
+            assignments.append(f"{last_login_column} = ?")
+            values.append(now)
+        updated_column = resolve_column(columns, "updated_at", "updatedat", "updatedAt")
+        if updated_column:
+            assignments.append(f"{updated_column} = ?")
+            values.append(now)
+        if assignments:
+            values.append(user["id"])
+            connection.execute(f"UPDATE users SET {', '.join(assignments)} WHERE id = ?", values)
         connection.commit()
     return user
 
