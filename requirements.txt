@@ -5,3 +5,4 @@ Flask-Caching>=2.3,<3
 httpx>=0.28,<0.29
 celery>=5.4,<6
 redis>=5.2,<6
+PyMySQL>=1.1,<2

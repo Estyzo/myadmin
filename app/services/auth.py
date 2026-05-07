@@ -1,13 +1,14 @@
 import hashlib
 import json
 import secrets
-import sqlite3
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from flask import current_app, g, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
+
+from app.services.database import open_database
 
 
 ROLE_PERMISSIONS = {
@@ -60,11 +61,11 @@ def get_auth_db_path(config=None):
 
 
 def get_auth_connection(config=None):
-    db_path = get_auth_db_path(config)
-    db_path.parent.mkdir(parents=True, exist_ok=True)
-    connection = sqlite3.connect(db_path)
-    connection.row_factory = sqlite3.Row
-    return connection
+    runtime_config = config or current_app.config
+    return open_database(
+        database_url=runtime_config.get("AUTH_DATABASE_URL", ""),
+        sqlite_path=get_auth_db_path(runtime_config),
+    )
 
 
 def utc_now():

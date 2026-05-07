@@ -1,8 +1,9 @@
-import sqlite3
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from flask import current_app
+
+from app.services.database import open_database
 
 
 EXPENSE_CATEGORIES = [
@@ -37,11 +38,11 @@ def get_operations_db_path(config=None):
 
 
 def get_operations_connection(config=None):
-    db_path = get_operations_db_path(config)
-    db_path.parent.mkdir(parents=True, exist_ok=True)
-    connection = sqlite3.connect(db_path)
-    connection.row_factory = sqlite3.Row
-    return connection
+    runtime_config = config or current_app.config
+    return open_database(
+        database_url=runtime_config.get("OPERATIONS_DATABASE_URL", ""),
+        sqlite_path=get_operations_db_path(runtime_config),
+    )
 
 
 def init_operations_storage(app):

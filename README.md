@@ -53,6 +53,10 @@ SENDER_CONFIG_API_URL=https://your-main-api-host/api/sender-configurations
 SEND_MONEY_API_URL=https://your-main-api-host/api/send-money
 APP_TIMEZONE=Africa/Dar_es_Salaam
 FLASK_SECRET_KEY=change-this
+AUTH_DATABASE_URL=
+OPERATIONS_DATABASE_URL=
+AUTH_DATABASE_PATH=
+OPERATIONS_DATABASE_PATH=
 REDIS_URL=redis://127.0.0.1:6379/0
 CELERY_BROKER_URL=redis://127.0.0.1:6379/0
 CELERY_RESULT_BACKEND=redis://127.0.0.1:6379/0
@@ -78,6 +82,8 @@ Notes:
 - `SENDER_CONFIG_API_URL` is used by the settings page.
 - `SEND_MONEY_API_URL` is used by the send-money flow.
 - `REDIS_URL` is used by Flask-Caching and Celery when Redis is available.
+- `AUTH_DATABASE_URL` and `OPERATIONS_DATABASE_URL` switch auth and operations storage to MySQL, for example `mysql://user:password@127.0.0.1:3306/transferflow`.
+- `AUTH_DATABASE_PATH` and `OPERATIONS_DATABASE_PATH` keep SQLite storage paths when MySQL URLs are not set.
 - `docker-compose.redis.yml` is the recommended local Redis setup.
 - `USE_CELERY_CACHE_WARMING` makes dashboard stale-cache refresh dispatch through Celery first, with a local fallback if the broker is unavailable.
 - `DASHBOARD_REFRESH_LOCK_TTL` prevents duplicate background dashboard refresh jobs from being queued repeatedly.
@@ -152,6 +158,30 @@ If you used Docker:
 
 ```bash
 docker compose -f docker-compose.redis.yml down
+```
+
+## MySQL migration
+
+The app defaults to SQLite until MySQL URLs are configured. Use a dry run first:
+
+```bash
+./.venv/bin/python scripts/migrate_sqlite_to_mysql.py \
+  --mysql-url 'mysql://user:password@127.0.0.1:3306/transferflow'
+```
+
+Apply only after the dry-run row counts look correct:
+
+```bash
+./.venv/bin/python scripts/migrate_sqlite_to_mysql.py \
+  --mysql-url 'mysql://user:password@127.0.0.1:3306/transferflow' \
+  --apply
+```
+
+Then set both production variables and restart the app:
+
+```env
+AUTH_DATABASE_URL=mysql://user:password@127.0.0.1:3306/transferflow
+OPERATIONS_DATABASE_URL=mysql://user:password@127.0.0.1:3306/transferflow
 ```
 
 ## Routes
