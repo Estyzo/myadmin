@@ -18,7 +18,7 @@
     <div class="page-copy">
       <p class="page-eyebrow">Reports</p>
       <h2>Business activity report</h2>
-      <p>Review transactions, commission income, and office assets in one place.</p>
+      <p>Review transactions, commission income, office assets, and loans in one place.</p>
     </div>
   </div>
 
@@ -26,6 +26,7 @@
     <article><span>Transactions</span><strong>{{ money(summary.transaction_total) }}</strong><small>{{ summary.transaction_count }} records</small></article>
     <article><span>Commissions</span><strong>{{ money(summary.commission_total) }}</strong><small>{{ summary.commission_count }} records</small></article>
     <article><span>Assets</span><strong>{{ money(summary.asset_total) }}</strong><small>{{ summary.active_asset_count }} active · {{ summary.asset_count }} total</small></article>
+    <article><span>Active loans</span><strong>{{ money(summary.active_loan_total) }}</strong><small>{{ summary.active_loan_count }} active · {{ summary.loan_count }} total</small></article>
   </section>
 
   <form class="report-filter-bar" method="get" action="{{ url_for('reports') }}">
@@ -35,6 +36,7 @@
     <label><span>Commission</span><select name="commission_type"><option value="">All commissions</option><option value="mobile" {% if filters.commission_type == 'mobile' %}selected{% endif %}>Mobile</option><option value="bank" {% if filters.commission_type == 'bank' %}selected{% endif %}>Banking</option></select></label>
     <label><span>Source</span><select name="commission_source"><option value="">All sources</option>{% for item in mobile_sources + bank_sources %}<option value="{{ item }}" {% if filters.commission_source == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></label>
     <label><span>Asset status</span><select name="asset_status"><option value="">All assets</option>{% for item in asset_statuses %}<option value="{{ item }}" {% if filters.asset_status == item %}selected{% endif %}>{{ item|title }}</option>{% endfor %}</select></label>
+    <label><span>Loan status</span><select name="loan_status"><option value="">All loans</option>{% for item in loan_statuses %}<option value="{{ item }}" {% if filters.loan_status == item %}selected{% endif %}>{{ item|title }}</option>{% endfor %}</select></label>
     <div class="report-filter-actions">
       <button type="submit">Apply</button>
       <a href="{{ url_for('reports') }}">Reset</a>
@@ -42,10 +44,11 @@
   </form>
 
   <div class="report-export-bar">
-    <a href="{{ url_for('export_reports', section='all', q=filters.q, date_from=filters.date_from, date_to=filters.date_to, commission_type=filters.commission_type, commission_source=filters.commission_source, asset_status=filters.asset_status) }}">Export all</a>
+    <a href="{{ url_for('export_reports', section='all', q=filters.q, date_from=filters.date_from, date_to=filters.date_to, commission_type=filters.commission_type, commission_source=filters.commission_source, asset_status=filters.asset_status, loan_status=filters.loan_status) }}">Export all</a>
     <a href="{{ url_for('export_reports', section='transactions', q=filters.q, date_from=filters.date_from, date_to=filters.date_to) }}">Transactions CSV</a>
     <a href="{{ url_for('export_reports', section='commissions', q=filters.q, date_from=filters.date_from, date_to=filters.date_to, commission_type=filters.commission_type, commission_source=filters.commission_source) }}">Commissions CSV</a>
     <a href="{{ url_for('export_reports', section='assets', q=filters.q, date_from=filters.date_from, date_to=filters.date_to, asset_status=filters.asset_status) }}">Assets CSV</a>
+    <a href="{{ url_for('export_reports', section='loans', q=filters.q, date_from=filters.date_from, date_to=filters.date_to, loan_status=filters.loan_status) }}">Loans CSV</a>
   </div>
 
   {% if data_status.message %}
@@ -178,6 +181,46 @@
         </div>
         {% else %}
         <div class="report-empty">No assets registered.</div>
+        {% endfor %}
+      </div>
+    </article>
+
+    <article class="report-section">
+      <div class="report-section-head">
+        <div>
+          <p class="card-kicker">Loans</p>
+          <h3>Loan register</h3>
+        </div>
+        <span>{{ summary.loan_count }} total</span>
+      </div>
+      <div class="report-list">
+        {% for item in loans %}
+        {% set loan_detail = {
+          'eyebrow': 'Loan report',
+          'title': item.borrower_name,
+          'summary': money(item.amount) ~ ' · ' ~ item.status|title,
+          'tone': 'loan',
+          'tone_label': item.status|title,
+          'fields': [
+            {'label': 'Borrower', 'value': item.borrower_name},
+            {'label': 'Amount', 'value': money(item.amount)},
+            {'label': 'Issued date', 'value': item.issued_date},
+            {'label': 'Due date', 'value': item.due_date or '-'},
+            {'label': 'Status', 'value': item.status|title},
+            {'label': 'Paid at', 'value': item.paid_at or '-'},
+            {'label': 'Reference', 'value': item.reference or '-'},
+            {'label': 'Note', 'value': item.note or '-'},
+            {'label': 'Created at', 'value': item.created_at}
+          ]
+        } %}
+        <div class="report-row">
+          <div><strong>{{ item.borrower_name }}</strong><span>{{ item.status|title }}{% if item.due_date %} · Due {{ item.due_date }}{% endif %}</span></div>
+          <b>{{ money(item.amount) }}</b>
+          <small>{{ item.reference or item.note or "-" }}</small>
+          <button class="row-action-btn" type="button" data-detail-trigger="true" data-detail-payload='{{ loan_detail|tojson|forceescape }}'>View</button>
+        </div>
+        {% else %}
+        <div class="report-empty">No loans registered.</div>
         {% endfor %}
       </div>
     </article>

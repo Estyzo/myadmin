@@ -2,6 +2,7 @@ from app.services.dashboard import build_dashboard_data
 from app.services.operations import (
     ASSET_STATUSES,
     BANK_COMMISSION_SOURCES,
+    LOAN_STATUSES,
     MOBILE_COMMISSION_SOURCES,
     clean_filters,
     in_date_range,
@@ -25,7 +26,7 @@ def transaction_matches_filters(row, filters):
     return in_date_range(date_text, filters)
 
 
-def apply_report_filters(transactions, commissions, assets, filters):
+def apply_report_filters(transactions, commissions, assets, loans, filters):
     query = filters.get("q", "")
     filtered_transactions = [row for row in transactions if transaction_matches_filters(row, filters)]
     filtered_commissions = [
@@ -41,7 +42,13 @@ def apply_report_filters(transactions, commissions, assets, filters):
         and in_date_range(row.get("purchase_date"), filters)
         and (not filters.get("asset_status") or row.get("status") == filters.get("asset_status"))
     ]
-    return filtered_transactions, filtered_commissions, filtered_assets
+    filtered_loans = [
+        row for row in loans
+        if row_matches_search(row, query)
+        and in_date_range(row.get("issued_date"), filters)
+        and (not filters.get("loan_status") or row.get("status") == filters.get("loan_status"))
+    ]
+    return filtered_transactions, filtered_commissions, filtered_assets, filtered_loans
 
 
 def build_reports_view_model(config=None, filters=None):
@@ -58,20 +65,25 @@ def build_reports_view_model(config=None, filters=None):
     transactions = dashboard_data.get("filtered_transactions", [])
     commissions = list_rows("commissions", config=config, limit=500)
     assets = list_rows("office_assets", config=config, limit=500)
-    transactions, commissions, assets = apply_report_filters(transactions, commissions, assets, active_filters)
+    loans = list_rows("loans", config=config, limit=500)
+    transactions, commissions, assets, loans = apply_report_filters(transactions, commissions, assets, loans, active_filters)
     active_assets = [asset for asset in assets if asset.get("status") == "active"]
+    active_loans = [loan for loan in loans if loan.get("status") == "active"]
     transaction_total = sum(float(item.get("amount_value") or 0) for item in transactions)
     commission_total = sum_amount(commissions)
     asset_total = sum_amount(active_assets)
+    loan_total = sum_amount(active_loans)
 
     return {
         "transactions": transactions[:100],
         "commissions": commissions,
         "assets": assets,
+        "loans": loans,
         "filters": active_filters,
         "mobile_sources": MOBILE_COMMISSION_SOURCES,
         "bank_sources": BANK_COMMISSION_SOURCES,
         "asset_statuses": ASSET_STATUSES,
+        "loan_statuses": LOAN_STATUSES,
         "summary": {
             "transaction_total": transaction_total,
             "transaction_count": len(transactions),
@@ -80,6 +92,9 @@ def build_reports_view_model(config=None, filters=None):
             "asset_total": asset_total,
             "asset_count": len(assets),
             "active_asset_count": len(active_assets),
+            "active_loan_total": loan_total,
+            "loan_count": len(loans),
+            "active_loan_count": len(active_loans),
         },
         "data_status": dashboard_data.get("data_status", {}),
     }

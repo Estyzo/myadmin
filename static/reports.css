@@ -5,7 +5,7 @@
 
 .report-summary-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
 }
 
@@ -47,7 +47,7 @@
 
 .report-filter-bar {
   display: grid;
-  grid-template-columns: minmax(180px, 1.4fr) repeat(5, minmax(130px, 1fr)) auto;
+  grid-template-columns: minmax(180px, 1.4fr) repeat(6, minmax(130px, 1fr)) auto;
   gap: 10px;
   align-items: end;
   padding: 16px;

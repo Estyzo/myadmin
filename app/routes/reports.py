@@ -35,6 +35,9 @@ def export_reports():
     if section == "assets":
         headers = ["id", "asset_name", "asset_tag", "category", "purchase_date", "purchase_value", "assigned_to", "location", "status", "note", "created_at"]
         return csv_response("reports-assets.csv", headers, view_model["assets"])
+    if section == "loans":
+        headers = ["id", "borrower_name", "amount", "issued_date", "due_date", "status", "paid_at", "reference", "note", "created_at"]
+        return csv_response("reports-loans.csv", headers, view_model["loans"])
 
     rows = []
     for row in view_model["transactions"]:
@@ -43,6 +46,8 @@ def export_reports():
         rows.append({"type": "commission", "name": row.get("source_name"), "source": row.get("source_type"), "date": row.get("commission_date"), "amount": row.get("amount"), "status": "", "reference": row.get("reference")})
     for row in view_model["assets"]:
         rows.append({"type": "asset", "name": row.get("asset_name"), "source": row.get("asset_tag"), "date": row.get("purchase_date"), "amount": row.get("purchase_value"), "status": row.get("status"), "reference": row.get("location")})
+    for row in view_model["loans"]:
+        rows.append({"type": "loan", "name": row.get("borrower_name"), "source": row.get("reference"), "date": row.get("issued_date"), "amount": row.get("amount"), "status": row.get("status"), "reference": row.get("due_date")})
     return csv_response("reports-combined.csv", ["type", "name", "source", "date", "amount", "status", "reference"], rows)
 
 
