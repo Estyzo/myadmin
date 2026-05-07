@@ -120,6 +120,23 @@ def insert_rows(connection, table, rows):
     return len(values)
 
 
+def backfill_user_password_hash(connection):
+    columns = set(mysql_columns(connection, "users"))
+    if "password" not in columns or "password_hash" not in columns:
+        return 0
+    with connection.cursor() as cursor:
+        cursor.execute(
+            """
+            UPDATE users
+            SET password_hash = password
+            WHERE (password_hash IS NULL OR password_hash = '')
+              AND password IS NOT NULL
+              AND password <> ''
+            """
+        )
+        return cursor.rowcount
+
+
 def source_for_table(table, auth_path, operations_path):
     return auth_path if table in {"users", "invitations", "audit_logs"} else operations_path
 
@@ -170,6 +187,9 @@ def main():
             rows = sqlite_rows(source_for_table(table, auth_path, operations_path), table)
             copied = insert_rows(connection, table, rows)
             print(f"{table}: copied {copied} rows")
+        backfilled = backfill_user_password_hash(connection)
+        if backfilled:
+            print(f"users: backfilled password_hash for {backfilled} legacy rows")
         connection.commit()
     except Exception:
         connection.rollback()

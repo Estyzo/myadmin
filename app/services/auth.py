@@ -115,6 +115,23 @@ def row_to_user(row):
     return user
 
 
+def stored_password_hash(user):
+    if not user:
+        return ""
+    return str(user.get("password_hash") or user.get("password") or "").strip()
+
+
+def password_matches(stored_hash, password):
+    try:
+        return check_password_hash(str(stored_hash or ""), str(password or ""))
+    except (TypeError, ValueError):
+        return False
+
+
+def table_columns(connection, table):
+    return {row["name"] for row in connection.execute(f"PRAGMA table_info({table})").fetchall()}
+
+
 def row_to_invitation(row):
     if row is None:
         return None
@@ -185,13 +202,31 @@ def init_auth_storage(app):
         connection.execute("CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs (created_at)")
         connection.execute("CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs (action)")
         connection.execute("CREATE INDEX IF NOT EXISTS idx_audit_logs_target ON audit_logs (target_type, target_id)")
+        ensure_user_password_hash_column(connection)
         ensure_invitation_delivery_columns(connection)
         connection.commit()
     bootstrap_admin(app)
 
 
+def ensure_user_password_hash_column(connection):
+    columns = table_columns(connection, "users")
+    if "password_hash" not in columns:
+        connection.execute("ALTER TABLE users ADD COLUMN password_hash TEXT NOT NULL DEFAULT ''")
+        columns.add("password_hash")
+    if "password" in columns and "password_hash" in columns:
+        connection.execute(
+            """
+            UPDATE users
+            SET password_hash = password
+            WHERE (password_hash IS NULL OR password_hash = '')
+              AND password IS NOT NULL
+              AND password <> ''
+            """
+        )
+
+
 def ensure_invitation_delivery_columns(connection):
-    columns = {row["name"] for row in connection.execute("PRAGMA table_info(invitations)").fetchall()}
+    columns = table_columns(connection, "invitations")
     if "sent_at" not in columns:
         connection.execute("ALTER TABLE invitations ADD COLUMN sent_at TEXT")
     if "send_error" not in columns:
@@ -223,23 +258,29 @@ def bootstrap_admin(app):
 
 def create_user(email, password, name, role, client_codes=None, operator_scope=None, status="active", config=None):
     now = iso_now()
+    password_hash = generate_password_hash(password)
     with get_auth_connection(config) as connection:
+        columns = table_columns(connection, "users")
+        insert_columns = ["email", "name", "password_hash", "role", "client_codes", "operator_scope", "status", "created_at", "updated_at"]
+        values = [
+            str(email or "").strip().lower(),
+            str(name or "").strip(),
+            password_hash,
+            normalize_role(role),
+            join_scope(client_codes),
+            join_scope(operator_scope),
+            str(status or "active").strip().lower(),
+            now,
+            now,
+        ]
+        if "password" in columns:
+            insert_columns.append("password")
+            values.append(password_hash)
+        column_sql = ", ".join(insert_columns)
+        placeholder_sql = ", ".join(["?"] * len(insert_columns))
         cursor = connection.execute(
-            """
-            INSERT INTO users (email, name, password_hash, role, client_codes, operator_scope, status, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                str(email or "").strip().lower(),
-                str(name or "").strip(),
-                generate_password_hash(password),
-                normalize_role(role),
-                join_scope(client_codes),
-                join_scope(operator_scope),
-                str(status or "active").strip().lower(),
-                now,
-                now,
-            ),
+            f"INSERT INTO users ({column_sql}) VALUES ({placeholder_sql})",
+            values,
         )
         connection.commit()
         return cursor.lastrowid
@@ -257,7 +298,7 @@ def get_user_by_id(user_id, config=None):
 
 def get_user_by_email(email, config=None):
     with get_auth_connection(config) as connection:
-        row = connection.execute("SELECT * FROM users WHERE email = ?", (str(email or "").strip().lower(),)).fetchone()
+        row = connection.execute("SELECT * FROM users WHERE LOWER(email) = LOWER(?)", (str(email or "").strip(),)).fetchone()
         return row_to_user(row)
 
 
@@ -357,12 +398,21 @@ def list_audit_logs(limit=30, config=None):
 
 def authenticate_user(email, password, config=None):
     user = get_user_by_email(email, config=config)
-    if not user or user.get("status") != "active":
+    if not user or str(user.get("status") or "").strip().lower() != "active":
         return None
-    if not check_password_hash(user.get("password_hash", ""), str(password or "")):
+    password_hash = stored_password_hash(user)
+    if not password_hash or not password_matches(password_hash, password):
         return None
     with get_auth_connection(config) as connection:
-        connection.execute("UPDATE users SET last_login_at = ?, updated_at = ? WHERE id = ?", (iso_now(), iso_now(), user["id"]))
+        columns = table_columns(connection, "users")
+        now = iso_now()
+        if "password_hash" in columns and not str(user.get("password_hash") or "").strip():
+            connection.execute(
+                "UPDATE users SET password_hash = ?, last_login_at = ?, updated_at = ? WHERE id = ?",
+                (password_hash, now, now, user["id"]),
+            )
+        else:
+            connection.execute("UPDATE users SET last_login_at = ?, updated_at = ? WHERE id = ?", (now, now, user["id"]))
         connection.commit()
     return user
 
