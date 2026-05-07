@@ -64,11 +64,45 @@ def mysql_columns(connection, table):
         return [row["COLUMN_NAME"] for row in cursor.fetchall()]
 
 
+def mysql_column_info(connection, table):
+    with connection.cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT COLUMN_NAME, IS_NULLABLE, COLUMN_DEFAULT, EXTRA
+            FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s
+            ORDER BY ORDINAL_POSITION
+            """,
+            (table,),
+        )
+        return cursor.fetchall()
+
+
+def fallback_value_for_missing_column(column, row):
+    if column == "password":
+        return row.get("password_hash", "")
+    if column.endswith("_at"):
+        return row.get("created_at") or row.get("updated_at") or ""
+    if column in {"amount", "purchase_value", "created_by", "accepted_user_id", "invited_by"}:
+        return None
+    return ""
+
+
 def insert_rows(connection, table, rows):
     if not rows:
         return 0
-    target_columns = mysql_columns(connection, table)
+    target_info = mysql_column_info(connection, table)
+    target_columns = [item["COLUMN_NAME"] for item in target_info]
     columns = [column for column in target_columns if column in rows[0]]
+    row_keys = set(rows[0])
+    for item in target_info:
+        column = item["COLUMN_NAME"]
+        if column in row_keys or column == "id":
+            continue
+        if str(item.get("EXTRA") or "").lower().find("auto_increment") >= 0:
+            continue
+        if item.get("IS_NULLABLE") == "NO" and item.get("COLUMN_DEFAULT") is None:
+            columns.append(column)
     if not columns:
         return 0
     placeholders = ", ".join(["%s"] * len(columns))
@@ -77,7 +111,10 @@ def insert_rows(connection, table, rows):
     sql = f"INSERT INTO `{table}` ({column_sql}) VALUES ({placeholders})"
     if update_sql:
         sql += f" ON DUPLICATE KEY UPDATE {update_sql}"
-    values = [tuple(row.get(column) for column in columns) for row in rows]
+    values = [
+        tuple(row.get(column) if column in row else fallback_value_for_missing_column(column, row) for column in columns)
+        for row in rows
+    ]
     with connection.cursor() as cursor:
         cursor.executemany(sql, values)
     return len(values)
