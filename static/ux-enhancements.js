@@ -16,6 +16,10 @@
   var maxRecentTransfers = 5;
   var deferredInstallPrompt = null;
   var approvalPollTimer = null;
+  var approvalTimeoutTimer = null;
+  var approvalDecisionInFlight = false;
+  var approvalPollIntervalMs = 3000;
+  var approvalAutoRejectMs = 30000;
   var activeApprovalContext = null;
   var pendingTransferConfirmationPayload = null;
   var transferConfirmationOpener = null;
@@ -1879,6 +1883,10 @@
       window.clearInterval(approvalPollTimer);
       approvalPollTimer = null;
     }
+    if (approvalTimeoutTimer) {
+      window.clearTimeout(approvalTimeoutTimer);
+      approvalTimeoutTimer = null;
+    }
   }
 
   function getApprovalModalElements() {
@@ -1948,7 +1956,7 @@
     var pollUrl = activeApprovalContext && activeApprovalContext.poll_url ? activeApprovalContext.poll_url : "/api/send-money/approval-status";
     var response;
     var result = {};
-    if (!requestPayload) {
+    if (!requestPayload || approvalDecisionInFlight) {
       return;
     }
     response = await fetch(pollUrl, {
@@ -1969,6 +1977,9 @@
     if (!response.ok || result.ok === false) {
       throw new Error(result.error || "Unable to poll approval status.");
     }
+    if (approvalDecisionInFlight) {
+      return;
+    }
     if (result.approval_status === "APPROVED" || result.approval_status === "REJECTED") {
       stopApprovalPolling();
       hideApprovalModal();
@@ -1987,14 +1998,30 @@
     showApprovalModal(result.message || "Waiting for the device to execute the transfer and send the approval prompt.");
     setApprovalDecisionControlsEnabled(false);
     if (form) {
-      setFormFeedback(form, "Transfer request created. Waiting for server reply.", "info");
+      setFormFeedback(form, "Transfer request created. Waiting for server reply. Auto-rejects after 30 seconds with no prompt.", "info");
     }
+  }
+
+  function autoRejectApprovalAfterTimeout(form) {
+    if (!hasApprovalTrackingContext(activeApprovalContext) || approvalDecisionInFlight) {
+      return;
+    }
+    showApprovalModal("No approval prompt was received within 30 seconds. Auto-rejecting this transfer now.");
+    setApprovalDecisionControlsEnabled(false);
+    setFormFeedback(form, "No approval prompt was received within 30 seconds. Auto-rejecting transfer.", "error");
+    announceStatus("No approval prompt received. Auto-rejecting transfer.");
+    submitApprovalDecision("REJECTED", {
+      form: form,
+      note: "Auto rejected after 30 seconds with no approval prompt.",
+      auto: true,
+    });
   }
 
   function startApprovalPolling(form, approvalContext) {
     stopApprovalPolling();
+    approvalDecisionInFlight = false;
     activeApprovalContext = approvalContext || null;
-    showApprovalModal("Waiting for the device to execute the transfer and send the approval prompt.");
+    showApprovalModal("Waiting for the device to execute the transfer and send the approval prompt. This will auto-reject after 30 seconds if no prompt arrives.");
     setApprovalDecisionControlsEnabled(false);
 
     if (!hasApprovalTrackingContext(activeApprovalContext)) {
@@ -2009,26 +2036,32 @@
       return;
     }
 
-    setFormFeedback(form, "Transfer request created. Polling for server reply.", "info");
-    pollApprovalStatusOnce(form).catch(function () {});
+    setFormFeedback(form, "Transfer request created. Polling every 3 seconds. Auto-rejects after 30 seconds with no prompt.", "info");
+    pollApprovalStatusOnce(form).catch(function (error) {
+      setFormFeedback(form, error.message || "Approval polling failed. Retrying until timeout.", "error");
+    });
     approvalPollTimer = window.setInterval(function () {
       pollApprovalStatusOnce(form).catch(function (error) {
-        setFormFeedback(form, error.message || "Approval polling failed.", "error");
-        stopApprovalPolling();
+        setFormFeedback(form, error.message || "Approval polling failed. Retrying until timeout.", "error");
       });
-    }, 30000);
+    }, approvalPollIntervalMs);
+    approvalTimeoutTimer = window.setTimeout(function () {
+      autoRejectApprovalAfterTimeout(form);
+    }, approvalAutoRejectMs);
   }
 
-  async function submitApprovalDecision(decision) {
+  async function submitApprovalDecision(decision, options) {
     var requestPayload = buildApprovalRequestPayload();
     var elements = getApprovalModalElements();
-    var note = elements.note ? elements.note.value : "";
+    var decisionOptions = options || {};
+    var note = decisionOptions.note != null ? decisionOptions.note : elements.note ? elements.note.value : "";
     var decisionUrl = activeApprovalContext && activeApprovalContext.decision_url ? activeApprovalContext.decision_url : "/api/send-money/approval-decision";
     var response;
     var result = {};
-    if (!requestPayload) {
+    if (!requestPayload || approvalDecisionInFlight) {
       return;
     }
+    approvalDecisionInFlight = true;
     requestPayload.decision = decision;
     requestPayload.note = note;
     setElementLoadingState(elements.approveButton, true);
@@ -2066,8 +2099,19 @@
       });
       showToast(result.message || "Approval decision submitted.", decision === "APPROVED" ? "success" : "error");
       announceStatus(result.message || "Approval decision submitted.");
+      if (decisionOptions.form) {
+        setFormFeedback(
+          decisionOptions.form,
+          result.message || (decisionOptions.auto ? "Transfer auto-rejected after timeout." : "Approval decision submitted."),
+          decision === "APPROVED" ? "success" : "error"
+        );
+      }
     } catch (error) {
       showToast(error.message || "Unable to submit approval decision.", "error");
+      if (decisionOptions.form) {
+        setFormFeedback(decisionOptions.form, error.message || "Unable to submit approval decision.", "error");
+      }
+      approvalDecisionInFlight = false;
     } finally {
       setElementLoadingState(elements.approveButton, false);
       setElementLoadingState(elements.rejectButton, false);
