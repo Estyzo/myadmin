@@ -1,6 +1,7 @@
 import time
 
 from app.clients.api_client import ApiClientError, api_client
+from app.services.auth import filter_by_client_scope
 from app.services.shared import format_cache_timestamp, parse_flexible_timestamp, pick_first_available
 
 
@@ -90,6 +91,7 @@ def fetch_requests(config):
         record = normalize_request_record(raw_item)
         if record is not None:
             normalized.append(record)
+    normalized = filter_by_client_scope(normalized, key="client")
     normalized.sort(key=lambda item: item.get("created_sort", 0.0), reverse=True)
     fetched_at = time.time()
     return {

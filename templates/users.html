@@ -1,0 +1,94 @@
+{% extends "base_app.html" %}
+{% set active_page = "users" %}
+{% set page_title = "Users" %}
+
+{% block document_title %}TransferFlow Users{% endblock %}
+
+{% block page_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='users.css') }}">
+{% endblock %}
+
+{% block page_content %}
+<section class="page-wrap users-page container-fluid px-3 px-md-4">
+  <div class="page-header">
+    <div class="page-copy">
+      <p class="page-eyebrow">Access Control</p>
+      <h2>Users and invitations</h2>
+      <p>Invite users, assign roles, and scope access by client code.</p>
+    </div>
+  </div>
+
+  <section class="users-grid">
+    <article class="users-panel">
+      <p class="card-kicker">Invite user</p>
+      <h3>Send enrollment link</h3>
+      {% if invite_error %}
+      <div class="auth-alert">{{ invite_error }}</div>
+      {% endif %}
+      {% if invite_link %}
+      <div class="invite-link-panel">
+        <strong>Invitation link</strong>
+        <p>{{ invite_link }}</p>
+      </div>
+      {% endif %}
+      <form class="users-form" method="post" action="{{ url_for('create_user_invite') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <label>
+          <span>Email</span>
+          <input type="email" name="email" required>
+        </label>
+        <label>
+          <span>Role</span>
+          <select name="role">
+            <option value="operator">Operator</option>
+            <option value="viewer">Viewer</option>
+            <option value="manager">Manager</option>
+          </select>
+        </label>
+        <label>
+          <span>Client codes</span>
+          <input type="text" name="client_codes" placeholder="client1, client2">
+        </label>
+        <label>
+          <span>Operator scope</span>
+          <input type="text" name="operator_scope" placeholder="Vodacom, Airtel">
+        </label>
+        <button type="submit">Create invitation</button>
+      </form>
+    </article>
+
+    <article class="users-panel">
+      <p class="card-kicker">Active accounts</p>
+      <h3>{{ users|length }} users</h3>
+      <div class="users-list">
+        {% for user in users %}
+        <div class="users-row">
+          <div>
+            <strong>{{ user.email }}</strong>
+            <span>{{ user.name or '-' }}</span>
+          </div>
+          <span class="role-pill">{{ user.role }}</span>
+          <small>{{ user.client_codes|join(', ') if user.client_codes else 'All clients' }}</small>
+        </div>
+        {% endfor %}
+      </div>
+    </article>
+  </section>
+
+  <section class="users-panel">
+    <p class="card-kicker">Recent invitations</p>
+    <div class="users-list">
+      {% for invite in invitations %}
+      <div class="users-row">
+        <div>
+          <strong>{{ invite.email }}</strong>
+          <span>{{ invite.accepted_at or invite.revoked_at or 'Pending' }}</span>
+        </div>
+        <span class="role-pill">{{ invite.role }}</span>
+        <small>Expires {{ invite.expires_at }}</small>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+</section>
+{% endblock %}

@@ -3,6 +3,7 @@ import re
 from datetime import datetime, timedelta
 
 from app.clients.api_client import ApiClientError, api_client
+from app.services.auth import current_user, filter_by_client_scope, user_can_access_client
 from app.services.shared import (
     format_cache_timestamp,
     format_currency_amount,
@@ -131,6 +132,13 @@ def build_client_status_payload(config):
         }
 
     status_index = build_client_status_index(extract_log_records(payload))
+    active_user = current_user()
+    if active_user:
+        status_index = {
+            key: value
+            for key, value in status_index.items()
+            if user_can_access_client(value.get("client_code"), user=active_user)
+        }
     return {
         "ok": True,
         "clients": status_index,
@@ -237,10 +245,10 @@ def build_balance_payload(config):
         }
 
     status_payload = build_client_status_payload(config)
-    records = attach_client_status(
+    records = filter_by_client_scope(attach_client_status(
         latest_balance_by_client_operator(extract_balance_records(payload)),
         status_payload.get("clients", {}),
-    )
+    ), key="client_code")
     return {
         "ok": True,
         "data": records,

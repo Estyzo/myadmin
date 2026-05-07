@@ -1,6 +1,6 @@
 import secrets
 
-from flask import Flask, abort, request, send_from_directory, session
+from flask import Flask, abort, jsonify, redirect, request, send_from_directory, session, url_for
 
 from app.clients.api_client import api_client
 from app.config import build_config, load_environment
@@ -14,6 +14,40 @@ from app.services.shared import (
     mask_name,
     mask_numeric_sequences,
 )
+from app.services.auth import (
+    current_user,
+    has_permission,
+    init_auth_storage,
+    is_fragment_or_json_request,
+    is_public_endpoint,
+    load_current_user,
+    role_home_endpoint,
+    user_permissions,
+)
+
+
+ENDPOINT_PERMISSIONS = {
+    "root": "dashboard",
+    "dashboard": "dashboard",
+    "api_dashboard_data": "dashboard",
+    "export_transactions": "exports",
+    "send_money": "send_money",
+    "api_send_money": "send_money",
+    "api_send_money_approval_status": "send_money",
+    "api_send_money_approval_decision": "send_money",
+    "recent_transfers": "recent_transfers",
+    "requests": "requests",
+    "api_getrequests": "requests",
+    "balance": "balance",
+    "api_balance_data": "balance",
+    "api_client_status": "balance",
+    "messages": "messages",
+    "settings": "settings",
+    "api_sender_configurations": "settings",
+    "api_sender_configuration_status": "settings",
+    "users": "manage_users",
+    "create_user_invite": "manage_users",
+}
 
 
 def create_app():
@@ -36,15 +70,35 @@ def create_app():
     api_client.init_app(app)
     app.extensions["celery"] = create_celery_app(app)
     init_service_config(app)
+    init_auth_storage(app)
 
     @app.context_processor
     def inject_api_base_url():
         session.setdefault("csrf_token", secrets.token_urlsafe(32))
+        active_user = current_user()
         return {
             "api_base_url": app.config["API_BASE_URL"],
             "sender_config_api_url": app.config["SENDER_CONFIG_API_URL"],
             "csrf_token": session["csrf_token"],
+            "current_user": active_user,
+            "current_permissions": user_permissions(active_user),
         }
+
+    @app.before_request
+    def require_login_and_permission():
+        load_current_user()
+        if is_public_endpoint(request.endpoint):
+            return None
+        if not current_user():
+            if is_fragment_or_json_request():
+                return jsonify({"ok": False, "error": "Authentication required."}), 401
+            return redirect(url_for("login"))
+        required_permission = ENDPOINT_PERMISSIONS.get(request.endpoint)
+        if required_permission and not has_permission(required_permission):
+            if is_fragment_or_json_request():
+                return jsonify({"ok": False, "error": "You do not have permission to access this resource."}), 403
+            return redirect(url_for(role_home_endpoint()))
+        return None
 
     @app.before_request
     def protect_state_changing_requests():

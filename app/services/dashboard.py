@@ -9,6 +9,7 @@ from flask import Response, current_app
 
 from app.clients.api_client import ApiClientError, api_client
 from app.extensions import cache
+from app.services.auth import filter_by_client_scope
 from app.services.shared import (
     build_daily_metric_window,
     build_export_filename,
@@ -497,6 +498,7 @@ def build_dashboard_data(
     current_page = page if isinstance(page, int) and page > 0 else 1
 
     all_transactions, fetch_meta = fetch_all_transactions(config=config, page_size=100, force_refresh=force_refresh)
+    all_transactions = filter_by_client_scope(all_transactions, key="created_by")
     today_date = datetime.now(get_app_timezone()).date()
     scoped_transactions = []
     operator_values = set()

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Accept Invitation</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='auth.css') }}">
+</head>
+<body class="auth-body">
+  <main class="auth-shell">
+    <section class="auth-card">
+      <p class="page-eyebrow">TransferFlow Invite</p>
+      <h1>Create your account</h1>
+      <p>Set your password to enroll into the assigned role and client scope.</p>
+      {% if error %}
+      <div class="auth-alert">{{ error }}</div>
+      {% endif %}
+      <form method="post" class="auth-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <label>
+          <span>Name</span>
+          <input type="text" name="name" autocomplete="name" required>
+        </label>
+        <label>
+          <span>Password</span>
+          <input type="password" name="password" autocomplete="new-password" minlength="8" required>
+        </label>
+        <label>
+          <span>Confirm password</span>
+          <input type="password" name="confirm_password" autocomplete="new-password" minlength="8" required>
+        </label>
+        <button type="submit">Create account</button>
+      </form>
+    </section>
+  </main>
+</body>
+</html>

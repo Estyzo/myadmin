@@ -62,7 +62,10 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path></svg>
             <span class="sr-only">Install app</span>
           </button>
-          <div class="profile" aria-label="Admin console">{{ profile_initial|default("L") }}</div>
+          <a class="topbar-utility topbar-utility-compact" href="{{ url_for('logout') }}" aria-label="Sign out">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><path d="m16 17 5-5-5-5"></path><path d="M21 12H9"></path></svg>
+          </a>
+          <div class="profile" aria-label="{{ current_user.email if current_user else 'User' }}">{{ (current_user.name or current_user.email or 'U')[:1]|upper if current_user else profile_initial|default("L") }}</div>
         </div>
       </header>
       {% endif %}

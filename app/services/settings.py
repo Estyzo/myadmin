@@ -2,6 +2,7 @@ import time
 
 from app.clients.api_client import ApiClientError, api_client
 from app.extensions import cache
+from app.services.auth import filter_by_client_scope, user_can_access_client
 from app.services.shared import format_cache_timestamp, pick_first_available
 
 
@@ -175,6 +176,11 @@ def set_sender_configuration_status(config, sender_number, is_active):
             "ok": False,
             "error": "Sender configuration was not found.",
         }, 404
+    if not user_can_access_client(matched_item.get("client_code")):
+        return {
+            "ok": False,
+            "error": "You do not have permission to update this client.",
+        }, 403
 
     overrides = _read_sender_status_overrides()
     overrides[normalized_key] = bool(is_active)
@@ -199,7 +205,8 @@ def set_sender_configuration_status(config, sender_number, is_active):
 def fetch_sender_configurations(config, active_only=False, force_refresh=False):
     def apply_filters(rows):
         rows_with_overrides = apply_sender_status_overrides(rows)
-        return [row for row in rows_with_overrides if row.get("is_active")] if active_only else rows_with_overrides
+        scoped_rows = filter_by_client_scope(rows_with_overrides, key="client_code")
+        return [row for row in scoped_rows if row.get("is_active")] if active_only else scoped_rows
 
     now = time.time()
     cached_items, cached_meta = _read_cached_sender_configurations()

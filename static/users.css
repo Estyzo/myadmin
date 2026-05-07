@@ -1,0 +1,119 @@
+.users-page {
+  display: grid;
+  gap: 22px;
+}
+
+.users-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.users-panel {
+  padding: 22px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(15, 24, 41, 0.08);
+  box-shadow: var(--shadow-soft);
+}
+
+.users-panel h3 {
+  margin: 0 0 16px;
+  color: var(--navy);
+  font-size: 24px;
+  letter-spacing: -0.03em;
+}
+
+.users-form {
+  display: grid;
+  gap: 12px;
+}
+
+.users-form label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.users-form input,
+.users-form select {
+  min-height: 44px;
+  border: 1px solid rgba(15, 24, 41, 0.12);
+  border-radius: 14px;
+  padding: 0 12px;
+  color: var(--navy);
+}
+
+.users-form button {
+  min-height: 46px;
+  border: 0;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--emerald), var(--teal));
+  color: #fff;
+  font-weight: 900;
+}
+
+.users-list {
+  display: grid;
+  gap: 10px;
+}
+
+.users-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 12px;
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(15, 24, 41, 0.04);
+}
+
+.users-row strong,
+.users-row span,
+.users-row small {
+  display: block;
+}
+
+.users-row small {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.role-pill {
+  align-self: start;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(6, 182, 212, 0.12);
+  color: var(--teal);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.invite-link-panel {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 14px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(28, 220, 139, 0.1);
+  color: var(--navy);
+}
+
+.invite-link-panel p {
+  margin: 0;
+  word-break: break-all;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+@media (max-width: 900px) {
+  .users-grid {
+    grid-template-columns: 1fr;
+  }
+}

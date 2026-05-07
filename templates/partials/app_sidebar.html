@@ -22,40 +22,60 @@
         <small>Financial operations</small>
       </div>
     </div>
-    <span class="brand-badge">Admin</span>
+    <span class="brand-badge">{{ current_user.role|default('User')|title }}</span>
   </div>
 
   <nav class="side-nav" aria-label="Primary">
+    {% if 'dashboard' in current_permissions %}
     <a href="{{ url_for('dashboard') }}" class="nav-item{% if current_page == 'dashboard' %} active{% endif %}"{% if current_page == 'dashboard' %} aria-current="page"{% endif %}>
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M3 11h7V3H3zM14 21h7v-7h-7zM14 10h7V3h-7zM3 21h7v-7H3z"></path>
       </svg>
       <span>Dashboard</span>
     </a>
+    {% endif %}
+    {% if 'send_money' in current_permissions %}
     <a href="{{ url_for('send_money') }}" class="nav-item{% if current_page == 'send-money' %} active{% endif %}"{% if current_page == 'send-money' %} aria-current="page"{% endif %}>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4z"></path></svg>
       <span>Send Money</span>
     </a>
+    {% endif %}
+    {% if 'recent_transfers' in current_permissions %}
     <a href="{{ url_for('recent_transfers') }}" class="nav-item{% if current_page == 'recent-transfers' %} active{% endif %}"{% if current_page == 'recent-transfers' %} aria-current="page"{% endif %}>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v6h6"></path><path d="M21 21v-6h-6"></path><path d="M21 9A9 9 0 0 0 6 5.3L3 9"></path><path d="M3 15a9 9 0 0 0 15 3.7l3-3.7"></path></svg>
       <span>Recent</span>
     </a>
+    {% endif %}
+    {% if 'requests' in current_permissions %}
     <a href="{{ url_for('requests') }}" class="nav-item{% if current_page == 'requests' %} active{% endif %}"{% if current_page == 'requests' %} aria-current="page"{% endif %}>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M3 6h.01"></path><path d="M3 12h.01"></path><path d="M3 18h.01"></path></svg>
       <span>Requests</span>
     </a>
+    {% endif %}
+    {% if 'balance' in current_permissions %}
     <a href="{{ url_for('balance') }}" class="nav-item{% if current_page == 'balance' %} active{% endif %}"{% if current_page == 'balance' %} aria-current="page"{% endif %}>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18"></path><path d="M3 12h18"></path><path d="M3 17h18"></path></svg>
       <span>Balance</span>
     </a>
+    {% endif %}
+    {% if 'messages' in current_permissions %}
     <a href="{{ url_for('messages') }}" class="nav-item{% if current_page == 'messages' %} active{% endif %}"{% if current_page == 'messages' %} aria-current="page"{% endif %}>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
       <span>Messages</span>
     </a>
+    {% endif %}
+    {% if 'settings' in current_permissions %}
     <a href="{{ url_for('settings') }}" class="nav-item{% if current_page == 'settings' %} active{% endif %}"{% if current_page == 'settings' %} aria-current="page"{% endif %}>
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15A1.65 1.65 0 0 0 20 16.82l.1.1a2 2 0 1 1-2.83 2.83l-.1-.1A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1V21a2 2 0 1 1-4 0v-.2a1.65 1.65 0 0 0-.33-1 1.65 1.65 0 0 0-1-.6 1.65 1.65 0 0 0-1.82.6l-.1.1a2 2 0 1 1-2.83-2.83l.1-.1A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1-.33H3a2 2 0 1 1 0-4h.2a1.65 1.65 0 0 0 1-.33 1.65 1.65 0 0 0 .6-1 1.65 1.65 0 0 0-.6-1.82l-.1-.1a2 2 0 1 1 2.83-2.83l.1.1A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .33-1V3a2 2 0 1 1 4 0v.2a1.65 1.65 0 0 0 .33 1 1.65 1.65 0 0 0 1 .6 1.65 1.65 0 0 0 1.82-.6l.1-.1a2 2 0 1 1 2.83 2.83l-.1.1A1.65 1.65 0 0 0 19.4 9c.27.32.47.7.6 1.1H21a2 2 0 1 1 0 4h-.2a1.65 1.65 0 0 0-1 .33z"></path></svg>
       <span>Settings</span>
     </a>
+    {% endif %}
+    {% if 'manage_users' in current_permissions %}
+    <a href="{{ url_for('users') }}" class="nav-item{% if current_page == 'users' %} active{% endif %}"{% if current_page == 'users' %} aria-current="page"{% endif %}>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+      <span>Users</span>
+    </a>
+    {% endif %}
   </nav>
 
 </aside>

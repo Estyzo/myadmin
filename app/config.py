@@ -108,4 +108,7 @@ def build_config():
         "CELERY_TASK_ALWAYS_EAGER": os.getenv("CELERY_TASK_ALWAYS_EAGER", "").strip().lower() in {"1", "true", "yes"},
         "USE_CELERY_CACHE_WARMING": os.getenv("USE_CELERY_CACHE_WARMING", "true").strip().lower() in {"1", "true", "yes"},
         "DASHBOARD_REFRESH_LOCK_TTL": read_positive_int_env("DASHBOARD_REFRESH_LOCK_TTL", 120, minimum=30),
+        "AUTH_DATABASE_PATH": os.getenv("AUTH_DATABASE_PATH", "").strip(),
+        "AUTH_BOOTSTRAP_EMAIL": os.getenv("AUTH_BOOTSTRAP_EMAIL", "admin@transferflow.local").strip(),
+        "AUTH_BOOTSTRAP_PASSWORD": os.getenv("AUTH_BOOTSTRAP_PASSWORD", "ChangeMe123!").strip(),
     }

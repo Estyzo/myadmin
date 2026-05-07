@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from uuid import uuid4
 
 from app.clients.api_client import ApiClientError, api_client
+from app.services.auth import user_can_access_client
 from app.services.request_feed import extract_request_records
 from app.services.settings import fetch_sender_configurations, infer_mobile_operator_name
 from app.services.shared import format_currency_amount, get_app_timezone, parse_flexible_timestamp, pick_first_available
@@ -314,6 +315,8 @@ def submit_send_money_request(config, payload):
         validation_errors["sender_mobile_number"] = "Sender number is invalid."
     if not client_code or client_code == "-":
         validation_errors["client_code"] = "Client code is required for the selected sender."
+    elif not user_can_access_client(client_code):
+        validation_errors["client_code"] = "You do not have permission to operate this client code."
     if not mobile_operator or mobile_operator == "-":
         validation_errors["mobile_operator"] = "Mobile operator name is required for the selected sender."
     if not request_path or request_path == "-":
