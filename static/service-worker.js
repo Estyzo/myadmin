@@ -9,6 +9,7 @@ const APP_SHELL = [
   "/static/icons/transferflow-icon-192.png",
   "/static/icons/transferflow-icon-512.png",
   "/static/styles.css",
+  "/static/ui-improvements.css",
   "/static/dashboard.css",
   "/static/balance.css",
   "/static/operations.css",
