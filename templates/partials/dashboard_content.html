@@ -278,10 +278,16 @@
               <span class="operation-pill" data-operation="{{ transaction.operation|lower }}">{{ transaction.operation }}</span>
             </td>
             <td data-col="amount" data-label="Amount" class="transaction-amount">
-              <span class="amount-value">{{ transaction.amount }}</span>
+              <span class="amount-value amount-value-desktop">{{ transaction.amount }}</span>
+              <span class="amount-value amount-value-mobile">
+                <strong>{{ transaction.amount|replace('TZS ', '')|replace('.00', '') }}</strong>
+                <small>TZS</small>
+              </span>
             </td>
             <td data-col="created_by" data-label="Created By" class="monospace created-by-cell">{{ transaction.created_by }}</td>
             <td data-col="date" data-label="Date" class="transaction-date">{{ transaction.created_at }}</td>
+            <td data-col="meta" data-label="Meta" class="transaction-meta mobile-only-cell">{{ transaction.created_at }} · {{ transaction.operation }} · {{ transaction.created_by }}</td>
+            <td data-col="note" data-label="Note" class="transaction-note mobile-only-cell">{{ transaction.note|mask_sensitive_numbers }}</td>
             <td data-label="Details" class="table-action-cell">
               <button class="row-action-btn" type="button" data-detail-trigger="true" data-detail-payload='{{ transaction_detail|tojson|forceescape }}'>View details</button>
             </td>
