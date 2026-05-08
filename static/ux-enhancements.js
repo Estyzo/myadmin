@@ -282,6 +282,10 @@
     if (!element) {
       return;
     }
+    if (element.matches && element.matches(".nav-item, .mobile-bottom-nav-item, .mobile-more-item")) {
+      element.setAttribute("aria-busy", isLoading ? "true" : "false");
+      return;
+    }
     element.classList.toggle("is-loading", isLoading);
     setBusyState(element, isLoading);
     if (element.tagName === "BUTTON" || element.tagName === "INPUT") {
