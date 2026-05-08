@@ -1007,6 +1007,9 @@ body.compact-cards-mode .transaction-date {
     border-radius: 18px;
     background: rgba(255, 255, 255, 0.96);
     border: 1px solid rgba(15, 24, 41, 0.08);
+    contain: layout paint style;
+    content-visibility: auto;
+    contain-intrinsic-size: 132px;
   }
 
   .transaction-table tbody td {

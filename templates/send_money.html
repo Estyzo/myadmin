@@ -11,3 +11,7 @@
 {% block page_content %}
   {% include "partials/send_money_content.html" %}
 {% endblock %}
+
+{% block page_scripts %}
+  <script defer src="{{ url_for('static', filename='send-money-page.js', v='53') }}"></script>
+{% endblock %}

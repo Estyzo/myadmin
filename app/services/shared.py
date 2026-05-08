@@ -249,7 +249,7 @@ def normalize_per_page(value):
         parsed = int(value)
     except (TypeError, ValueError):
         return 15
-    return parsed if parsed in {15, 30, 50} else 15
+    return parsed if parsed in {8, 15, 30, 50} else 15
 
 
 def is_truthy_flag(value):

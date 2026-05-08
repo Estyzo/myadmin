@@ -1,29 +1,13 @@
-const CACHE_NAME = "transferflow-shell-v52";
+const CACHE_NAME = "transferflow-shell-v53";
 const APP_SHELL = [
   "/dashboard",
-  "/balance",
-  "/operations",
-  "/reports",
   "/static/manifest.webmanifest",
   "/static/icons/transferflow-icon.svg",
   "/static/icons/transferflow-icon-192.png",
   "/static/icons/transferflow-icon-512.png",
   "/static/styles.css",
   "/static/ui-improvements.css",
-  "/static/dashboard.css",
-  "/static/balance.css",
-  "/static/operations.css",
-  "/static/reports.css",
-  "/static/send-money.css",
-  "/static/messages.css",
-  "/static/requests.css",
-  "/static/settings.css",
-  "/static/auth.css",
-  "/static/users.css",
-  "/static/ux-enhancements.js",
-  "/static/operations.js",
-  "/static/dashboard-page.js",
-  "/static/requests-page.js"
+  "/static/ux-enhancements.js"
 ];
 
 self.addEventListener("install", (event) => {

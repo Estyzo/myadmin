@@ -621,7 +621,7 @@ def build_dashboard_data(
     return {
         "period": normalized_period,
         "per_page": rows_per_page,
-        "per_page_options": [15, 30, 50],
+        "per_page_options": [8, 15, 30, 50],
         "fetch_meta": {
             "source": fetch_meta["source"],
             "used_stale": fetch_meta["used_stale"],

@@ -18,6 +18,7 @@
     refreshTimerId: null,
     isPaused: false,
     preferencesApplied: false,
+    mobilePageSizeApplied: false,
   };
   var hiddenColumns = new Set();
 
@@ -77,6 +78,14 @@
     try {
       window.localStorage.setItem(dashboardRefreshPausedStorageKey, isPaused ? "true" : "false");
     } catch (_error) {}
+  }
+
+  function isMobileDashboardViewport() {
+    return !!(window.matchMedia && window.matchMedia("(max-width: 760px)").matches);
+  }
+
+  function getPreferredMobilePageSize() {
+    return "8";
   }
 
   function normalizeOperatorKey(value) {
@@ -545,6 +554,11 @@
     );
   }
 
+  function hasCustomPageSizePreference(preferences) {
+    var value = String((preferences && preferences.per_page) || "15");
+    return value !== "15" && value !== getPreferredMobilePageSize();
+  }
+
   function buildDashboardUrlFromPreferences(root, preferences) {
     var form = root.querySelector(".list-controls");
     var url = new URL((form && form.getAttribute("action")) || "/dashboard", window.location.origin);
@@ -583,6 +597,12 @@
     var currentUrl = new URL(window.location.href);
     var targetUrl;
     var hasExplicitFilters;
+    var hasExplicitPageSize;
+
+    hasExplicitPageSize = currentUrl.searchParams.has("per_page");
+    if (isMobileDashboardViewport() && !hasExplicitPageSize && !hasCustomPageSizePreference(preferences)) {
+      preferences = Object.assign({}, preferences, { per_page: getPreferredMobilePageSize() });
+    }
 
     if (dashboardState.preferencesApplied || !hasCustomDashboardPreferences(preferences)) {
       return false;
@@ -602,6 +622,46 @@
     }
 
     dashboardState.preferencesApplied = true;
+    if (window.CodexUX && typeof window.CodexUX.fetchAndSwap === "function") {
+      window.CodexUX.fetchAndSwap(targetUrl.toString(), "#dashboard-page-root", false, {
+        restoreFocus: false,
+        notify: false,
+        suppressToast: true,
+        replaceHistory: true,
+      }).catch(function () {
+        window.location.assign(targetUrl.toString());
+      });
+      return true;
+    }
+
+    window.location.assign(targetUrl.toString());
+    return true;
+  }
+
+  function maybeApplyMobilePageSize(root) {
+    var currentUrl = new URL(window.location.href);
+    var form = root.querySelector(".list-controls");
+    var pageSizeField = form ? form.querySelector('[name="per_page"]') : null;
+    var preferences = readDashboardPreferences();
+    var targetUrl;
+
+    if (
+      dashboardState.mobilePageSizeApplied ||
+      !isMobileDashboardViewport() ||
+      currentUrl.searchParams.has("per_page") ||
+      hasCustomPageSizePreference(preferences) ||
+      !pageSizeField ||
+      pageSizeField.value === getPreferredMobilePageSize() ||
+      !pageSizeField.querySelector('option[value="' + getPreferredMobilePageSize() + '"]')
+    ) {
+      return false;
+    }
+
+    dashboardState.mobilePageSizeApplied = true;
+    targetUrl = new URL(window.location.href);
+    targetUrl.searchParams.set("per_page", getPreferredMobilePageSize());
+    targetUrl.searchParams.delete("page");
+
     if (window.CodexUX && typeof window.CodexUX.fetchAndSwap === "function") {
       window.CodexUX.fetchAndSwap(targetUrl.toString(), "#dashboard-page-root", false, {
         restoreFocus: false,
@@ -806,6 +866,10 @@
     dashboardState.isPaused = readRefreshPausedPreference();
 
     if (maybeApplyStoredDashboardPreferences(root)) {
+      return;
+    }
+
+    if (maybeApplyMobilePageSize(root)) {
       return;
     }
 
