@@ -602,17 +602,21 @@ body.theme-dark .approval-note-field textarea {
   .transfer-confirmation-modal,
   .transfer-approval-modal {
     align-items: end;
-    padding: 12px max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    padding:
+      12px
+      max(12px, env(safe-area-inset-right))
+      calc(82px + env(safe-area-inset-bottom))
+      max(12px, env(safe-area-inset-left));
   }
 
   .transfer-confirmation-panel,
   .transfer-approval-panel {
     width: 100%;
-    max-height: calc(100vh - 24px);
-    max-height: calc(100dvh - 24px);
+    max-height: calc(100vh - 106px - env(safe-area-inset-bottom));
+    max-height: calc(100dvh - 106px - env(safe-area-inset-bottom));
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    padding: 18px;
+    padding: 18px 18px 0;
     border-radius: 22px 22px 16px 16px;
   }
 
@@ -628,8 +632,19 @@ body.theme-dark .approval-note-field textarea {
 
   .transfer-confirmation-actions,
   .transfer-approval-actions {
+    position: sticky;
+    bottom: 0;
     display: grid;
     grid-template-columns: 1fr;
+    margin: 16px -18px 0;
+    padding: 12px 18px calc(14px + env(safe-area-inset-bottom));
+    background: var(--surface-strong);
+    border-top: 1px solid rgba(15, 24, 41, 0.08);
+  }
+
+  body.theme-dark .transfer-confirmation-actions,
+  body.theme-dark .transfer-approval-actions {
+    border-top-color: rgba(156, 174, 199, 0.14);
   }
 }
 
